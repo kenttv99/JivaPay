@@ -1,0 +1,77 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.pdb
+*.egg-info/
+*.egg
+*.log
+
+# Virtual environments
+venv/
+.env/
+.envrc
+
+# VSCode
+.vscode/
+
+# MacOS
+.DS_Store
+
+# Node.js
+node_modules/
+.npm/
+
+# Build output
+build/
+dist/
+*.tgz
+*.tar.gz
+*.zip
+
+# Next.js/React/Frontend
+.next/
+out/
+coverage/
+
+# Local env files
+*.env
+*.local
+
+# System files
+Thumbs.db
+
+# Ignore frontend app build artifacts
+frontend/**/node_modules/
+frontend/**/.next/
+frontend/**/out/
+frontend/**/coverage/
+
+# Ignore lock files if not needed (optional)
+# package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Ignore IDE files
+.idea/
+*.iml
+
+# Ignore test cache
+.pytest_cache/
+
+# Ignore database dumps/backups
+*.sqlite3
+*.db
+*.bak
+*.sql
+
+# Ignore logs
+logs/
+*.log
+
+# Ignore temp files
+*.tmp
+*.swp
+*.swo 
