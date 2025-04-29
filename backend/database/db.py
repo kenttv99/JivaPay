@@ -135,9 +135,10 @@ class ReqTrader(Base):
 class OrderHistory(Base):
     __tablename__ = "order_history"
     id = Column(Integer, primary_key=True, index=True)
-    hash = Column(String(255), nullable=False)
+    hash_id = Column(String(255), nullable=False)
     trader_id = Column(Integer, ForeignKey('traders.id', ondelete='CASCADE'), nullable=False)
     merchant_id = Column(Integer, ForeignKey('merchants.id', ondelete='CASCADE'), nullable=False)
+    customer_id = Column(Integer, nullable=False)
     store_id = Column(Integer, ForeignKey('merchant_stores.id', ondelete='CASCADE'), nullable=False)
     requeset_id = Column(Integer, ForeignKey('req_traders.id', ondelete='CASCADE'), nullable=False)
     method_id = Column(Integer, ForeignKey('payment_methods.id', ondelete='CASCADE'), nullable=False)
@@ -145,6 +146,7 @@ class OrderHistory(Base):
     currency_id = Column(Integer, ForeignKey('fiat_currencies.id', ondelete='CASCADE'), nullable=False)
     fiat_id = Column(Integer, ForeignKey('fiat_currencies.id', ondelete='CASCADE'), nullable=False)
     order_type = Column(String(50), nullable=False)
+    exchange_rate = Column(DECIMAL(20, 8), nullable=False)
     amount_currency = Column(DECIMAL(20, 8), nullable=False)
     total_fiat = Column(DECIMAL(20, 2), nullable=False)
     merchant_commission = Column(DECIMAL(20, 2), nullable=False)
