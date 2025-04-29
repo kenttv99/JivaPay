@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, Boolean, DECIMAL, TIMESTAMP, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 
 Base = declarative_base()
@@ -25,6 +26,10 @@ class Merchant(Base):
     updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
     access = Column(Boolean, default=True)
 
+    stores = relationship("MerchantStore", back_populates="merchant", cascade="all, delete-orphan")
+    order_histories = relationship("OrderHistory", back_populates="merchant")
+    store_addresses = relationship("StoreAddress", back_populates="merchant")
+
 class MerchantStore(Base):
     __tablename__ = "merchant_stores"
     id = Column(Integer, primary_key=True, index=True)
@@ -39,6 +44,14 @@ class MerchantStore(Base):
     trafic_access = Column(Boolean, default=False)
     access = Column(Boolean, default=True)
     
+    merchant = relationship("Merchant", back_populates="stores")
+    store_commissions = relationship("StoreCommission", back_populates="store")
+    store_gateways = relationship("StoreGateway", back_populates="store")
+    balance_stores = relationship("BalanceStore", back_populates="store")
+    balance_store_history = relationship("BalanceStoreHistory", back_populates="store")
+    store_addresses = relationship("StoreAddress", back_populates="store")
+    order_histories = relationship("OrderHistory", back_populates="store")
+
 class StoreCommission(Base):
     __tablename__ = "store_commissions"
     id = Column(Integer, primary_key=True, index=True)
@@ -47,11 +60,16 @@ class StoreCommission(Base):
     commission_payout = Column(DECIMAL(20, 2), nullable=False)
     updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
 
+    store = relationship("MerchantStore", back_populates="store_commissions")
+
 class StoreGateway(Base):
     __tablename__ = "store_gateways"
     id = Column(Integer, primary_key=True, index=True)
     store_id = Column(Integer, ForeignKey('merchant_stores.id', ondelete='CASCADE'), nullable=False)
     type = Column(String(50), nullable=False) #redirect, api
+
+    store = relationship("MerchantStore", back_populates="store_gateways")
+    order_histories = relationship("OrderHistory", back_populates="gateway")
 
 class BalanceStore(Base):
     __tablename__ = "balance_stores"
@@ -61,6 +79,9 @@ class BalanceStore(Base):
     balance = Column(DECIMAL(20, 2), nullable=False)
     updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
     
+    store = relationship("MerchantStore", back_populates="balance_stores")
+    currency = relationship("CryptoCurrency")
+
 class BalanceStoreHistory(Base):
     __tablename__ = "balance_store_history"
     id = Column(Integer, primary_key=True, index=True)
@@ -68,6 +89,9 @@ class BalanceStoreHistory(Base):
     currency_id = Column(Integer, ForeignKey('crypto_currencies.id', ondelete='CASCADE'), nullable=False)
     balance = Column(DECIMAL(20, 2), nullable=False)
     updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
+
+    store = relationship("MerchantStore", back_populates="balance_store_history")
+    currency = relationship("CryptoCurrency")
 
 class StoreAddress(Base):
     __tablename__ = "store_addresses"
@@ -79,6 +103,10 @@ class StoreAddress(Base):
     status = Column(String(50), nullable=False, default="check")
     created_at = Column(TIMESTAMP(timezone=True), default=utcnow)
     updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
+
+    store = relationship("MerchantStore", back_populates="store_addresses")
+    merchant = relationship("Merchant", back_populates="store_addresses")
+    currency = relationship("FiatCurrency")
 
 # =====================
 # === ТРЕЙДЕРЫ (Traders)
@@ -103,6 +131,13 @@ class Trader(Base):
     two_factor_auth_token = Column(String(32), nullable=True)
     time_zone_id = Column(Integer, ForeignKey('time_zones.id', ondelete='CASCADE'), nullable=False)
     
+    trader_commissions = relationship("TraderCommission", back_populates="trader")
+    trader_addresses = relationship("TraderAddress", back_populates="trader")
+    balance_traders = relationship("BalanceTrader", back_populates="trader")
+    balans_trader_history = relationship("BalansTraderHistory", back_populates="trader")
+    req_traders = relationship("ReqTrader", back_populates="trader")
+    order_histories = relationship("OrderHistory", back_populates="trader")
+
 class TraderCommission(Base):
     __tablename__ = "trader_commissions"
     id = Column(Integer, primary_key=True, index=True)
@@ -110,6 +145,8 @@ class TraderCommission(Base):
     commission_payin = Column(DECIMAL(20, 2), nullable=False)
     commission_payout = Column(DECIMAL(20, 2), nullable=False)
     updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
+
+    trader = relationship("Trader", back_populates="trader_commissions")
 
 class TraderAddress(Base):
     __tablename__ = "trader_addresses"
@@ -121,12 +158,18 @@ class TraderAddress(Base):
     created_at = Column(TIMESTAMP(timezone=True), default=utcnow)
     updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
 
+    trader = relationship("Trader", back_populates="trader_addresses")
+    currency = relationship("FiatCurrency")
+
 class BalanceTrader(Base):
     __tablename__ = "balance_traders"
     id = Column(Integer, primary_key=True, index=True)
     trader_id = Column(Integer, ForeignKey('traders.id', ondelete='CASCADE'), nullable=False)
     currency_id = Column(Integer, ForeignKey('fiat_currencies.id', ondelete='CASCADE'), nullable=False)
     balance = Column(DECIMAL(20, 2), nullable=False)
+
+    trader = relationship("Trader", back_populates="balance_traders")
+    currency = relationship("FiatCurrency")
 
 class BalansTraderHistory(Base):
     __tablename__ = "balans_trader_history"
@@ -139,6 +182,10 @@ class BalansTraderHistory(Base):
     amount = Column(DECIMAL(20, 2), nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), default=utcnow)
     updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
+
+    trader = relationship("Trader", back_populates="balans_trader_history")
+    fiat = relationship("FiatCurrency", foreign_keys=[fiat_id])
+    currency = relationship("FiatCurrency", foreign_keys=[currency_id])
 
 class ReqTrader(Base):
     __tablename__ = "req_traders"
@@ -155,15 +202,21 @@ class ReqTrader(Base):
     created_at = Column(TIMESTAMP(timezone=True), default=utcnow)
     updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
 
+    trader = relationship("Trader", back_populates="req_traders")
+    method = relationship("PaymentMethod")
+    bank = relationship("BanksTrader")
+    avalible_requisites = relationship("AvalibleRequisites", back_populates="requisite")
+    order_histories = relationship("OrderHistory", back_populates="requisite")
+
 class OrderHistory(Base):
     __tablename__ = "order_history"
     id = Column(Integer, primary_key=True, index=True)
     hash_id = Column(String(255), nullable=False)
     trader_id = Column(Integer, ForeignKey('traders.id', ondelete='CASCADE'), nullable=False)
     merchant_id = Column(Integer, ForeignKey('merchants.id', ondelete='CASCADE'), nullable=False)
-    customer_id = Column(Integer, nullable=False)
+    gateway_id = Column(Integer, ForeignKey('store_gateways.id', ondelete='CASCADE'), nullable=False)
     store_id = Column(Integer, ForeignKey('merchant_stores.id', ondelete='CASCADE'), nullable=False)
-    requeset_id = Column(Integer, ForeignKey('req_traders.id', ondelete='CASCADE'), nullable=False)
+    requisite_id = Column(Integer, ForeignKey('req_traders.id', ondelete='CASCADE'), nullable=False)
     method_id = Column(Integer, ForeignKey('payment_methods.id', ondelete='CASCADE'), nullable=False)
     bank_id = Column(Integer, ForeignKey('banks.id', ondelete='CASCADE'), nullable=False)
     currency_id = Column(Integer, ForeignKey('fiat_currencies.id', ondelete='CASCADE'), nullable=False)
@@ -178,14 +231,26 @@ class OrderHistory(Base):
     created_at = Column(TIMESTAMP(timezone=True), default=utcnow)
     updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
 
-class AvalibleRequesets(Base):
-    __tablename__ = "avalible_requests"
+    trader = relationship("Trader", back_populates="order_histories")
+    merchant = relationship("Merchant", back_populates="order_histories")
+    store = relationship("MerchantStore", back_populates="order_histories")
+    gateway = relationship("StoreGateway", back_populates="order_histories")
+    requisite = relationship("ReqTrader", back_populates="order_histories", foreign_keys=[requisite_id])
+    method = relationship("PaymentMethod", back_populates="order_histories")
+    bank = relationship("BanksTrader", back_populates="order_histories")
+    currency = relationship("FiatCurrency", foreign_keys=[currency_id])
+    fiat = relationship("FiatCurrency", foreign_keys=[fiat_id])
+
+class AvalibleRequisites(Base):
+    __tablename__ = "avalible_requisites"
     id = Column(Integer, primary_key=True, index=True)
-    request_id = Column(Integer, ForeignKey('req_traders.id', ondelete='CASCADE'), nullable=False)
+    requisite_id = Column(Integer, ForeignKey('req_traders.id', ondelete='CASCADE'), nullable=False)
     upper_limit = Column(DECIMAL(20, 2), nullable=False)
     lower_limit = Column(DECIMAL(20, 2), nullable=False)
     total_limit = Column(DECIMAL(20, 2), nullable=False)
     updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
+
+    requisite = relationship("ReqTrader", back_populates="avalible_requisites")
 
 # =====================
 # === ПОДДЕРЖКА и АДМИНЫ (Support & Admins)
@@ -236,6 +301,10 @@ class BanksTrader(Base):
     interbank = Column(Boolean, default=False, nullable=False)
     access = Column(Boolean, default=True)
 
+    req_traders = relationship("ReqTrader", back_populates="bank")
+    order_histories = relationship("OrderHistory", back_populates="bank")
+    avalible_bank_methods = relationship("AvalibleBankMethod", back_populates="bank")
+
 class PaymentMethod(Base):
     __tablename__ = "payment_methods"
     id = Column(Integer, primary_key=True, index=True)
@@ -245,6 +314,10 @@ class PaymentMethod(Base):
     description = Column(String(255), nullable=True)
     access = Column(Boolean, default=True)
 
+    req_traders = relationship("ReqTrader", back_populates="method")
+    order_histories = relationship("OrderHistory", back_populates="method")
+    avalible_bank_methods = relationship("AvalibleBankMethod", back_populates="method")
+
 class AvalibleBankMethod(Base):
     __tablename__ = "avalible_bank_methods"
     id = Column(Integer, primary_key=True, index=True)
@@ -252,6 +325,10 @@ class AvalibleBankMethod(Base):
     bank_id = Column(Integer, ForeignKey('banks.id', ondelete='CASCADE'), nullable=False)
     method_id = Column(Integer, ForeignKey('payment_methods.id', ondelete='CASCADE'), nullable=False)
     access = Column(Boolean, default=True)
+
+    bank = relationship("BanksTrader", back_populates="avalible_bank_methods")
+    method = relationship("PaymentMethod", back_populates="avalible_bank_methods")
+    fiat = relationship("FiatCurrency")
 
 class FiatCurrency(Base):
     __tablename__ = "fiat_currencies"
@@ -261,6 +338,14 @@ class FiatCurrency(Base):
     description = Column(String(255), nullable=True)
     access = Column(Boolean, default=True)
     
+    traders = relationship("Trader", foreign_keys="[Trader.currency_id]", backref="currency")
+    traders_fiat = relationship("Trader", foreign_keys="[Trader.fiat_id]", backref="fiat_currency")
+    trader_addresses = relationship("TraderAddress", back_populates="currency")
+    balans_trader_history_fiat = relationship("BalansTraderHistory", foreign_keys="[BalansTraderHistory.fiat_id]", backref="fiat")
+    balans_trader_history_currency = relationship("BalansTraderHistory", foreign_keys="[BalansTraderHistory.currency_id]", backref="currency")
+    balance_traders = relationship("BalanceTrader", back_populates="currency")
+    store_addresses = relationship("StoreAddress", back_populates="currency")
+
 class CryptoCurrency(Base):
     __tablename__ = "crypto_currencies"
     id = Column(Integer, primary_key=True, index=True)
@@ -269,6 +354,10 @@ class CryptoCurrency(Base):
     description = Column(String(255), nullable=True)
     access = Column(Boolean, default=True)
     
+    merchant_stores = relationship("MerchantStore", backref="crypto_currency")
+    balance_stores = relationship("BalanceStore", back_populates="currency")
+    balance_store_history = relationship("BalanceStoreHistory", back_populates="currency")
+
 class Country(Base):
     __tablename__ = "countries"
     id = Column(Integer, primary_key=True, index=True)
