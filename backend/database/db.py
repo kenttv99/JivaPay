@@ -39,6 +39,8 @@ class MerchantStore(Base):
     balance = Column(DECIMAL(20, 2), nullable=False)
     public_api_key = Column(String(255), nullable=False)
     private_api_key = Column(String(255), nullable=False)
+    lower_limit = Column(DECIMAL(20, 2), nullable=False)
+    upper_limit = Column(DECIMAL(20, 2), nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), default=utcnow)
     updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
     trafic_access = Column(Boolean, default=False)
@@ -190,23 +192,41 @@ class BalansTraderHistory(Base):
 class ReqTrader(Base):
     __tablename__ = "req_traders"
     id = Column(Integer, primary_key=True, index=True)
+    fiat_id = Column(Integer, ForeignKey('fiat_currencies.id', ondelete='CASCADE'), nullable=False)
     trader_id = Column(Integer, ForeignKey('traders.id', ondelete='CASCADE'), nullable=False)
+    owner_of_requisites_id = Column(Integer, ForeignKey('owner_of_requisites.id', ondelete='CASCADE'), nullable=False)
     method_id = Column(Integer, ForeignKey('payment_methods.id', ondelete='CASCADE'), nullable=False)
     bank_id = Column(Integer, ForeignKey('banks.id', ondelete='CASCADE'), nullable=False)
     req_number = Column(String, nullable=False)
-    fio = Column(String, nullable=False)
     status = Column(String(50), default="approve")
+    created_at = Column(TIMESTAMP(timezone=True), default=utcnow)
+    updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
+    avalible_requisites = relationship("AvalibleRequisites", back_populates="requisite")
+    order_histories = relationship("OrderHistory", back_populates="requisite")
+    full_requisites_settings = relationship("FullRequisitesSettings", back_populates="requisite", uselist=False)
+    owner_of_requisites = relationship("OwnerOfRequisites", back_populates="requisites")
+
+class OwnerOfRequisites(Base):
+    __tablename__ = "owner_of_requisites"
+    id = Column(Integer, primary_key=True, index=True)
+    fio = Column(String(255), nullable=False)
+    description = Column(String(255), nullable=True)
+    created_at = Column(TIMESTAMP(timezone=True), default=utcnow)
+    updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
+    requisites = relationship("ReqTrader", back_populates="owner_of_requisites")
+
+class FullRequisitesSettings(Base):
+    __tablename__ = "full_requisites_settings"
+    id = Column(Integer, primary_key=True, index=True)
+    requisite_id = Column(Integer, ForeignKey('req_traders.id', ondelete='CASCADE'), nullable=False)
+    pay_in = Column(Boolean, default=False)
+    pay_out = Column(Boolean, default=False)
     lower_limit = Column(DECIMAL(20, 2), nullable=False)
     upper_limit = Column(DECIMAL(20, 2), nullable=False)
     total_limit = Column(DECIMAL(20, 2), nullable=False)
-    created_at = Column(TIMESTAMP(timezone=True), default=utcnow)
-    updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
-
-    trader = relationship("Trader", back_populates="req_traders")
-    method = relationship("PaymentMethod")
-    bank = relationship("BanksTrader")
-    avalible_requisites = relationship("AvalibleRequisites", back_populates="requisite")
-    order_histories = relationship("OrderHistory", back_populates="requisite")
+    turnover_limit_minutes = Column(Integer, nullable=False)
+    turnover_day_max = Column(DECIMAL(20, 2), nullable=False) 
+    requisite = relationship("ReqTrader", back_populates="full_requisites_settings")
 
 class OrderHistory(Base):
     __tablename__ = "order_history"
@@ -333,6 +353,7 @@ class AvalibleBankMethod(Base):
 class FiatCurrency(Base):
     __tablename__ = "fiat_currencies"
     id = Column(Integer, primary_key=True, index=True)
+    country_id = Column(Integer, ForeignKey('countries.id', ondelete='CASCADE'), nullable=False)
     currency_name = Column(String(50), unique=True, nullable=False)
     public_name = Column(String(255), nullable=True)
     description = Column(String(255), nullable=True)
@@ -345,6 +366,10 @@ class FiatCurrency(Base):
     balans_trader_history_currency = relationship("BalansTraderHistory", foreign_keys="[BalansTraderHistory.currency_id]", backref="currency")
     balance_traders = relationship("BalanceTrader", back_populates="currency")
     store_addresses = relationship("StoreAddress", back_populates="currency")
+    
+    
+    country = relationship("Country")
+
 
 class CryptoCurrency(Base):
     __tablename__ = "crypto_currencies"
@@ -365,6 +390,8 @@ class Country(Base):
     public_name = Column(String(255), nullable=True)
     description = Column(String(255), nullable=True)
     access = Column(Boolean, default=True)
+    
+    fiat_currencies = relationship("FiatCurrency", back_populates="country")
 
 class TimeZone(Base):
     __tablename__ = "time_zones"
