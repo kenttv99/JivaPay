@@ -30,7 +30,7 @@ class MerchantStore(Base):
     id = Column(Integer, primary_key=True, index=True)
     merchant_id = Column(Integer, ForeignKey('merchants.id', ondelete='CASCADE'), nullable=False)
     store_name = Column(String(255), nullable=False)
-    currency_id = Column(Integer, ForeignKey('fiat_currencies.id', ondelete='CASCADE'), nullable=False)
+    currency_id = Column(Integer, ForeignKey('crypto_currencies.id', ondelete='CASCADE'), nullable=False)
     balance = Column(DECIMAL(20, 2), nullable=False)
     public_api_key = Column(String(255), nullable=False)
     private_api_key = Column(String(255), nullable=False)
@@ -38,6 +38,14 @@ class MerchantStore(Base):
     updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
     trafic_access = Column(Boolean, default=False)
     access = Column(Boolean, default=True)
+    
+class StoreCommission(Base):
+    __tablename__ = "store_commissions"
+    id = Column(Integer, primary_key=True, index=True)
+    store_id = Column(Integer, ForeignKey('merchant_stores.id', ondelete='CASCADE'), nullable=False)
+    commission_payin = Column(DECIMAL(20, 2), nullable=False)
+    commission_payout = Column(DECIMAL(20, 2), nullable=False)
+    updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
 
 class StoreGateway(Base):
     __tablename__ = "store_gateways"
@@ -49,7 +57,15 @@ class BalanceStore(Base):
     __tablename__ = "balance_stores"
     id = Column(Integer, primary_key=True, index=True)
     store_id = Column(Integer, ForeignKey('merchant_stores.id', ondelete='CASCADE'), nullable=False)
-    currency_id = Column(Integer, ForeignKey('fiat_currencies.id', ondelete='CASCADE'), nullable=False)
+    currency_id = Column(Integer, ForeignKey('crypto_currencies.id', ondelete='CASCADE'), nullable=False)
+    balance = Column(DECIMAL(20, 2), nullable=False)
+    updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
+    
+class BalanceStoreHistory(Base):
+    __tablename__ = "balance_store_history"
+    id = Column(Integer, primary_key=True, index=True)
+    store_id = Column(Integer, ForeignKey('merchant_stores.id', ondelete='CASCADE'), nullable=False)
+    currency_id = Column(Integer, ForeignKey('crypto_currencies.id', ondelete='CASCADE'), nullable=False)
     balance = Column(DECIMAL(20, 2), nullable=False)
     updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
 
@@ -86,6 +102,14 @@ class Trader(Base):
     access = Column(Boolean, default=True)
     two_factor_auth_token = Column(String(32), nullable=True)
     time_zone_id = Column(Integer, ForeignKey('time_zones.id', ondelete='CASCADE'), nullable=False)
+    
+class TraderCommission(Base):
+    __tablename__ = "trader_commissions"
+    id = Column(Integer, primary_key=True, index=True)
+    trader_id = Column(Integer, ForeignKey('traders.id', ondelete='CASCADE'), nullable=False)
+    commission_payin = Column(DECIMAL(20, 2), nullable=False)
+    commission_payout = Column(DECIMAL(20, 2), nullable=False)
+    updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
 
 class TraderAddress(Base):
     __tablename__ = "trader_addresses"
@@ -104,15 +128,14 @@ class BalanceTrader(Base):
     currency_id = Column(Integer, ForeignKey('fiat_currencies.id', ondelete='CASCADE'), nullable=False)
     balance = Column(DECIMAL(20, 2), nullable=False)
 
-class BalansHistoryTrader(Base):
-    __tablename__ = "balans_history_traders"
+class BalansTraderHistory(Base):
+    __tablename__ = "balans_trader_history"
     id = Column(Integer, primary_key=True, index=True)
     trader_id = Column(Integer, ForeignKey('traders.id', ondelete='CASCADE'), nullable=False)
     fiat_id = Column(Integer, ForeignKey('fiat_currencies.id', ondelete='CASCADE'), nullable=False)
     currency_id = Column(Integer, ForeignKey('fiat_currencies.id', ondelete='CASCADE'), nullable=False)
     operation_type = Column(String(50), nullable=False)
     network = Column(String(50), nullable=False)
-    commission = Column(DECIMAL(20, 2), nullable=False)
     amount = Column(DECIMAL(20, 2), nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), default=utcnow)
     updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
@@ -149,23 +172,9 @@ class OrderHistory(Base):
     exchange_rate = Column(DECIMAL(20, 8), nullable=False)
     amount_currency = Column(DECIMAL(20, 8), nullable=False)
     total_fiat = Column(DECIMAL(20, 2), nullable=False)
-    merchant_commission = Column(DECIMAL(20, 2), nullable=False)
+    store_commission = Column(DECIMAL(20, 2), nullable=False)
     trader_commission = Column(DECIMAL(20, 2), nullable=False)
     status = Column(String(50), nullable=False, default='pending')
-    created_at = Column(TIMESTAMP(timezone=True), default=utcnow)
-    updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
-
-class WorkBalansHistory(Base):
-    __tablename__ = "work_balans_history"
-    id = Column(Integer, primary_key=True, index=True)
-    trader_id = Column(Integer, ForeignKey('traders.id', ondelete='CASCADE'), nullable=False)
-    fiat_id = Column(Integer, ForeignKey('fiat_currencies.id', ondelete='CASCADE'), nullable=False)
-    currency_id = Column(Integer, ForeignKey('fiat_currencies.id', ondelete='CASCADE'), nullable=False)
-    exchange_rate = Column(DECIMAL(20, 8), nullable=False)
-    operation_type = Column(String(50), nullable=False)
-    amount_currency = Column(DECIMAL(20, 8), nullable=False)
-    amount_fiat = Column(DECIMAL(20, 2), nullable=False)
-    commission = Column(DECIMAL(20, 2), nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), default=utcnow)
     updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
 
@@ -173,11 +182,10 @@ class AvalibleRequesets(Base):
     __tablename__ = "avalible_requests"
     id = Column(Integer, primary_key=True, index=True)
     request_id = Column(Integer, ForeignKey('req_traders.id', ondelete='CASCADE'), nullable=False)
-    bank_id = Column(Integer, ForeignKey('banks.id', ondelete='CASCADE'), nullable=False)
-    method_id = Column(Integer, ForeignKey('payment_methods.id', ondelete='CASCADE'), nullable=False)
     upper_limit = Column(DECIMAL(20, 2), nullable=False)
     lower_limit = Column(DECIMAL(20, 2), nullable=False)
     total_limit = Column(DECIMAL(20, 2), nullable=False)
+    updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
 
 # =====================
 # === ПОДДЕРЖКА и АДМИНЫ (Support & Admins)
@@ -221,6 +229,7 @@ class ExchangeRate(Base):
 class BanksTrader(Base):
     __tablename__ = "banks"
     id = Column(Integer, primary_key=True, index=True)
+    fiat_id = Column(Integer, ForeignKey('fiat_currencies.id', ondelete='CASCADE'), nullable=False)
     bank_name = Column(String(100), unique=True, nullable=False)
     public_name = Column(String(255), nullable=True)
     description = Column(String(255), nullable=True)
@@ -230,6 +239,7 @@ class BanksTrader(Base):
 class PaymentMethod(Base):
     __tablename__ = "payment_methods"
     id = Column(Integer, primary_key=True, index=True)
+    fiat_id = Column(Integer, ForeignKey('fiat_currencies.id', ondelete='CASCADE'), nullable=False)
     method_name = Column(String(50), unique=True, nullable=False)
     public_name = Column(String(255), nullable=True)
     description = Column(String(255), nullable=True)
@@ -238,6 +248,7 @@ class PaymentMethod(Base):
 class AvalibleBankMethod(Base):
     __tablename__ = "avalible_bank_methods"
     id = Column(Integer, primary_key=True, index=True)
+    fiat_id = Column(Integer, ForeignKey('fiat_currencies.id', ondelete='CASCADE'), nullable=False)
     bank_id = Column(Integer, ForeignKey('banks.id', ondelete='CASCADE'), nullable=False)
     method_id = Column(Integer, ForeignKey('payment_methods.id', ondelete='CASCADE'), nullable=False)
     access = Column(Boolean, default=True)
@@ -246,6 +257,23 @@ class FiatCurrency(Base):
     __tablename__ = "fiat_currencies"
     id = Column(Integer, primary_key=True, index=True)
     currency_name = Column(String(50), unique=True, nullable=False)
+    public_name = Column(String(255), nullable=True)
+    description = Column(String(255), nullable=True)
+    access = Column(Boolean, default=True)
+    
+class CryptoCurrency(Base):
+    __tablename__ = "crypto_currencies"
+    id = Column(Integer, primary_key=True, index=True)
+    currency_name = Column(String(50), unique=True, nullable=False)
+    public_name = Column(String(255), nullable=True)
+    description = Column(String(255), nullable=True)
+    access = Column(Boolean, default=True)
+    
+class Country(Base):
+    __tablename__ = "countries"
+    id = Column(Integer, primary_key=True, index=True)
+    country_name = Column(String(50), unique=True, nullable=False)
+    public_name = Column(String(255), nullable=True)
     description = Column(String(255), nullable=True)
     access = Column(Boolean, default=True)
 
