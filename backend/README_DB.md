@@ -57,6 +57,10 @@
         *   `public_api_key`, `private_api_key`: API ключи магазина (Внимание: `private_api_key` требует безопасного хранения/хеширования в приложении).
         *   `pay_in_enabled`, `pay_out_enabled`: Флаги, разрешающие прием (PayIn) или выплаты (PayOut) для всего магазина.
         *   `access`, `trafic_access`: Флаги доступа.
+        *   `callback_url`: URL для отправки коллбэков (webhooks) о статусе ордеров.
+        *   `secret_key`: Секретный ключ для подписи коллбэков.
+        *   `gateway_require_customer_id_param`: Mapped[bool] = mapped_column(default=False) # Требовать customer_id в параметрах шлюза?
+        *   `gateway_require_amount_param`: Mapped[bool] = mapped_column(default=False) # Требовать сумму в параметрах шлюза?
 
 ### 2.2. Трейдеры (`traders`, `req_traders`, `full_requisites_settings`, `owner_of_requisites`)
 *   `traders`: Хранит **специфичную** информацию об аккаунтах трейдеров. **Общие данные теперь в `users`.**
@@ -108,6 +112,17 @@
     *   `retry_count`, `last_attempt_at`, `failure_reason`: Данные для управления обработкой.
     *   `created_at`, `updated_at`: Временные метки.
     *   `assigned_order`: Связь (один-к-одному) с созданным ордером в `order_history`.
+    *   `payment_method_id`: ID метода оплаты (FK на `payment_methods`).
+    *   `bank_id`: ID банка (FK на `banks`).
+    *   `crypto_currency_id`: ID криптовалюты (FK на `crypto_currencies`).
+    *   `fiat_currency_id`: ID фиатной валюты (FK на `fiat_currencies`).
+    *   `amount_crypto`: Сумма в криптовалюте (для PayOut).
+    *   `amount_fiat`: Сумма в фиатной валюте (для PayIn).
+    *   `amount_currency`: Сумма операции в валюте.
+    *   `customer_id`: Идентификатор клиента в системе мерчанта (строка, nullable).
+    *   `customer_ip`: IP адрес конечного клиента (строка, nullable).
+    *   `return_url`: URL для редиректа клиента после завершения операции (строка, nullable).
+    *   `payment_details_submitted`: Флаг, указывающий, предоставил ли клиент детали/чек оплаты (Boolean, default=False).
     *   merchant: Mapped["Merchant"] = relationship(back_populates="incoming_orders")
     *   store: Mapped["MerchantStore"] = relationship(back_populates="incoming_orders")
     *   assigned_order_rel: Mapped[Optional["OrderHistory"]] = relationship(back_populates="incoming_order")
