@@ -13,8 +13,39 @@
 
 ## 2. Основные Сущности (Таблицы)
 
+### 2.0. Пользователи (`users`) - НОВОЕ
+*   **Назначение:** Общая таблица для всех типов пользователей системы, хранящая базовые учетные данные и роль.
+*   **Ключевые поля:**
+    *   `id`: Уникальный ID пользователя.
+    *   `email`: Mapped[str] = mapped_column(unique=True, index=True)
+    *   `password_hash`: Mapped[str]
+    *   `role`: Mapped[str] = mapped_column(index=True) # 'merchant', 'trader', 'admin', 'support'
+    *   `is_active`: Mapped[bool] = mapped_column(default=True) # Для блокировки доступа
+    *   `created_at`: Mapped[datetime] = mapped_column(server_default=func.now())
+    *   `updated_at`: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
+    # Связи к таблицам ролей для доступа к специфичным данным
+    merchant_profile: Mapped[Optional["Merchant"]] = relationship(back_populates="user")
+    trader_profile: Mapped[Optional["Trader"]] = relationship(back_populates="user")
+    admin_profile: Mapped[Optional["Admin"]] = relationship(back_populates="user")
+    support_profile: Mapped[Optional["Support"]] = relationship(back_populates="user")
+    audit_logs: Mapped[List["AuditLog"]] = relationship(back_populates="user")
+
 ### 2.1. Мерчанты (`merchants`, `merchant_stores`)
-*   `merchants`: Хранит основную информацию об аккаунтах мерчантов (логин, пароль, 2FA, статус доступа).
+*   `merchants`: Хранит **специфичную** информацию об аккаунтах мерчантов. **Общие данные (email, пароль, статус) теперь в `users`.**
+    *   `id`: Mapped[intpk]
+    *   `user_id`: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'), unique=True) # Связь с общей таблицей users
+    *   `first_name`: Mapped[Optional[str]]
+    *   `last_name`: Mapped[Optional[str]]
+    *   `avatar_url`: Mapped[Optional[str]]
+    *   `two_factor_auth_token`: Mapped[Optional[str]]
+    *   `verification_level`: Mapped[Optional[str]]
+    *   # Убраны: email, password_hash, is_active (access), created_at
+    *   user: Mapped["User"] = relationship(back_populates="merchant_profile")
+    *   stores: Mapped[List["MerchantStore"]] = relationship(back_populates="merchant")
+    *   incoming_orders: Mapped[List["IncomingOrder"]] = relationship(back_populates="merchant")
+    *   order_history: Mapped[List["OrderHistory"]] = relationship(back_populates="merchant")
+    *   balance_stores: Mapped[List["BalanceStore"]] = relationship(back_populates="merchant")
+
 *   `merchant_stores`: Хранит информацию о магазинах, созданных мерчантами.
     *   **Ключевые поля:**
         *   `merchant_id`: Связь с владельцем-мерчантом.
@@ -28,21 +59,34 @@
         *   `access`, `trafic_access`: Флаги доступа.
 
 ### 2.2. Трейдеры (`traders`, `req_traders`, `full_requisites_settings`, `owner_of_requisites`)
-*   `traders`: Хранит информацию об аккаунтах трейдеров.
-    *   **Ключевые поля:**
-        *   `email`, `password_hash`, `avatar_url`, `two_factor_auth_token`: Данные аккаунта.
-        *   `preferred_fiat_currency_id`: Основная *фиатная* валюта, с которой работает трейдер.
-        *   `crypto_currency_id`: Основная *криптовалюта*, с которой работает трейдер (может быть `NULL` или использоваться для будущих расширений).
-        *   `verification_level`: Уровень верификации.
-        *   `pay_in`, `pay_out`: Глобальные флаги разрешения работы трейдера на прием/выплату.
-        *   `in_work`: Основной флаг активности трейдера.
-        *   `trafic_priority`: Приоритет трейдера при подборе реквизита (1 - наивысший, 10 - низший, стандартно 5).
-        *   `access`: Флаг доступа к аккаунту.
-        *   `time_zone_id`: Часовой пояс трейдера (важно для сброса дневных лимитов).
-    *   **Индексы:** В дополнение к стандартным, есть индекс `ix_trader_priority_lookup` по (`in_work`, `trafic_priority`) для ускорения подбора реквизитов.
+*   `traders`: Хранит **специфичную** информацию об аккаунтах трейдеров. **Общие данные теперь в `users`.**
+    *   `id`: Mapped[intpk]
+    *   `user_id`: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'), unique=True) # Связь с общей таблицей users
+    *   `first_name`: Mapped[Optional[str]]
+    *   `last_name`: Mapped[Optional[str]]
+    *   `avatar_url`: Mapped[Optional[str]]
+    *   `two_factor_auth_token`: Mapped[Optional[str]]
+    *   `preferred_fiat_currency_id`: Mapped[Optional[int]] = mapped_column(ForeignKey('fiat_currencies.id'))
+    *   `crypto_currency_id`: Mapped[Optional[int]] = mapped_column(ForeignKey('crypto_currencies.id'))
+    *   `verification_level`: Mapped[Optional[str]]
+    *   `pay_in`: Mapped[bool] = mapped_column(default=False)
+    *   `pay_out`: Mapped[bool] = mapped_column(default=False)
+    *   `in_work`: Mapped[bool] = mapped_column(default=False, index=True) # Индекс оставлен здесь, т.к. важен для выборки
+    *   `trafic_priority`: Mapped[int] = mapped_column(default=5) # Индекс оставлен здесь
+    *   `time_zone_id`: Mapped[Optional[int]] = mapped_column(ForeignKey('time_zones.id'))
+    # Убраны: email, password_hash, access (заменен is_active в users), created_at
+    *   user: Mapped["User"] = relationship(back_populates="trader_profile")
+    *   requisites: Mapped[List["ReqTrader"]] = relationship(back_populates="trader")
+    *   order_history: Mapped[List["OrderHistory"]] = relationship(back_populates="trader")
+    *   balance_traders: Mapped[List["BalanceTrader"]] = relationship(back_populates="trader")
+    *   balance_trader_fiat_history: Mapped[List["BalanceTraderFiatHistory"]] = relationship(back_populates="trader")
+    *   balance_trader_crypto_history: Mapped[List["BalanceTraderCryptoHistory"]] = relationship(back_populates="trader")
+    *   # Индекс `ix_trader_priority_lookup` нужно будет пересоздать с учетом `users.is_active` и `traders.in_work`
+
 *   `owner_of_requisites`: Определяет "владельца" (группу) реквизитов (ФИО).
 *   `req_traders`: Хранит информацию о конкретных реквизитах (карта, счет и т.д.), добавленных трейдером.
-    *   **Ключевые поля:** `trader_id`, `owner_of_requisites_id`, `fiat_id`, `method_id`, `bank_id`, `req_number` (требует защиты), `status`.
+    *   **Ключевые поля:** `trader_id`, `owner_of_requisites_id`, `fiat_id`, `method_id`, `bank_id`, `req_number`, `status`.
+    *   `req_number`: Mapped[str] # **Важно:** Номер реквизита. Требует защиты. Рекомендуется шифровать на уровне приложения перед сохранением в БД (например, используя `cryptography.fernet`) или использовать возможности шифрования самой СУБД. Обеспечить маскирование при отображении в API и логах (например, показывать только последние 4 цифры).
 *   `full_requisites_settings`: Хранит детальные настройки для *каждого* реквизита (`requisite_id`).
     *   **Ключевые поля:** `pay_in`, `pay_out` (флаги), `lower_limit`, `upper_limit`, `total_limit`, `turnover_day_max`, `turnover_limit_minutes`.
 
@@ -50,7 +94,9 @@
 *   **Назначение:** Фиксирует *каждый* запрос на PayIn/PayOut от мерчанта **немедленно** после его поступления. Служит очередью для асинхронной обработки и подбора реквизитов.
 *   **Ключевые поля:**
     *   `id`: Уникальный ID входящей заявки.
-    *   `merchant_id`, `store_id`: Источник заявки.
+    *   `client_id`: Mapped[Optional[str]] = mapped_column(index=True) # ID клиента на стороне мерчанта (НОВОЕ)
+    *   `merchant_id`: Mapped[int] = mapped_column(ForeignKey('merchants.id'))
+    *   `store_id`: Mapped[int] = mapped_column(ForeignKey('merchant_stores.id'))
     *   `gateway_id`: Шлюз магазина, через который пришла заявка (если применимо).
     *   `target_method_id`, `target_bank_id`: Опциональные предпочтения мерчанта.
     *   `fiat_currency_id`, `crypto_currency_id`: Валюты операции.
@@ -62,15 +108,21 @@
     *   `retry_count`, `last_attempt_at`, `failure_reason`: Данные для управления обработкой.
     *   `created_at`, `updated_at`: Временные метки.
     *   `assigned_order`: Связь (один-к-одному) с созданным ордером в `order_history`.
+    *   merchant: Mapped["Merchant"] = relationship(back_populates="incoming_orders")
+    *   store: Mapped["MerchantStore"] = relationship(back_populates="incoming_orders")
+    *   assigned_order_rel: Mapped[Optional["OrderHistory"]] = relationship(back_populates="incoming_order")
 
 ### 2.4. История Ордеров (`order_history`)
 *   **Назначение:** Фиксирует ордера, которым **уже был успешно назначен** реквизит трейдера. Содержит полную информацию о выполненной или выполняемой операции.
 *   **Ключевые поля:**
     *   `id`: Уникальный ID выполненного ордера.
-    *   `incoming_order_id`: Ссылка на исходную заявку в `incoming_orders`.
-    *   `hash_id`: Уникальный публичный идентификатор ордера.
-    *   `trader_id`, `requisite_id`: **Важно:** Трейдер и реквизит, назначенные для выполнения (NOT NULL).
-    *   `merchant_id`, `store_id`, `gateway_id`: Участники со стороны мерчанта.
+    *   `client_id`: Mapped[Optional[str]] = mapped_column(index=True) # ID клиента на стороне мерчанта (НОВОЕ)
+    *   `incoming_order_id`: Mapped[int] = mapped_column(ForeignKey('incoming_orders.id'), unique=True)
+    *   `hash_id`: Mapped[str] = mapped_column(unique=True, index=True)
+    *   `trader_id`: Mapped[int] = mapped_column(ForeignKey('traders.id'))
+    *   `requisite_id`: Mapped[int] = mapped_column(ForeignKey('req_traders.id'))
+    *   `merchant_id`: Mapped[int] = mapped_column(ForeignKey('merchants.id'))
+    *   `store_id`: Mapped[int] = mapped_column(ForeignKey('merchant_stores.id'))
     *   `method_id`, `bank_id`, `crypto_currency_id`, `fiat_id`: Детали операции.
     *   `order_type`: Тип ордера ('pay_in', 'pay_out').
     *   `exchange_rate`: Курс обмена (копируется из `incoming_orders` или может быть переопределен).
@@ -79,6 +131,14 @@
     *   `trader_commission`: Комиссия трейдера (рассчитывается при назначении).
     *   `status`: Статус *выполнения* ордера ('pending', 'processing', 'completed', 'failed', 'cancelled' и т.д.) - **после** назначения реквизита.
     *   `created_at`, `updated_at`: Временные метки.
+    *   incoming_order: Mapped["IncomingOrder"] = relationship(back_populates="assigned_order_rel")
+    *   trader: Mapped["Trader"] = relationship(back_populates="order_history")
+    *   requisite: Mapped["ReqTrader"] = relationship() # Связь без back_populates
+    *   merchant: Mapped["Merchant"] = relationship(back_populates="order_history")
+    *   store: Mapped["MerchantStore"] = relationship(back_populates="order_history")
+    *   balance_store_history: Mapped[List["BalanceStoreHistory"]] = relationship(back_populates="order")
+    *   balance_trader_fiat_history: Mapped[List["BalanceTraderFiatHistory"]] = relationship(back_populates="order")
+    *   balance_trader_crypto_history: Mapped[List["BalanceTraderCryptoHistory"]] = relationship(back_populates="order")
 
 ### 2.5. Балансы и История Балансов (`balance_stores`, `balance_store_history`, `balance_traders`, `balance_trader_fiat_history`, `balance_trader_crypto_history`)
 *   `balance_stores`: Текущий *крипто*-баланс магазина.
@@ -91,7 +151,20 @@
 *   Хранят справочную информацию.
 
 ### 2.7. Администраторы и Поддержка (`admins`, `supports`)
-*   Данные для доступа к внутренним панелям.
+*   `admins`: Хранит **специфичную** информацию об админах. **Общие данные в `users`.**
+    *   `id`: Mapped[intpk]
+    *   `user_id`: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'), unique=True)
+    *   `username`: Mapped[str] # Или first/last name
+    *   # Убраны: email, password_hash, is_active, created_at
+    *   user: Mapped["User"] = relationship(back_populates="admin_profile")
+
+*   `supports`: Хранит **специфичную** информацию о саппортах. **Общие данные в `users`.**
+    *   `id`: Mapped[intpk]
+    *   `user_id`: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'), unique=True)
+    *   `username`: Mapped[str] # Или first/last name
+    *   `access_to`: Mapped[Optional[dict]] = mapped_column(JSON)
+    # Убраны: email, password_hash, is_active, created_at
+    *   user: Mapped["User"] = relationship(back_populates="support_profile")
 
 ## 3. Логика Обработки Заявок и Подбора Реквизита
 
@@ -136,4 +209,32 @@
 *   **Безопасность:** Чувствительные данные требуют защиты на уровне приложения.
 
 Эта документация описывает текущее состояние. При внесении изменений в структуру или логику базы данных, пожалуйста, обновляйте этот файл.
+
+class OrderHistory(Base):
+    # ... (existing fields)
+
+
+class AuditLog(Base):
+    __tablename__ = 'audit_logs'
+
+    id: Mapped[intpk]
+    timestamp: Mapped[datetime] = mapped_column(server_default=func.now(), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id', name='fk_audit_user_id')) # Ссылка на общую таблицу users (ИЗМЕНЕНО)
+    ip_address: Mapped[Optional[str]] = mapped_column(String)
+    action: Mapped[str] = mapped_column(String, index=True)
+    target_entity: Mapped[Optional[str]] = mapped_column(String)
+    target_id: Mapped[Optional[int]] = mapped_column(Integer)
+    details: Mapped[Optional[dict]] = mapped_column(JSON)
+
+    user: Mapped["User"] = relationship(back_populates="audit_logs") # Связь с User (ИЗМЕНЕНО)
+
+# --- Relationships ---
+# Добавлены связи в описаниях таблиц выше
+
+# --- Indexes ---
+# ... (существующие индексы)
+Index('ix_audit_logs_target', AuditLog.target_entity, AuditLog.target_id)
+# Индекс ix_trader_priority_lookup нужно будет пересмотреть, возможно, создать view или использовать JOIN с users в запросе.
+Index('ix_incoming_orders_client_id', IncomingOrder.client_id) # НОВЫЙ индекс
+Index('ix_order_history_client_id', OrderHistory.client_id) # НОВЫЙ индекс
 
