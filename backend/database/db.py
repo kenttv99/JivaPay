@@ -139,6 +139,8 @@ class Trader(Base):
     access = Column(Boolean, default=True)
     two_factor_auth_token = Column(String(32), nullable=True)
     time_zone_id = Column(Integer, ForeignKey('time_zones.id'), nullable=False)
+    pay_in_order_limit = Column(DECIMAL(20, 2), nullable=False, default=0)
+    base_pay_out_order_limit = Column(DECIMAL(20, 2), nullable=False, default=0)
     
     preferred_fiat_currency = relationship("FiatCurrency", foreign_keys=[preferred_fiat_currency_id])
     crypto_currency = relationship("CryptoCurrency", back_populates="traders")

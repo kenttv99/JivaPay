@@ -20,8 +20,7 @@
     *   Экспортирует: `engine`, `SessionLocal`.
 *   **migrations/**
     *   Скрипты Alembic для миграций схемы БД.
-*   **db.py / models.py** (Предположительно, здесь должна быть Base и модели, хотя в `README_DB.md` они описаны без указания файла)
-    *   Определение базового класса SQLAlchemy (`Base`) и всех моделей таблиц БД (Merchant, Trader, OrderHistory и т.д.).
+*   **db.py** (Определяет `Base` и все модели таблиц БД, включая `Merchant`, `Trader`, `IncomingOrder`, `OrderHistory` и другие; модели подробно описаны в `README_DB.md`)
 
 ### 2.2. `config/`
 
