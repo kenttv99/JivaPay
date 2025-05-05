@@ -45,33 +45,44 @@ def calculate_commissions(
         DatabaseError: For underlying database issues.
     """
     logger.info(f"Calculating commissions for Order ID: {order.id}")
-
-    # TODO: Implement Commission Calculation Logic based on README_IMPLEMENTATION_PLAN.md 3.3
-    # ------------------------------------------------------------------------------------
-
-    # 1. Load Commission Settings:
-    #    - Fetch `StoreCommission` based on `order.store_id` (or a default setting).
-    #    - Fetch `TraderCommission` based on `order.trader_id` (or a default setting).
-
-    # 2. Handle Missing Settings:
-    #    - if not store_commission_setting or not trader_commission_setting:
-    #        - logger.error(f"Commission settings not found for Order ID: {order.id} (Store: {order.store_id}, Trader: {order.trader_id})")
-    #        - raise ConfigurationError("Commission settings are missing.")
-
-    # 3. Calculate Commissions:
-    #    - Apply the logic based on the settings (e.g., percentage, fixed fee, tiered).
-    #    - store_commission = order.amount * store_commission_setting.percentage / 100 + store_commission_setting.fixed_fee
-    #    - trader_commission = order.amount * trader_commission_setting.percentage / 100 + trader_commission_setting.fixed_fee
-    #    - Ensure Decimal precision is maintained.
-
-    # 4. Log and Return:
-    #    - logger.info(f"Calculated commissions for Order ID {order.id}: Store={store_commission}, Trader={trader_commission}")
-    #    - return store_commission, trader_commission
-
-    # --- Placeholder Return --- #
-    logger.warning(f"Commission calculation logic for Order ID {order.id} is not implemented yet.")
-    # Return zero commissions as a placeholder
-    return Decimal("0.00"), Decimal("0.00")
+    try:
+        # Load latest commission settings
+        store_setting = (
+            db_session.query(StoreCommission)
+            .filter_by(store_id=order.store_id)
+            .order_by(StoreCommission.updated_at.desc())
+            .first()
+        )
+        trader_setting = (
+            db_session.query(TraderCommission)
+            .filter_by(trader_id=order.trader_id)
+            .order_by(TraderCommission.updated_at.desc())
+            .first()
+        )
+        if not store_setting or not trader_setting:
+            logger.error(f"Commission settings missing for Order ID {order.id}")
+            raise ConfigurationError("Commission settings not found for store or trader.")
+        # Determine base amount and rate fields based on order type
+        if order.order_type == 'pay_in':
+            base_amount = order.total_fiat
+            store_rate = store_setting.commission_payin
+            trader_rate = trader_setting.commission_payin
+        else:
+            base_amount = order.amount_crypto or Decimal('0')
+            store_rate = store_setting.commission_payout
+            trader_rate = trader_setting.commission_payout
+        # Calculate commissions (percentage of base amount)
+        store_commission = (base_amount * store_rate) / Decimal('100')
+        trader_commission = (base_amount * trader_rate) / Decimal('100')
+        logger.info(
+            f"Calculated commissions for Order ID {order.id}: Store={store_commission}, Trader={trader_commission}"
+        )
+        return store_commission, trader_commission
+    except (ConfigurationError, DatabaseError):
+        raise
+    except Exception as e:
+        logger.error(f"Error calculating commissions for Order ID {order.id}: {e}", exc_info=True)
+        raise DatabaseError(f"Error calculating commissions: {e}") from e
 
 def update_balances_for_completed_order(order_id: int, db_session: Session):
     """Updates store and trader balances and records history for a completed order.
@@ -91,72 +102,65 @@ def update_balances_for_completed_order(order_id: int, db_session: Session):
     logger.info(f"Attempting to update balances for completed Order ID: {order_id}")
 
     try:
-        with atomic_transaction(db_session): # Ensure all balance updates are atomic
-            # TODO: Implement Balance Update Logic based on README_IMPLEMENTATION_PLAN.md 3.3
-            # -------------------------------------------------------------------------------
-
-            # 1. Load Necessary Data:
-            #    - order = db_session.get(OrderHistory, order_id)
-            #    - if not order:
-            #        - raise OrderProcessingError(f"OrderHistory not found: {order_id}")
-            #    - if order.status != 'completed': # Or appropriate completed status enum
-            #        - raise OrderProcessingError(f"Order {order_id} is not in completed state: {order.status}")
-            #    - store = db_session.get(MerchantStore, order.store_id)
-            #    - trader = db_session.get(Trader, order.trader_id)
-            #    - if not store or not trader:
-            #        - raise DatabaseError(f"Store or Trader not found for Order {order_id}")
-
-            # 2. Calculate Commissions (or retrieve if pre-calculated and stored on OrderHistory):
-            #    - store_commission, trader_commission = calculate_commissions(order, db_session)
-            #    - Alternatively: store_commission = order.store_commission; trader_commission = order.trader_commission
-
-            # 3. Load and Lock Balances:
-            #    - balance_store = db_session.query(BalanceStore).filter(BalanceStore.store_id == order.store_id).with_for_update().one_or_none()
-            #    - balance_trader = db_session.query(BalanceTrader).filter(BalanceTrader.trader_id == order.trader_id).with_for_update().one_or_none()
-            #    - if not balance_store or not balance_trader:
-            #        - raise DatabaseError(f"Balance record not found for Store {order.store_id} or Trader {order.trader_id}")
-
-            # 4. Determine Amounts:
-            #    - order_amount = order.amount
-            #    - net_amount_for_store = order_amount - store_commission
-            #    - net_amount_for_trader = order_amount - trader_commission # Or just trader_commission depending on flow?
-            #    - Define amounts based on PayIn/PayOut direction (order.direction)
-
-            # 5. Update Balances (Example for PayIn - adjust based on actual flow):
-            #    - # Store balance increases by net amount
-            #    - if balance_store.balance + net_amount_for_store < 0: # Check before applying
-            #        - raise InsufficientBalance(f"Store {order.store_id} balance would go negative.", account_id=order.store_id)
-            #    - balance_store.balance += net_amount_for_store
-            #    - # Trader balance might increase by commission or decrease depending on model
-            #    - if balance_trader.fiat_balance + trader_commission < 0: # Example, adjust field/logic
-            #        - raise InsufficientBalance(f"Trader {order.trader_id} balance would go negative.", account_id=order.trader_id)
-            #    - balance_trader.fiat_balance += trader_commission # Example
-            #    - db_session.add_all([balance_store, balance_trader])
-
-            # 6. Create History Records:
-            #    - create_object(db_session, BalanceStoreHistory, {
-            #        "balance_store_id": balance_store.id,
-            #        "order_id": order.id,
-            #        "amount_change": net_amount_for_store,
-            #        "new_balance": balance_store.balance,
-            #        "type": "ORDER_COMPLETED", # Use Enum
-            #        "description": f"Completed order {order_id}"
-            #      })
-            #    - create_object(db_session, BalanceTraderFiatHistory, { ... })
-            #    - create_object(db_session, BalanceTraderCryptoHistory, { ... })
-
-            # --- Placeholder Logic --- #
-            logger.warning(f"Balance update logic for Order ID {order_id} is not implemented yet.")
-            # Simulate loading order to prevent unused variable warning if needed
-            order = db_session.get(OrderHistory, order_id)
+        with atomic_transaction(db_session):
+            # 1. Load and validate order
+            order = db_session.query(OrderHistory).filter_by(id=order_id).one_or_none()
             if not order:
-                 raise OrderProcessingError(f"OrderHistory not found: {order_id} (Placeholder Check)")
-
-        logger.info(f"Successfully processed (placeholder) balance update for Order ID: {order_id}")
+                raise OrderProcessingError(f"OrderHistory not found: {order_id}")
+            if order.status != 'completed':
+                raise OrderProcessingError(f"Order {order_id} is not completed: {order.status}")
+            # 2. Lock balances
+            store_balance = (
+                db_session.query(BalanceStore)
+                .filter_by(store_id=order.store_id, crypto_currency_id=order.crypto_currency_id)
+                .with_for_update()
+                .one_or_none()
+            )
+            trader_balance = (
+                db_session.query(BalanceTrader)
+                .filter_by(trader_id=order.trader_id, fiat_currency_id=order.fiat_id)
+                .with_for_update()
+                .one_or_none()
+            )
+            if not store_balance or not trader_balance:
+                raise DatabaseError("Balance record not found for store or trader.")
+            # 3. Calculate commissions
+            store_comm, trader_comm = calculate_commissions(order, db_session)
+            # 4. Determine net balance changes
+            net_store_change = order.amount_crypto or Decimal('0')
+            net_trader_change = trader_comm
+            # 5. Apply balance updates
+            if store_balance.balance + net_store_change < 0:
+                raise InsufficientBalance("Store balance would go negative.", account_id=order.store_id)
+            store_balance.balance += net_store_change
+            if trader_balance.balance + net_trader_change < 0:
+                raise InsufficientBalance("Trader balance would go negative.", account_id=order.trader_id)
+            trader_balance.balance += net_trader_change
+            db_session.flush()
+            # 6. Record history entries
+            create_object(db_session, BalanceStoreHistory, {
+                "store_id": store_balance.store_id,
+                "crypto_currency_id": store_balance.crypto_currency_id,
+                "order_id": order.id,
+                "balance_change": net_store_change,
+                "new_balance": store_balance.balance,
+                "operation_type": "order_completed",
+                "description": f"Order {order_id} completed"
+            })
+            create_object(db_session, BalanceTraderFiatHistory, {
+                "trader_id": trader_balance.trader_id,
+                "fiat_id": trader_balance.fiat_currency_id,
+                "order_id": order.id,
+                "operation_type": "commission",
+                "network": None,
+                "balance_change": net_trader_change,
+                "new_balance": trader_balance.balance,
+                "description": f"Commission for order {order_id}"
+            })
+        logger.info(f"Balances updated for Order ID: {order_id}")
 
     except (InsufficientBalance, ConfigurationError, OrderProcessingError, DatabaseError) as e:
         logger.error(f"Failed to update balances for Order ID {order_id}: {e}", exc_info=True)
-        # Re-raise the specific handled exception
         raise
     except Exception as e:
         # Catch any other unexpected error during balance update
