@@ -16,11 +16,13 @@ try:
     # !! Need worker task for async balance update !!
     from backend.worker.tasks import update_balances_task # Assuming this task exists
     # !! Need S3 client if handling uploads here !!
-    # from backend.utils.s3_client import upload_file
+    from backend.utils.s3_client import upload_fileobj
+    from backend.config.logger import get_logger
+    from backend.services.balance_manager import update_balances_for_completed_order
 except ImportError as e:
     raise ImportError(f"Could not import required modules for OrderStatusManager: {e}. Ensure models and worker tasks are available.")
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Define expected order statuses (replace with actual Enum when available)
 # Example:
@@ -61,131 +63,66 @@ def _add_uploaded_document(db: Session, order_id: int, actor_id: int, file_url: 
 
 def confirm_payment_by_client(
     order_id: int,
-    client_actor: Any, # Represents the authenticated client/merchant user
-    uploaded_receipt_url: Optional[str], # URL from S3 after upload
-    db: Session
+    receipt: bytes,
+    filename: str,
+    db_session: Session
 ) -> OrderHistory:
-    """Confirms payment made by the end client (for PayIn orders).
-
-    Args:
-        order_id: The ID of the OrderHistory.
-        client_actor: The authenticated user performing the action (e.g., Merchant user).
-        uploaded_receipt_url: The URL of the uploaded payment receipt (if applicable).
-        db: The SQLAlchemy session.
-
-    Returns:
-        The updated OrderHistory object.
-
-    Raises:
-        OrderProcessingError: If order not found.
-        InvalidOrderStatus: If the order is not in a state allowing client confirmation.
-        AuthorizationError: If the actor lacks permission.
-        DatabaseError: For database issues.
-        S3Error: If receipt upload fails (if handled here).
     """
-    logger.info(f"Attempting client payment confirmation for Order ID: {order_id} by Actor: {getattr(client_actor, 'id', 'N/A')}")
-    with atomic_transaction(db):
-        # TODO: Implement Client Confirmation Logic
-        # 1. Load OrderHistory (maybe with lock? Depends on flow)
-        #    order = db.get(OrderHistory, order_id, options=[joinedload(OrderHistory.incoming_order)]) # Example load
-        #    if not order: raise OrderProcessingError(f"Order not found: {order_id}")
-        order = db.get(OrderHistory, order_id) # Placeholder load
-        if not order: raise OrderProcessingError(f"Order not found: {order_id}")
+    Updates OrderHistory after merchant client confirms payment and uploads receipt.
+    Uploads receipt to S3, updates order status to 'pending_trader_confirmation'.
+    """
+    order = db_session.query(OrderHistory).filter_by(id=order_id).one_or_none()
+    if not order:
+        raise InvalidOrderStatus(f"Order with ID {order_id} not found.")
+    if order.status != 'assigned':
+        raise InvalidOrderStatus(f"Order {order_id} is not in 'assigned' status.")
 
-        # 2. Check Permissions (Is client_actor allowed to confirm this order?)
-        #    _check_permissions(client_actor, order, required_role='merchant') # Or specific client role
+    # Upload receipt to S3
+    bucket = settings.S3_BUCKET_NAME
+    key = f"receipts/{order_id}/{filename}"
+    receipt_url = upload_fileobj(receipt, bucket, key)
 
-        # 3. Check Current Status
-        #    if order.status not in VALID_STATUSES_FOR_CLIENT_CONFIRM: # Use Enum
-        #        raise InvalidOrderStatus(f"Order {order_id} has status {order.status}, cannot be confirmed by client.", order_id=order_id, current_status=order.status)
-
-        # 4. Handle Receipt Upload (if URL provided)
-        #    if uploaded_receipt_url:
-        #        _add_uploaded_document(db, order.id, client_actor.id, uploaded_receipt_url, doc_type='client_receipt')
-        pass # Placeholder
-
-        # 5. Update Order Status
-        #    new_status = "confirmed_by_client" # Use Enum
-        #    update_data = {"status": new_status}
-        #    updated_order = update_object_db(db, order, update_data)
-        #    logger.info(f"Order {order_id} status updated to {new_status}")
-        #    return updated_order
-
-        # Placeholder update
-        order.status = "confirmed_by_client"
-        logger.info(f"Order {order_id} status updated to 'confirmed_by_client' (placeholder)")
-        return order # Return placeholder
+    # Update order fields
+    order.status = 'pending_trader_confirmation'
+    order.payment_details_submitted = True
+    order.receipt_url = receipt_url  # Ensure this column exists in model
+    db_session.add(order)
+    db_session.flush()
+    logger.info(f"Order {order_id} updated to 'pending_trader_confirmation', receipt uploaded: {receipt_url}")
+    return order
 
 def confirm_order_by_trader(
     order_id: int,
-    trader_actor: Any, # Represents the authenticated Trader user
-    uploaded_document_url: Optional[str], # URL for PayOut confirmation
-    db: Session
+    receipt: bytes,
+    filename: str,
+    trader_id: int,
+    db_session: Session
 ) -> OrderHistory:
-    """Confirms order completion by the trader.
-
-    Args:
-        order_id: The ID of the OrderHistory.
-        trader_actor: The authenticated Trader user.
-        uploaded_document_url: The URL of the uploaded document (e.g., payout receipt).
-        db: The SQLAlchemy session.
-
-    Returns:
-        The updated OrderHistory object.
-
-    Raises:
-        OrderProcessingError: If order not found.
-        InvalidOrderStatus: If the order cannot be confirmed by the trader in its current state.
-        AuthorizationError: If the actor lacks permission.
-        DatabaseError: For database issues.
     """
-    logger.info(f"Attempting trader confirmation for Order ID: {order_id} by Actor: {getattr(trader_actor, 'id', 'N/A')}")
-    updated_order: Optional[OrderHistory] = None
-    with atomic_transaction(db):
-        # TODO: Implement Trader Confirmation Logic
-        # 1. Load OrderHistory
-        #    order = db.get(OrderHistory, order_id)
-        #    if not order: raise OrderProcessingError(f"Order not found: {order_id}")
-        order = db.get(OrderHistory, order_id) # Placeholder load
-        if not order: raise OrderProcessingError(f"Order not found: {order_id}")
+    Confirms order by trader, uploads receipt if needed, updates status and triggers balance update.
+    """
+    order = db_session.query(OrderHistory).filter_by(id=order_id).one_or_none()
+    if not order or order.trader_id != trader_id:
+        raise InvalidOrderStatus(f"Order {order_id} not assigned to trader {trader_id}.")
+    if order.status not in ['pending_trader_confirmation', 'pending_client_confirmation']:
+        raise InvalidOrderStatus(f"Order {order_id} is not in confirmation status.")
 
-        # 2. Check Permissions (Is trader_actor assigned to this order?)
-        #    _check_permissions(trader_actor, order, required_role='trader')
-        #    if order.trader_id != trader_actor.id: raise AuthorizationError("Trader not assigned to this order.")
+    # Upload receipt for PayOut if provided
+    bucket = settings.S3_BUCKET_NAME
+    key = f"receipts/{order_id}/{filename}"
+    receipt_url = upload_fileobj(receipt, bucket, key)
+    
+    # Update order
+    order.status = 'completed'
+    order.payment_details_submitted = True
+    order.trader_receipt_url = receipt_url  # Ensure this column exists in model
+    db_session.add(order)
+    db_session.flush()
+    logger.info(f"Order {order_id} confirmed by trader {trader_id}, receipt uploaded: {receipt_url}")
 
-        # 3. Check Current Status
-        #    if order.status not in VALID_STATUSES_FOR_TRADER_CONFIRM: # Use Enum
-        #        raise InvalidOrderStatus(f"Order {order_id} has status {order.status}, cannot be confirmed by trader.", order_id=order_id, current_status=order.status)
-
-        # 4. Handle Document Upload (if needed, e.g., for PayOut)
-        #    if uploaded_document_url and order.direction == OrderDirection.PAYOUT:
-        #        _add_uploaded_document(db, order.id, trader_actor.id, uploaded_document_url, doc_type='payout_receipt')
-        pass # Placeholder
-
-        # 5. Update Order Status
-        #    new_status = "completed" # Use Enum
-        #    update_data = {"status": new_status, "completed_at": datetime.utcnow()}
-        #    updated_order = update_object_db(db, order, update_data)
-        #    logger.info(f"Order {order_id} status updated to {new_status}")
-
-        # Placeholder update
-        order.status = "completed"
-        updated_order = order # Assign for later use
-        logger.info(f"Order {order_id} status updated to 'completed' (placeholder)")
-
-    # 6. Trigger Asynchronous Balance Update (AFTER successful commit)
-    if updated_order and updated_order.status == "completed": # Use Enum
-        try:
-            logger.info(f"Queueing balance update task for completed Order ID: {order_id}")
-            update_balances_task.delay(order_id)
-        except Exception as e:
-            # Log critical error if queuing fails, needs monitoring
-            logger.critical(f"CRITICAL: Failed to queue balance update task for Order ID {order_id}: {e}", exc_info=True)
-            # Report to Sentry
-            report_critical_error(e, context_message="Failed to queue balance update task", order_id=order_id)
-            # The order status is already committed as completed, but balance won't update automatically.
-
-    return updated_order # Return the updated order (or placeholder)
+    # Trigger balance update asynchronously, here a direct call
+    update_balances_for_completed_order(order_id, db_session)
+    return order
 
 def cancel_order(
     order_id: int,

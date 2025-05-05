@@ -1,26 +1,49 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from datetime import timedelta
+
 from backend.database.db import Trader
 from backend.config.crypto import verify_password
 from backend.config.logger import get_logger
-from backend.shemas_enums import trader_schemas
+from backend.database.utils import get_db_session
+from backend.security import create_access_token
+from backend.config.settings import settings
 
 router = APIRouter()
 logger = get_logger("trader_auth")
 
+
 def get_db():
-    from backend.database.db import SessionLocal
-    db = SessionLocal()
+    db = next(get_db_session())
     try:
         yield db
     finally:
         db.close()
 
-@router.post("/auth/login")
-def login_trader(data: trader_schemas.TraderLogin, db: Session = Depends(get_db)):
-    user = db.query(Trader).filter_by(email=data.email).first()
-    if not user or not verify_password(data.password, user.password_hash):
-        logger.warning(f"Неудачная попытка входа трейдера: {data.email}")
-        raise HTTPException(status_code=401, detail="Неверные учетные данные")
-    logger.info(f"Трейдер вошел: {user.email}")
-    return {"id": user.id, "email": user.email} 
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+@router.post("/auth/token", response_model=Token)
+def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    user = db.query(Trader).filter_by(email=form_data.username).first()
+    if not user or not verify_password(form_data.password, user.password_hash):
+        logger.warning(f"Failed trader login attempt: {form_data.username}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.email}, expires_delta=access_token_expires
+    )
+    logger.info(f"Trader logged in: {user.email}")
+    return {"access_token": access_token, "token_type": "bearer"} 

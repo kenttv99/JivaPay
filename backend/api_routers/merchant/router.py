@@ -16,23 +16,23 @@ try:
     # !! Need services !!
     # from backend.services import order_service, gateway_service # Example service imports
     from backend.utils.exceptions import JivaPayException, AuthorizationError, DatabaseError
+    from backend.security import get_current_active_user
+    from backend.database.db import Merchant
 except ImportError as e:
     # Make error message clearer about location
     raise ImportError(f"Could not import required modules for merchant router (in api_routers/merchant/router.py): {e}")
 
 logger = logging.getLogger(__name__)
 
-# Placeholder for authentication dependency - replace with actual implementation
-def get_current_active_merchant() -> Any:
-    # TODO: Replace with actual dependency from backend/security.py
-    logger.warning("Using placeholder authentication for Merchant router!")
-    # Return a dummy object or raise if you want to enforce auth setup first
-    class DummyMerchant:
-        id = 1
-        store_id = 1 # Assume merchant is linked to a store
-        is_active = True
-        role = "merchant"
-    return DummyMerchant()
+def get_current_active_merchant(
+    current_user = Depends(get_current_active_user),
+    db: Session = Depends(get_db_session)
+) -> Merchant:
+    """Retrieve the Merchant profile for the currently authenticated user."""
+    merchant = db.query(Merchant).filter_by(user_id=current_user.id).one_or_none()
+    if not merchant:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User is not a merchant")
+    return merchant
 
 router = APIRouter()
 

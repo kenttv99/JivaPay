@@ -10,6 +10,8 @@ from slowapi.middleware import SlowAPIMiddleware
 from slowapi.extension import RateLimitExceeded  # Re-export for clarity in main.py
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+from backend.database.utils import get_db_session
+from backend.utils.config_loader import get_typed_config_value
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +29,16 @@ if not REDIS_URL:
 else:
     storage_uri = REDIS_URL
 
-# Default key function: limit by remote IP address
-limiter = Limiter(key_func=get_remote_address, storage_uri=storage_uri)
+# Read default rate limit from DB configuration
+def get_default_rate_limit() -> str:
+    """Fetch the default rate limit from DB (RATE_LIMIT_DEFAULT key)."""
+    with get_db_session() as db:
+        # default format: "100/minute"
+        limit = get_typed_config_value("RATE_LIMIT_DEFAULT", db, str, default="100/minute")
+    return limit
+
+# Configure limiter without default_limits, use get_limiter instead
+# limiter = Limiter(key_func=get_remote_address, storage_uri=storage_uri)
 
 # --- Custom Exception Handler (Optional but Recommended) --- #
 
@@ -46,8 +56,9 @@ def custom_rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded)
 # --- Functions to be used in main.py --- #
 
 def get_limiter() -> Limiter:
-    """Returns the configured Limiter instance."""
-    return limiter
+    """Returns a Limiter instance configured with default limits from DB."""
+    default_limit = get_default_rate_limit()
+    return Limiter(key_func=get_remote_address, storage_uri=storage_uri, default_limits=[default_limit])
 
 def get_rate_limit_exceeded_handler():
     """Returns the custom rate limit exception handler."""
