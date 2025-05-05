@@ -140,7 +140,7 @@ class Trader(Base):
     two_factor_auth_token = Column(String(32), nullable=True)
     time_zone_id = Column(Integer, ForeignKey('time_zones.id'), nullable=False)
     pay_in_order_limit = Column(DECIMAL(20, 2), nullable=False, default=0)
-    base_pay_out_order_limit = Column(DECIMAL(20, 2), nullable=False, default=0)
+    pay_out_order_limit = Column(DECIMAL(20, 2), nullable=False, default=0)
     
     preferred_fiat_currency = relationship("FiatCurrency", foreign_keys=[preferred_fiat_currency_id])
     crypto_currency = relationship("CryptoCurrency", back_populates="traders")
@@ -229,6 +229,9 @@ class ReqTrader(Base):
     status = Column(String(50), default="approve", index=True)
     created_at = Column(TIMESTAMP(timezone=True), default=utcnow)
     updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
+    last_used_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    distribution_weight = Column(DECIMAL(10, 2), nullable=False, default=5)  # При создании реквизита копируется из trafic_priority трейдера. При изменении trafic_priority трейдера веса всех его реквизитов должны быть синхронизированы. Индивидуальное изменение возможно только вручную через админку/саппорт.
+    is_excluded_from_distribution = Column(Boolean, nullable=False, default=False)
 
     fiat = relationship("FiatCurrency")
     trader = relationship("Trader", back_populates="req_traders")
@@ -485,5 +488,14 @@ Index('ix_trader_address_status', TraderAddress.status)
 Index('ix_store_address_status', StoreAddress.status)
 Index('ix_balance_trader_fiat_history_op_type', BalanceTraderFiatHistory.operation_type)
 Index('ix_balance_trader_crypto_history_op_type', BalanceTraderCryptoHistory.operation_type)
+
+class RequisiteDistributionSettings(Base):
+    __tablename__ = "requisite_distribution_settings"
+    id = Column(Integer, primary_key=True, index=True)
+    strategy = Column(String(50), nullable=False, default="round_robin")
+    params = Column(JSON, nullable=True)
+    scope = Column(String(100), nullable=False, default="global")
+    created_at = Column(TIMESTAMP(timezone=True), default=utcnow)
+    updated_at = Column(TIMESTAMP(timezone=True), default=utcnow, onupdate=utcnow)
     
     

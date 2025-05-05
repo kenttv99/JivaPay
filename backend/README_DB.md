@@ -76,7 +76,7 @@
     *   `pay_in`: Mapped[bool] = mapped_column(default=False)
     *   `pay_out`: Mapped[bool] = mapped_column(default=False)
     *   `in_work`: Mapped[bool] = mapped_column(default=False, index=True) # Индекс оставлен здесь, т.к. важен для выборки
-    *   `trafic_priority`: Mapped[int] = mapped_column(default=5) # Индекс оставлен здесь
+    *   `trafic_priority`: Mapped[int] = mapped_column(default=5) # **Приоритет трейдера для распределения заявок.** При создании реквизита его вес (`distribution_weight`) копируется из этого поля. При изменении этого значения у трейдера веса всех его реквизитов должны быть синхронизированы (обновлены). Индивидуальная корректировка веса реквизита возможна только вручную через админку или саппорт с нужным уровнем доступа.
     *   `time_zone_id`: Mapped[Optional[int]] = mapped_column(ForeignKey('time_zones.id'))
     # Убраны: email, password_hash, access (заменен is_active в users), created_at
     *   user: Mapped["User"] = relationship(back_populates="trader_profile")
@@ -89,8 +89,11 @@
 
 *   `owner_of_requisites`: Определяет "владельца" (группу) реквизитов (ФИО).
 *   `req_traders`: Хранит информацию о конкретных реквизитах (карта, счет и т.д.), добавленных трейдером.
-    *   **Ключевые поля:** `trader_id`, `owner_of_requisites_id`, `fiat_id`, `method_id`, `bank_id`, `req_number`, `status`.
+    *   **Ключевые поля:** `trader_id`, `owner_of_requisites_id`, `fiat_id`, `method_id`, `bank_id`, `req_number`, `status`, `last_used_at` (TIMESTAMP, nullable=True).
     *   `req_number`: Mapped[str] # **Важно:** Номер реквизита. Требует защиты. Рекомендуется шифровать на уровне приложения перед сохранением в БД (например, используя `cryptography.fernet`) или использовать возможности шифрования самой СУБД. Обеспечить маскирование при отображении в API и логах (например, показывать только последние 4 цифры).
+    *   `last_used_at`: TIMESTAMP (nullable=True). Время последнего назначения реквизита для round-robin распределения.
+    *   `distribution_weight` (DECIMAL, default=значение trafic_priority трейдера): **Вес реквизита для стратегии weighted.** Устанавливается при создании реквизита из `trafic_priority` трейдера. При изменении `trafic_priority` трейдера веса всех его реквизитов должны быть синхронизированы. Может быть изменен вручную только через админку/саппорт.
+
 *   `full_requisites_settings`: Хранит детальные настройки для *каждого* реквизита (`requisite_id`).
     *   **Ключевые поля:** `pay_in`, `pay_out` (флаги), `lower_limit`, `upper_limit`, `total_limit`, `turnover_day_max`, `turnover_limit_minutes`.
 
@@ -197,9 +200,10 @@
     *   Объединяет `req_traders`, `traders`, `full_requisites_settings`.
     *   Фильтрует по параметрам заявки (`fiat_id`, `method_id`, `bank_id`).
     *   Проверяет статические условия: `Trader.in_work = TRUE`, `ReqTrader.status = 'approve'`, флаги `pay_in`/`pay_out` в `FullRequisitesSettings`, статические лимиты (`lower_limit`, `upper_limit`).
-    *   **Сортирует** кандидатов по `Trader.trafic_priority` (ASC) и другим критериям.
+    *   **Сортирует** кандидатов по `Trader.trafic_priority` (ASC), затем по `req_traders.last_used_at` (ASC, NULLS FIRST) для реализации round-robin.
     *   Выбирает **одного** лучшего кандидата (`LIMIT 1`).
     *   **Блокирует** строку кандидата (`FOR UPDATE SKIP LOCKED`).
+    *   После назначения заявки обновляет поле `last_used_at` у выбранного реквизита на текущее время.
 4.  **Проверка динамических лимитов:** Если кандидат найден и заблокирован:
     *   Рассчитывается текущий дневной/общий оборот кандидата по данным из `order_history`.
     *   Проверяется, не превысят ли лимиты (`turnover_day_max`, `total_limit`) из `FullRequisitesSettings` с учетом суммы текущей заявки.
@@ -252,4 +256,26 @@ Index('ix_audit_logs_target', AuditLog.target_entity, AuditLog.target_id)
 # Индекс ix_trader_priority_lookup нужно будет пересмотреть, возможно, создать view или использовать JOIN с users в запросе.
 Index('ix_incoming_orders_client_id', IncomingOrder.client_id) # НОВЫЙ индекс
 Index('ix_order_history_client_id', OrderHistory.client_id) # НОВЫЙ индекс
+
+### Механизм гибкого распределения заявок между реквизитами трейдеров
+
+*   **Стратегии распределения:**
+    *   `round_robin` — равномерное распределение по времени последнего использования (`last_used_at`).
+    *   `weighted` — распределение с учетом веса реквизита (`distribution_weight`).
+    *   `random` — случайный выбор из подходящих реквизитов.
+    *   `manual_exclusion` — возможность временно исключать реквизиты из распределения (`is_excluded_from_distribution`).
+*   **Таблица `requisite_distribution_settings`:**
+    *   `id` (PK)
+    *   `strategy` (строка: 'round_robin', 'weighted', 'random', 'manual_exclusion')
+    *   `params` (JSON: веса, исключения, дополнительные параметры)
+    *   `scope` (глобально/по трейдеру/по методу/по валюте и т.д.)
+*   **Поля в `req_traders`:**
+    *   `distribution_weight` (DECIMAL, default=значение trafic_priority трейдера) — вес реквизита для стратегии weighted. Устанавливается при создании реквизита из `trafic_priority` трейдера. При изменении `trafic_priority` трейдера веса всех его реквизитов должны быть синхронизированы. Может быть изменен вручную только через админку/саппорт.
+    *   `is_excluded_from_distribution` (BOOLEAN, default=False) — исключение реквизита из распределения.
+*   **Принципы работы:**
+    *   Стратегия и параметры могут быть заданы глобально или для отдельных трейдеров/методов/валют.
+    *   Управление осуществляется через админ-панель или API.
+    *   После назначения заявки выбранному реквизиту обновляется поле `last_used_at` (для round_robin).
+    *   Для weighted/random всегда учитывается поле `distribution_weight` (оно не может быть пустым). Если требуется массовое изменение — оно происходит через синхронизацию с `trafic_priority` трейдера.
+    *   Все изменения параметров должны логироваться и быть доступны для аудита.
 

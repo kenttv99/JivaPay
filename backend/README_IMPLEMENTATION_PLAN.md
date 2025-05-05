@@ -81,8 +81,9 @@
     *   **Шаги:**
         *   Реализовать основную функцию `find_suitable_requisite(incoming_order: IncomingOrder, db_session: Session) -> Tuple[Optional[int], Optional[int]] | None` (возвращает `(requisite_id, trader_id)` или `None`, или выбрасывает исключение).
         *   Сформировать и выполнить оптимизированный SQL-запрос SQLAlchemy с JOIN'ами (`req_traders`, `traders`, `full_requisites_settings`), фильтрами по параметрам заявки, статусам, статическим лимитам.
-        *   Применить сортировку по `Trader.trafic_priority` и другим критериям.
+        *   Применить сортировку по `Trader.trafic_priority` (ASC), затем по `ReqTrader.last_used_at` (ASC, NULLS FIRST) для реализации round-robin.
         *   Использовать `with_for_update(skip_locked=True)`. `limit(1)`.
+        *   После назначения заявки выбранному реквизиту обновить поле `last_used_at` на текущее время.
         *   Обработать случай `NoResultFound` или пустой результат -> вернуть `None` (или пробросить `RequisiteNotFound`).
         *   Если кандидат найден: выполнить запросы для проверки динамических лимитов (агрегация по `order_history` в той же сессии).
         *   Если лимит превышен -> вернуть `None` (или пробросить `LimitExceeded`).
