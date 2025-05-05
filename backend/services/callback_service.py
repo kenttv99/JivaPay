@@ -12,12 +12,13 @@ import httpx
 
 # Attempt imports
 try:
-    # !! Models needed: MerchantStore, OrderHistory/IncomingOrder !!
-    from backend.database.models import MerchantStore, OrderHistory, IncomingOrder
+    # Models for storing and retrieving orders and merchant stores
+    from backend.database.db import MerchantStore, OrderHistory, IncomingOrder
     # !! Need worker task if sending callbacks asynchronously !!
     # from backend.worker.app import celery_app # Example
     # !! Need DB session if fetching data within task !!
     # from backend.database.utils import get_db_session 
+    from backend.database.utils import get_object_or_none
     from backend.utils.exceptions import NotificationError, ConfigurationError
 except ImportError as e:
      raise ImportError(f"Could not import required modules for CallbackService: {e}")

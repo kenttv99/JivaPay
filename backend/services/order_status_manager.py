@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 # Attempt to import models, DB utils, exceptions, and worker tasks
 try:
     # !! Models needed: OrderHistory, User (or specific actor models), potentially UploadedDocument !!
-    from backend.database.models import OrderHistory # Add User, UploadedDocument etc.
+    from backend.database.db import OrderHistory, UploadedDocument, User
     from backend.database.utils import get_db_session, atomic_transaction, update_object_db, create_object
     from backend.utils.exceptions import (
         InvalidOrderStatus, AuthorizationError, DatabaseError, OrderProcessingError
@@ -19,6 +19,8 @@ try:
     from backend.utils.s3_client import upload_fileobj
     from backend.config.logger import get_logger
     from backend.services.balance_manager import update_balances_for_completed_order
+    from backend.config.settings import settings
+    from backend.services.audit_logger import log_event
 except ImportError as e:
     raise ImportError(f"Could not import required modules for OrderStatusManager: {e}. Ensure models and worker tasks are available.")
 
@@ -42,24 +44,40 @@ VALID_STATUSES_FOR_CANCEL = ["pending", "awaiting_client_confirmation", "awaitin
 
 def _check_permissions(actor: Any, order: OrderHistory, required_role: str) -> None:
     """Placeholder for permission checks."""
-    # TODO: Implement permission logic
-    # - Check if actor is not None
-    # - Check if actor has the required_role (e.g., 'merchant', 'trader', 'admin')
-    # - Check if the actor is associated with the order (e.g., order.merchant_store_id == actor.store_id or order.trader_id == actor.id)
-    # - Raise AuthorizationError if checks fail
-    logger.debug(f"Permission check placeholder for Actor {getattr(actor, 'id', 'N/A')} and Order {order.id}")
-    if not actor: # Basic check
+    logger.debug(f"Checking permissions for Actor {getattr(actor, 'id', 'N/A')} (role={getattr(actor, 'role', None)}) on Order {order.id}")
+    if not actor:
         raise AuthorizationError("Action requires an authenticated user.")
-    # Add real checks here
-    pass
+    role = getattr(actor.role, 'name', None)
+    if required_role == 'merchant':
+        if role not in ('merchant', 'admin'):
+            raise AuthorizationError("Only merchant or admin can perform this action.")
+        if order.merchant_id != getattr(actor.merchant_profile, 'id', None):
+            raise AuthorizationError("Merchant unauthorized for this order.")
+    elif required_role == 'trader':
+        if role not in ('trader', 'admin'):
+            raise AuthorizationError("Only trader or admin can perform this action.")
+        if order.trader_id != getattr(actor.trader_profile, 'id', None):
+            raise AuthorizationError("Trader unauthorized for this order.")
+    elif required_role == 'admin':
+        if role != 'admin':
+            raise AuthorizationError("Only admin can perform this action.")
+    else:
+        raise AuthorizationError(f"Unknown required role: {required_role}")
 
 def _add_uploaded_document(db: Session, order_id: int, actor_id: int, file_url: str, doc_type: str):
     """Placeholder for saving document info to DB."""
-    # TODO: Implement document saving
-    # - Create record in UploadedDocument table linking to order_id, user, url, type
-    # create_object(db, UploadedDocument, { ... })
-    logger.info(f"Placeholder: Adding document URL {file_url} for Order {order_id}")
-    pass
+    # Save document record in UploadedDocument table
+    try:
+        create_object(db, UploadedDocument, {
+            'order_id': order_id,
+            'actor_id': actor_id,
+            'file_url': file_url,
+            'doc_type': doc_type
+        })
+        logger.info(f"UploadedDocument saved: order={order_id}, actor={actor_id}, url={file_url}")
+    except Exception as e:
+        logger.error(f"Failed to save UploadedDocument for order {order_id}: {e}")
+        raise DatabaseError(f"Could not save uploaded document: {e}")
 
 def confirm_payment_by_client(
     order_id: int,
@@ -81,6 +99,8 @@ def confirm_payment_by_client(
     bucket = settings.S3_BUCKET_NAME
     key = f"receipts/{order_id}/{filename}"
     receipt_url = upload_fileobj(receipt, bucket, key)
+    # Save uploaded document record
+    _add_uploaded_document(db_session, order_id, None, receipt_url, 'client_receipt')
 
     # Update order fields
     order.status = 'pending_trader_confirmation'
@@ -89,6 +109,14 @@ def confirm_payment_by_client(
     db_session.add(order)
     db_session.flush()
     logger.info(f"Order {order_id} updated to 'pending_trader_confirmation', receipt uploaded: {receipt_url}")
+    # Audit log
+    log_event(
+        user_id=None,
+        action='confirm_payment_by_client',
+        target_entity='OrderHistory',
+        target_id=order_id,
+        details={'receipt_url': receipt_url}
+    )
     return order
 
 def confirm_order_by_trader(
@@ -111,6 +139,8 @@ def confirm_order_by_trader(
     bucket = settings.S3_BUCKET_NAME
     key = f"receipts/{order_id}/{filename}"
     receipt_url = upload_fileobj(receipt, bucket, key)
+    # Save uploaded document record
+    _add_uploaded_document(db_session, order_id, trader_id, receipt_url, 'trader_receipt')
     
     # Update order
     order.status = 'completed'
@@ -119,7 +149,14 @@ def confirm_order_by_trader(
     db_session.add(order)
     db_session.flush()
     logger.info(f"Order {order_id} confirmed by trader {trader_id}, receipt uploaded: {receipt_url}")
-
+    # Audit log
+    log_event(
+        user_id=trader_id,
+        action='confirm_order_by_trader',
+        target_entity='OrderHistory',
+        target_id=order_id,
+        details={'receipt_url': receipt_url}
+    )
     # Trigger balance update asynchronously, here a direct call
     update_balances_for_completed_order(order_id, db_session)
     return order
@@ -130,39 +167,75 @@ def cancel_order(
     reason: str,
     db: Session
 ) -> OrderHistory:
-    """Cancels an order.
-
-    Args:
-        order_id: The ID of the OrderHistory.
-        actor: The authenticated user performing the action.
-        reason: The reason for cancellation.
-        db: The SQLAlchemy session.
-
-    Returns:
-        The updated OrderHistory object.
-
-    Raises:
-        OrderProcessingError, InvalidOrderStatus, AuthorizationError, DatabaseError.
-    """
-    logger.info(f"Attempting to cancel Order ID: {order_id} by Actor: {getattr(actor, 'id', 'N/A')} Reason: {reason}")
+    """Implements order cancellation with permission and status checks."""
     with atomic_transaction(db):
-        # TODO: Implement Cancellation Logic
-        # 1. Load Order
-        # 2. Check Permissions (Who can cancel? Trader? Merchant? Admin? Based on status?)
-        # 3. Check Status (Can it be canceled in current state?)
-        #    if order.status not in VALID_STATUSES_FOR_CANCEL: ... raise InvalidOrderStatus
-        # 4. Update Status
-        #    update_data = {"status": "canceled", "cancellation_reason": reason, "updated_at": datetime.utcnow()}
-        #    updated_order = update_object_db(db, order, update_data)
-        #    logger.info(f"Order {order_id} canceled.")
-        #    return updated_order
+        # Load and lock order
+        order = db.query(OrderHistory).filter_by(id=order_id).with_for_update().one_or_none()
+        if not order:
+            raise OrderProcessingError(f"Order not found: {order_id}")
+        # Permission: merchant, trader or admin
+        role = getattr(actor.role, 'name', None)
+        required = 'merchant' if role == 'merchant' else ('trader' if role=='trader' else 'admin')
+        _check_permissions(actor, order, required)
+        # Status check
+        if order.status not in VALID_STATUSES_FOR_CANCEL:
+            raise InvalidOrderStatus(f"Order {order_id} cannot be cancelled from status {order.status}.")
+        # Update status and reason
+        update_data = {'status': 'canceled', 'cancellation_reason': reason}
+        updated_order = update_object_db(db, order, update_data)
+        logger.info(f"Order {order_id} canceled by actor {getattr(actor, 'id', None)}, reason: {reason}")
+        # Audit log
+        log_event(
+            user_id=getattr(actor, 'id', None),
+            action='cancel_order',
+            target_entity='OrderHistory',
+            target_id=order_id,
+            details={'reason': reason}
+        )
+        return updated_order
 
-        # Placeholder:
-        order = db.get(OrderHistory, order_id) # Placeholder load
-        if not order: raise OrderProcessingError(f"Order not found: {order_id}")
-        order.status = "canceled"
-        logger.info(f"Order {order_id} status updated to 'canceled' (placeholder)")
-        return order
+# Additional status management functions
+def dispute_order(order_id: int, actor: Any, reason: str, db: Session) -> OrderHistory:
+    """Marks an order as disputed."""
+    with atomic_transaction(db):
+        order = db.query(OrderHistory).filter_by(id=order_id).with_for_update().one_or_none()
+        if not order:
+            raise OrderProcessingError(f"Order not found: {order_id}")
+        _check_permissions(actor, order, 'support' if getattr(actor.role, 'name', '')=='support' else 'admin')
+        if order.status in ['completed', 'canceled', 'failed', 'disputed']:
+            raise InvalidOrderStatus(f"Order {order_id} cannot be disputed from status {order.status}.")
+        updated = update_object_db(db, order, {'status': 'disputed', 'cancellation_reason': reason})
+        log_event(user_id=getattr(actor, 'id', None), action='dispute_order', target_entity='OrderHistory', target_id=order_id, details={'reason': reason})
+        return updated
+
+def resolve_dispute(order_id: int, actor: Any, resolution_details: dict, final_status: str, db: Session) -> OrderHistory:
+    """Resolves a disputed order by setting a final status."""
+    with atomic_transaction(db):
+        order = db.query(OrderHistory).filter_by(id=order_id).with_for_update().one_or_none()
+        if not order:
+            raise OrderProcessingError(f"Order not found: {order_id}")
+        _check_permissions(actor, order, 'admin')
+        if order.status != 'disputed':
+            raise InvalidOrderStatus(f"Order {order_id} is not in disputed status.")
+        if final_status not in ['completed', 'canceled', 'failed']:
+            raise InvalidOrderStatus(f"Invalid final status: {final_status}.")
+        update_data = {'status': final_status, 'cancellation_reason': resolution_details.get('reason')}
+        updated = update_object_db(db, order, update_data)
+        log_event(user_id=getattr(actor, 'id', None), action='resolve_dispute', target_entity='OrderHistory', target_id=order_id, details=resolution_details)
+        return updated
+
+def fail_order(order_id: int, actor: Any, reason: str, db: Session) -> OrderHistory:
+    """Marks an order as failed (manual intervention)."""
+    with atomic_transaction(db):
+        order = db.query(OrderHistory).filter_by(id=order_id).with_for_update().one_or_none()
+        if not order:
+            raise OrderProcessingError(f"Order not found: {order_id}")
+        _check_permissions(actor, order, 'admin')
+        if order.status in ['completed', 'canceled', 'failed']:
+            raise InvalidOrderStatus(f"Order {order_id} cannot be failed from status {order.status}.")
+        updated = update_object_db(db, order, {'status': 'failed', 'cancellation_reason': reason})
+        log_event(user_id=getattr(actor, 'id', None), action='fail_order', target_entity='OrderHistory', target_id=order_id, details={'reason': reason})
+        return updated
 
 # TODO: Implement other status management functions as needed:
 # - dispute_order(order_id, actor, reason, db)

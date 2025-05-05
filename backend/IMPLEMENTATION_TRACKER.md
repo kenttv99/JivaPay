@@ -77,8 +77,8 @@
     - Примечания: Реализованы `calculate_commissions` и `update_balances_for_completed_order`, включая блокировку балансов и запись истории.
 - [x] **Сервис Справочных Данных (`services/reference_data.py`)**: Доступ к справочным данным с кэшированием (Redis).
     - Примечания: Реализована инициализация Redis, cache helpers, примеры get_bank_details, get_payment_method_details, get_exchange_rate.
-- [/] **Менеджер Статусов Ордера (`services/order_status_manager.py`)**: Управление переходами статусов ордеров.
-    - Примечания: Создан файл-заглушка с TODO по логике реализации (confirm_client, confirm_trader, cancel). Включен вызов задачи обновления балансов.
+- [x] **Менеджер Статусов Ордера (`services/order_status_manager.py`)**: Управление переходами статусов ордеров.
+    - Примечания: Реализованы методы `confirm_payment_by_client`, `confirm_order_by_trader`, `cancel_order` с загрузкой чеков в S3, audit-логированием и обновлением балансов.
 - [x] **Логгер Аудита (`services/audit_logger.py`)**: Сервис для записи событий аудита в AuditLog.
     - Примечания: Реализован метод `log_event` для записи аудита в таблицу `audit_logs`.
 - [ ] **Детектор Мошенничества (`services/fraud_detector.py`)**: Правила и проверки для обнаружения мошеннических операций.

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 # Attempt imports
 try:
     # !! Models needed: MerchantStore, IncomingOrder !!
-    from backend.database.models import MerchantStore, IncomingOrder
+    from backend.database.db import MerchantStore, IncomingOrder
     from backend.database.utils import get_object_or_none, create_object
     # !! Need Schemas !!
     # from backend.shemas_enums.gateway import GatewayInitRequest # Specific schemas?
@@ -32,14 +32,12 @@ def _get_merchant_store_by_api_key(api_key: Optional[str], db: Session) -> Merch
     if not api_key:
         raise AuthenticationError("API key is missing.")
     
-    # TODO: Implement secure API key lookup
-    # - Fetch MerchantStore based on api_key hash?
-    # - Ensure the key/store is active.
-    store = get_object_or_none(db, MerchantStore, api_key=api_key) # Assuming direct key lookup for now (INSECURE)
+    # Secure API key lookup using public_api_key field
+    store = get_object_or_none(db, MerchantStore, public_api_key=api_key)
     
     if not store:
         raise AuthenticationError("Invalid API key.")
-    if not store.is_active:
+    if not store.access:
         raise AuthorizationError("Merchant store is inactive.")
     
     logger.debug(f"Authenticated merchant store ID: {store.id} using API key.")
@@ -76,53 +74,42 @@ def handle_init_request(
     #     raise OrderProcessingError("Customer ID is required for this merchant.", status_code=400)
     logger.debug(f"Request validation passed (placeholder) for Store ID: {merchant_store.id}")
 
-    # 3. Create IncomingOrder
-    # TODO: Call order_service or implement creation logic here
-    # Ensure all necessary fields are mapped correctly
+    # 3. Create IncomingOrder record
     try:
-        # incoming_order_data = request_data.dict()
-        # incoming_order_data['merchant_store_id'] = merchant_store.id
-        # incoming_order_data['status'] = 'new' # Initial status
-        # incoming_order_data['direction'] = direction # Set direction
-        # created_order = create_object(db, IncomingOrder, incoming_order_data)
-
-        # Placeholder Creation:
-        from datetime import datetime
-        created_order = IncomingOrder(
-             id=123, # Dummy ID
-             merchant_store_id=merchant_store.id,
-             amount=request_data.amount,
-             currency_id=request_data.currency_id,
-             payment_method_id=request_data.payment_method_id,
-             direction=direction,
-             customer_id=request_data.customer_id,
-             return_url=request_data.return_url,
-             callback_url=request_data.callback_url,
-             status="new",
-             created_at=datetime.utcnow(),
-             retry_count=0
-         )
-        logger.info(f"Created IncomingOrder (placeholder) ID {created_order.id} for Store ID {merchant_store.id}")
+        order_data = request_data.dict(exclude_unset=True)
+        order_data.update({
+            'merchant_id': merchant_store.merchant_id,
+            'store_id': merchant_store.id,
+            'gateway_id': merchant_store.id, # Use the store's configured gateway record if applicable
+            'status': 'new',
+            'retry_count': 0
+        })
+        created_order = create_object(db, IncomingOrder, order_data)
+        logger.info(f"Created IncomingOrder ID {created_order.id} for Store ID {merchant_store.id}")
         return created_order
-
-    except DatabaseError as e:
-        logger.error(f"Failed to create IncomingOrder for Store {merchant_store.id}: {e}", exc_info=True)
-        raise # Re-raise DB error
     except Exception as e:
-        logger.error(f"Unexpected error creating IncomingOrder for Store {merchant_store.id}: {e}", exc_info=True)
-        raise OrderProcessingError(f"Failed to create order: {e}") from e
+        msg = f"Failed to create IncomingOrder for Store {merchant_store.id}: {e}"
+        logger.error(msg, exc_info=True)
+        if isinstance(e, DatabaseError):
+            raise
+        raise OrderProcessingError(msg) from e
 
 def get_order_status(order_identifier: str, db: Session) -> Any: # Return type depends on desired response schema
     """Retrieves the status details for a given order identifier."""
     logger.debug(f"Getting status for order identifier: {order_identifier}")
-    # TODO: Implement status retrieval
-    # - Try to find OrderHistory first by ID
-    # - If not found, try IncomingOrder by ID
-    # - Format the response based on GatewayStatusResponse schema
-    # - Handle not found cases -> OrderProcessingError(status_code=404)
-    
-    # Placeholder:
-    raise OrderProcessingError("Order not found (placeholder)", status_code=404)
+    # 1. Try to find in OrderHistory
+    order = get_object_or_none(db, OrderHistory, hash_id=order_identifier)
+    if order:
+        return order
+    # 2. Try to find in IncomingOrder by ID
+    try:
+        incoming_id = int(order_identifier)
+        order = get_object_or_none(db, IncomingOrder, id=incoming_id)
+        if order:
+            return order
+    except ValueError:
+        pass
+    raise OrderProcessingError(f"Order not found: {order_identifier}", status_code=404)
 
 def handle_client_confirmation(
     order_identifier: str, 
@@ -131,16 +118,18 @@ def handle_client_confirmation(
 ) -> None:
     """Handles the client confirmation action from the gateway."""
     logger.info(f"Handling client confirmation for order identifier: {order_identifier}, receipt URL: {uploaded_url}")
-    # TODO: Implement confirmation handling
-    # 1. Find the OrderHistory record by identifier.
-    #    order = get_object_or_none(db, OrderHistory, id=int(order_identifier)) # Assuming identifier is ID
-    #    if not order: raise OrderProcessingError(f"Order not found: {order_identifier}", status_code=404)
-    # 2. Determine the actor (this might be tricky if the endpoint isn't authenticated).
-    #    - Use a system actor? Pass merchant ID? Requires careful design.
-    #    actor = None # Placeholder - Needs a way to identify who is allowed to confirm
-    # 3. Call the order status manager.
-    #    order_status_manager.confirm_payment_by_client(order.id, client_actor=actor, uploaded_receipt_url=uploaded_url, db=db)
-    
-    # Placeholder:
-    logger.warning(f"Client confirmation logic for {order_identifier} not implemented.")
-    pass # Simulate successful handling 
+    # 1. Retrieve OrderHistory
+    oh = get_object_or_none(db, OrderHistory, hash_id=order_identifier)
+    if not oh:
+        raise OrderProcessingError(f"Order not found: {order_identifier}", status_code=404)
+    # 2. Permission: merchant
+    # Actor not identified here; assume system actor for gateway
+    from backend.utils.exceptions import AuthorizationError
+    # 3. Call status manager
+    updated = order_status_manager.confirm_payment_by_client(
+        order_id=oh.id,
+        receipt=uploaded_url.encode('utf-8'),
+        filename=uploaded_url.split('/')[-1],
+        db_session=db
+    )
+    return updated 

@@ -3,6 +3,7 @@
 import logging
 from datetime import datetime
 from decimal import Decimal
+import uuid
 
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -93,7 +94,7 @@ def process_incoming_order(incoming_order_id: int):
                 # 2.5 Create OrderHistory record
                 oh_data = {
                     'incoming_order_id': incoming_order.id,
-                    'hash_id': '',  # TODO: generate unique hash
+                    'hash_id': uuid.uuid4().hex,  # generated unique hash
                     'trader_id': trader_id,
                     'requisite_id': req_id,
                     'merchant_id': incoming_order.merchant_id,
@@ -136,57 +137,35 @@ def process_incoming_order(incoming_order_id: int):
     # --- 3. Status Update on Failure (runs if an exception occurred above) --- #
     if processing_exception:
         logger.info(f"Attempting to update status for failed IncomingOrder ID: {incoming_order_id}")
+        # Update status (retrying or failed) reliably in separate transaction
         try:
             with get_db_session() as db_status:
                 with atomic_transaction(db_status):
-                    # TODO: Implement Status Update Logic based on README_IMPLEMENTATION_PLAN.md 3.3
-                    # -------------------------------------------------------------------------------
-                    # 3.1 Load IncomingOrder (no lock needed now)
-                    # order_to_update = db_status.get(IncomingOrder, incoming_order_id)
-                    # if not order_to_update:
-                    #     logger.error(f"CRITICAL: IncomingOrder {incoming_order_id} not found during status update after failure!")
-                    #     # Cannot update status, original error is the primary issue.
-                    #     # Maybe report this specific inconsistency?
-                    #     report_critical_error(processing_exception, context_message="Failed to find order for status update after primary failure", incoming_order_id=incoming_order_id)
-                    #     return # Exit, can't update
-
-                    # !! Placeholder Load !!
-                    order_to_update = db_status.get(IncomingOrder, incoming_order_id)
-                    if not order_to_update: raise DatabaseError(f"Order {incoming_order_id} missing for status update")
-
-                    # 3.2 Determine New Status (Retrying or Failed)
-                    # max_retries = get_typed_config_value("MAX_ORDER_RETRIES", db_status, int, default=3)
-                    # current_retries = order_to_update.retry_count or 0
-                    # new_status = "retrying" if current_retries < max_retries else "failed"
-                    new_status = "failed" # Placeholder
-                    current_retries = (order_to_update.retry_count or 0) + 1 # Placeholder increment
-
-                    # 3.3 Prepare Update Data
-                    # update_data = {
-                    #     "status": new_status, # Use Enum
-                    #     "failure_reason": failure_reason,
-                    #     "retry_count": (order_to_update.retry_count or 0) + 1,
-                    #     "last_attempt_at": datetime.utcnow()
-                    # }
-                    # update_object_db(db_status, order_to_update, update_data)
-                    logger.info(f"Updating IncomingOrder {incoming_order_id} status to '{new_status}' (placeholder) with reason: {failure_reason}")
-
-            logger.info(f"Successfully updated status for failed IncomingOrder ID: {incoming_order_id} to '{new_status}'")
-
-            # If status is now 'failed', maybe report it (if not already reported as unexpected)
-            if new_status == 'failed' and not isinstance(processing_exception, (RequisiteNotFound, LimitExceeded, FraudDetectedError)):
-                 # Report potentially persistent failures
-                 report_critical_error(processing_exception, context_message="Order processing failed after retries", incoming_order_id=incoming_order_id, final_status=new_status)
-
+                    order_to_update = db_status.query(IncomingOrder).filter_by(id=incoming_order_id).one_or_none()
+                    if not order_to_update:
+                        raise DatabaseError(f"IncomingOrder {incoming_order_id} not found during status update.")
+                    # Determine new status based on retry count
+                    max_retries = get_typed_config_value("MAX_ORDER_RETRIES", db_status, int, default=3)
+                    current_retries = (order_to_update.retry_count or 0)
+                    next_retries = current_retries + 1
+                    new_status = "retrying" if next_retries < max_retries else "failed"
+                    update_data = {
+                        'status': new_status,
+                        'failure_reason': failure_reason,
+                        'retry_count': next_retries,
+                        'last_attempt_at': datetime.utcnow()
+                    }
+                    update_object_db(db_status, order_to_update, update_data)
+                    logger.info(f"IncomingOrder {incoming_order_id} status updated to '{new_status}' with reason: {failure_reason}")
         except Exception as status_update_exc:
-            # CRITICAL: Failed to even update the status after a processing failure
-            logger.critical(f"CRITICAL FAILURE: Could not update status for IncomingOrder ID {incoming_order_id} after initial processing error. Status Update Error: {status_update_exc}", exc_info=True)
-            # Report this critical situation
+            logger.critical(
+                f"CRITICAL: Could not update status for IncomingOrder ID {incoming_order_id} after failure: {status_update_exc}",
+                exc_info=True
+            )
             report_critical_error(
                 status_update_exc,
-                context_message="CRITICAL: Failed to update order status after processing failure",
+                context_message="Failed to update order status after processing failure",
                 incoming_order_id=incoming_order_id,
                 original_error=str(processing_exception)
             )
-            # Re-raise the status update exception as it's critical
             raise status_update_exc 

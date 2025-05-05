@@ -1,19 +1,24 @@
 from sqlalchemy.orm import Session
 from typing import Optional, Type, TypeVar
 import logging
+from cachetools import TTLCache, cached
 
 # Attempt to import the model, handle potential circular imports if structure changes
 try:
-    from backend.database.models import ConfigurationSetting
+    from backend.database.db import ConfigurationSetting
 except ImportError:
     # This path might be needed if called from scripts outside the main app structure
     # Or handle potential restructuring later
-    from ..database.models import ConfigurationSetting # Adjust relative path if needed
+    from ..database.db import ConfigurationSetting # Adjust relative path if needed
 
 logger = logging.getLogger(__name__) # Use standard logging
 
 T = TypeVar('T')
 
+# TTL cache for config values (max 128 entries, TTL 300 seconds)
+_config_cache = TTLCache(maxsize=128, ttl=300)
+
+@cached(_config_cache)
 def get_config_value(key: str, db: Session, default: Optional[str] = None) -> Optional[str]:
     """Fetches a configuration value (as string) from the database.
 

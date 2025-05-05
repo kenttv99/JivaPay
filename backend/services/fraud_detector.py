@@ -7,6 +7,8 @@ Provides a function to check orders against fraud rules.
 import logging
 from enum import Enum
 from sqlalchemy.orm import Session
+from decimal import Decimal
+from backend.utils.config_loader import get_typed_config_value
 
 from backend.database.db import IncomingOrder
 from backend.utils.exceptions import FraudDetectedError
@@ -37,7 +39,22 @@ def check_incoming_order(
         FraudDetectedError: For explicit deny or manual review triggers.
     """
     logger.info(f"Running fraud check for IncomingOrder ID: {incoming_order.id}")
-    # TODO: Implement actual fraud detection rules
-    # Example: check order.amount_fiat > threshold -> REQUIRE_MANUAL_REVIEW
-    # For now, allow all
+    # Fetch thresholds from config
+    try:
+        manual_threshold = get_typed_config_value("FRAUD_MANUAL_REVIEW_THRESHOLD", db_session, Decimal, default=None)
+        deny_threshold = get_typed_config_value("FRAUD_DENY_THRESHOLD", db_session, Decimal, default=None)
+    except Exception as e:
+        logger.warning(f"Could not load fraud thresholds: {e}. Defaulting to allow.")
+        manual_threshold = None
+        deny_threshold = None
+    amount = getattr(incoming_order, 'amount_fiat', None)
+    # Deny if above deny threshold
+    if deny_threshold is not None and amount is not None and amount > deny_threshold:
+        logger.warning(f"IncomingOrder {incoming_order.id} denied by fraud (>{deny_threshold}).")
+        return FraudStatus.DENY
+    # Manual review if above manual threshold
+    if manual_threshold is not None and amount is not None and amount > manual_threshold:
+        logger.info(f"IncomingOrder {incoming_order.id} requires manual review (>{manual_threshold}).")
+        return FraudStatus.REQUIRE_MANUAL_REVIEW
+    # Default allow
     return FraudStatus.ALLOW 

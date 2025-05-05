@@ -375,7 +375,12 @@ class OrderHistory(Base):
     client_id: Mapped[Optional[str]] = mapped_column(String(255), index=True) # Added from description
     customer_id: Mapped[Optional[str]] = mapped_column(String(255)) # Added from incoming order
     customer_ip: Mapped[Optional[str]] = mapped_column(String(100)) # Added from incoming order
-    payment_details_submitted: Mapped[bool] = mapped_column(Boolean, default=False) # Added from description
+    payment_details_submitted: Mapped[bool] = mapped_column(Boolean, default=False)  # Added from description
+
+    # Added fields for receipt URLs and cancellation details
+    receipt_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    trader_receipt_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    cancellation_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     incoming_order: Mapped[Optional["IncomingOrder"]] = relationship(back_populates="assigned_order_rel") # Renamed relationship
     trader: Mapped["Trader"] = relationship(back_populates="order_histories")
@@ -391,6 +396,9 @@ class OrderHistory(Base):
     balance_store_history: Mapped[List["BalanceStoreHistory"]] = relationship(back_populates="order")
     balance_trader_fiat_history: Mapped[List["BalanceTraderFiatHistory"]] = relationship(back_populates="order")
     balance_trader_crypto_history: Mapped[List["BalanceTraderCryptoHistory"]] = relationship(back_populates="order")
+
+    # Relationship to uploaded documents
+    uploaded_documents: Mapped[List["UploadedDocument"]] = relationship("UploadedDocument", back_populates="order", cascade="all, delete-orphan")
 
     __table_args__ = (Index('ix_order_history_created_at', 'created_at'), Index('ix_order_history_client_id', 'client_id'),)
 
@@ -637,5 +645,17 @@ Index('ix_store_address_status', StoreAddress.status)
 
 # Example of a composite index if needed:
 # Index('ix_merchant_store_currency', MerchantStore.merchant_id, MerchantStore.crypto_currency_id)
+
+# Added model for storing uploaded documents (receipts, proofs)
+class UploadedDocument(Base):
+    __tablename__ = "uploaded_documents"
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey('order_history.id', ondelete='CASCADE'), nullable=False)
+    actor_id: Mapped[Optional[int]] = mapped_column(ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    file_url: Mapped[str] = mapped_column(String(512), nullable=False)
+    doc_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
+
+    order: Mapped["OrderHistory"] = relationship(back_populates="uploaded_documents")
 
     

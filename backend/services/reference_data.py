@@ -9,13 +9,11 @@ from sqlalchemy.orm import Session
 
 # Attempt to import models, DB utils, and exceptions
 try:
-    # Assuming models for Bank, Currency, PaymentMethod, etc. exist or will exist
-    from backend.database.models import Bank, Currency, PaymentMethod, ExchangeRate # Add other models as needed
+    from backend.database.db import BanksTrader as Bank, FiatCurrency as Currency, PaymentMethod, ExchangeRate
     from backend.database.utils import get_object_or_none
     from backend.utils.exceptions import CacheError, DatabaseError, ConfigurationError
 except ImportError:
-    # Adjust paths if needed
-    from ..database.models import Bank, Currency, PaymentMethod, ExchangeRate
+    from ..database.db import BanksTrader as Bank, FiatCurrency as Currency, PaymentMethod, ExchangeRate
     from ..database.utils import get_object_or_none
     from ..utils.exceptions import CacheError, DatabaseError, ConfigurationError
 
@@ -119,13 +117,12 @@ def get_bank_details(bank_id: int, db: Session) -> Optional[Dict[str, Any]]:
     try:
         bank = get_object_or_none(db, Bank, id=bank_id)
         if bank:
-            # Convert SQLAlchemy object to dict for caching/return
-            # This is a simple example; consider using Pydantic schemas .model_dump()
             bank_details = {
                 "id": bank.id,
-                "name": bank.name,
-                "country_code": bank.country_code,
-                # Add other relevant fields
+                "name": bank.public_name or bank.bank_name,
+                "fiat_currency_id": bank.fiat_id,
+                "currency_code": bank.fiat.currency_code if bank.fiat else None,
+                "access": bank.access,
             }
             _set_to_cache(cache_key, bank_details)
             return bank_details
@@ -152,9 +149,9 @@ def get_payment_method_details(method_id: int, db: Session) -> Optional[Dict[str
         if method:
             method_details = {
                 "id": method.id,
-                "name": method.name,
-                "type": method.type.value if hasattr(method.type, 'value') else str(method.type),
-                # Add other fields
+                "method_name": method.method_name,
+                "public_name": method.public_name,
+                "access": method.access,
             }
             _set_to_cache(cache_key, method_details)
             return method_details
@@ -181,9 +178,12 @@ def get_exchange_rate(crypto_id: int, fiat_id: int, db: Session) -> Optional[Dic
         if rate:
             rate_details = {
                 "id": rate.id,
-                "crypto_currency_id": rate.crypto_currency_id,
-                "fiat_currency_id": rate.fiat_currency_id,
-                "rate": str(rate.rate), # Use str for Decimal precision
+                "currency": rate.currency,
+                "fiat": rate.fiat,
+                "buy_rate": str(rate.buy_rate),
+                "sell_rate": str(rate.sell_rate),
+                "median_rate": str(rate.median_rate),
+                "source": rate.source,
                 "updated_at": rate.updated_at.isoformat() if rate.updated_at else None,
             }
             _set_to_cache(cache_key, rate_details)
