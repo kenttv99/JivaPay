@@ -9,18 +9,20 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
 
-# --- Import Utilities and Routers --- #
+# --- Import Utilities, Middleware, Routers --- #
 # (Add imports for your routers as they are created)
-# from backend.api_routers import auth_router, merchant_router, trader_router, admin_router, gateway_router
+# from backend.servers.merchant.router import router as merchant_router
+# from backend.servers.trader.router import router as trader_router
+# from backend.servers.admin.router import router as admin_router
+# from backend.servers.gateway.router import router as gateway_router # Assuming gateway router goes here too?
 try:
+    # Adjust relative paths for imports from within servers/main
     from backend.utils.notifications import initialize_sentry, report_critical_error
     from backend.utils.exceptions import JivaPayException
     from backend.middleware.rate_limiting import get_limiter, get_rate_limit_exceeded_handler, RateLimitExceeded, SlowAPIMiddleware
-except ImportError:
-    # Adjust paths if needed
-    from .utils.notifications import initialize_sentry, report_critical_error
-    from .utils.exceptions import JivaPayException
-    from .middleware.rate_limiting import get_limiter, get_rate_limit_exceeded_handler, RateLimitExceeded, SlowAPIMiddleware
+except ImportError as e:
+    # Handle potential import issues if structure changes
+    raise ImportError(f"Could not import core utilities/middleware: {e}")
 
 # --- Basic Logging Configuration --- #
 # TODO: Enhance logging configuration (e.g., read from file, structured logging)
@@ -95,11 +97,23 @@ def health_check():
 
 # --- Include API Routers --- #
 # (Uncomment and add routers as they are created)
-# app.include_router(auth_router.router, prefix="/api/auth", tags=["Authentication"])
-# app.include_router(merchant_router.router, prefix="/api/merchant", tags=["Merchant"])
-# app.include_router(trader_router.router, prefix="/api/trader", tags=["Trader"])
-# app.include_router(admin_router.router, prefix="/api/admin", tags=["Admin"])
-# app.include_router(gateway_router.router, prefix="/api/gateway", tags=["Gateway"])
+# Example:
+# from backend.servers.merchant.router import router as merchant_router
+# app.include_router(merchant_router, prefix="/api/merchant", tags=["Merchant"])
+
+# from backend.servers.trader.router import router as trader_router
+# app.include_router(trader_router, prefix="/api/trader", tags=["Trader"])
+
+# from backend.servers.admin.router import router as admin_router
+# app.include_router(admin_router, prefix="/api/admin", tags=["Admin"])
+
+# from backend.servers.support.router import router as support_router # Assuming support has its own router
+# app.include_router(support_router, prefix="/api/support", tags=["Support"])
+
+# Where does the Gateway router belong? Maybe included here too?
+# from backend.servers.gateway.router import router as gateway_router # If gateway has its own dir
+# app.include_router(gateway_router, prefix="/api/gateway", tags=["Gateway"])
+
 
 # --- Application Startup Logic (Example) --- #
 # @app.on_event("startup")
@@ -114,7 +128,7 @@ def health_check():
 #     # Disconnect from database, release resources, etc.
 #     pass
 
-logger.info("FastAPI application configured.")
+logger.info("FastAPI application configured in servers/main/server.py.")
 
 # To run the app (using uvicorn):
-# uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000 
+# uvicorn backend.servers.main.server:app --reload --host 0.0.0.0 --port 8000 

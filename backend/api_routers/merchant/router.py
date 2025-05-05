@@ -6,7 +6,7 @@ from typing import List, Optional, Any # Any for placeholder user model
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.orm import Session
 
-# Attempt imports
+# Attempt imports (adjusting paths based on new location)
 try:
     from backend.database.utils import get_db_session
     from backend.shemas_enums.order import IncomingOrderCreate, IncomingOrderRead, OrderHistoryRead # Import schemas
@@ -17,7 +17,8 @@ try:
     # from backend.services import order_service, gateway_service # Example service imports
     from backend.utils.exceptions import JivaPayException, AuthorizationError, DatabaseError
 except ImportError as e:
-    raise ImportError(f"Could not import required modules for merchant router: {e}")
+    # Make error message clearer about location
+    raise ImportError(f"Could not import required modules for merchant router (in api_routers/merchant/router.py): {e}")
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ router = APIRouter()
     response_model=IncomingOrderRead, # Return the created incoming order details
     status_code=status.HTTP_201_CREATED,
     summary="Create a new Incoming Order (PayIn/PayOut request)",
-    tags=["Merchant Orders"]
+    tags=["Merchant Orders"] # Tags for OpenAPI docs
 )
 def create_incoming_order(
     order_data: IncomingOrderCreate, # Use the creation schema for input
@@ -97,7 +98,7 @@ def create_incoming_order(
     "/orders",
     response_model=List[OrderHistoryRead], # Return a list of orders
     summary="List Merchant's Orders",
-    tags=["Merchant Orders"]
+    tags=["Merchant Orders"] # Tags for OpenAPI docs
 )
 def list_merchant_orders(
     skip: int = 0,

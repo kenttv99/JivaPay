@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, Path, Body, Request, Response, UploadFile, File
 from sqlalchemy.orm import Session
 
-# Attempt imports
+# Attempt imports (adjusting paths based on new location)
 try:
     from backend.database.utils import get_db_session
     # !! Need Gateway specific Schemas (e.g., GatewayInitRequest, GatewayStatusResponse) !!
@@ -15,7 +15,7 @@ try:
     # from backend.services import gateway_service
     from backend.utils.exceptions import JivaPayException, OrderProcessingError
 except ImportError as e:
-    raise ImportError(f"Could not import required modules for gateway router: {e}")
+    raise ImportError(f"Could not import required modules for gateway router (in api_routers/gateway/router.py): {e}")
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ def initialize_payin(
         from datetime import datetime
         dummy_order = {
             "id": 456, "merchant_store_id": 1, "status": "awaiting_client_confirmation",
-            "amount": request_data.amount, "currency_id": request_data.currency_id, 
+            "amount": request_data.amount, "currency_id": request_data.currency_id,
             "payment_method_id": request_data.payment_method_id, "direction": "PAYIN",
             "created_at": datetime.utcnow(), "retry_count": 0, # Fill other fields
             "customer_id": request_data.customer_id,

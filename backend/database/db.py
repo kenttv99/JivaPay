@@ -613,6 +613,18 @@ class RequisiteDistributionSettings(Base):
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
 
+class ConfigurationSetting(Base):
+    __tablename__ = "configuration_settings"
+
+    key: Mapped[str] = mapped_column(String(255), primary_key=True, index=True, comment="Unique key identifying the configuration setting")
+    value: Mapped[str] = mapped_column(Text, nullable=False, comment="Value of the configuration setting (stored as text)")
+    description: Mapped[Optional[str]] = mapped_column(Text, comment="Description of the setting for administrators")
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now(), comment="Timestamp of creation")
+    updated_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP(timezone=True), onupdate=func.now(), comment="Timestamp of last update")
+
+    def __repr__(self):
+        return f"<ConfigurationSetting(key='{self.key}', value='{self.value[:20]}...')>"
+
 # Add indexes for foreign keys and common filter columns not covered by __table_args__
 # Index('ix_order_history_created_at', OrderHistory.created_at) # Already in __table_args__
 # Index('ix_req_trader_status', ReqTrader.status) # Already in __table_args__
