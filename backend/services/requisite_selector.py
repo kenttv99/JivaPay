@@ -4,7 +4,7 @@ import logging
 from typing import Optional, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func, and_
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Attempt to import models, DB utils, and exceptions
 try:
@@ -38,78 +38,49 @@ def find_suitable_requisite(
     """
     logger.info(f"Attempting to find suitable requisite for IncomingOrder ID: {incoming_order.id}")
 
-    # TODO: Implement Requisite Selection Logic based on README_IMPLEMENTATION_PLAN.md 3.3
-    # ---------------------------------------------------------------------------
-
-    # 1. Construct Base Query:
-    #    - SELECT ReqTrader.full_requisite_id, ReqTrader.trader_id
-    #    - FROM ReqTrader
-    #    - JOIN Trader ON Trader.id = ReqTrader.trader_id
-    #    - JOIN FullRequisitesSettings ON FullRequisitesSettings.id = ReqTrader.full_requisite_id
-    #    - WHERE conditions:
-    #        - ReqTrader.is_active = True
-    #        - Trader.is_active = True
-    #        - FullRequisitesSettings.is_active = True
-    #        - FullRequisitesSettings.direction = incoming_order.direction (or map enum)
-    #        - FullRequisitesSettings.payment_method_id = incoming_order.payment_method_id
-    #        - FullRequisitesSettings.currency_id = incoming_order.currency_id
-    #        - FullRequisitesSettings.min_amount <= incoming_order.amount
-    #        - FullRequisitesSettings.max_amount >= incoming_order.amount
-    #        - FullRequisitesSettings.merchant_store_id = incoming_order.store_id (or maybe filter later? Check plan)
-    #        - (Add any other static filters based on ReqTrader or FullRequisitesSettings)
-
-    # 2. Apply Sorting:
-    #    - ORDER BY
-    #        - Trader.trafic_priority ASC, # Lower number = higher priority
-    #        - ReqTrader.last_used_at ASC NULLS FIRST # Round-robin within the same priority
-
-    # 3. Apply Locking and Limit:
-    #    - .with_for_update(skip_locked=True)
-    #    - .limit(1)
-
-    # 4. Execute Query:
-    #    - candidate = db_session.execute(query).first() # Or .one_or_none()
-
-    # 5. Handle No Candidate Found:
-    #    - if not candidate:
-    #        - logger.warning(f"No suitable static candidate found for IncomingOrder ID: {incoming_order.id}")
-    #        - # Option 1: Return None, None (Caller handles status update)
-    #        - return None, None
-    #        - # Option 2: Raise RequisiteNotFound (Requires try...except in caller)
-    #        - # raise RequisiteNotFound(f"No static candidate found for order {incoming_order.id}")
-
-    # 6. Extract IDs:
-    #    - requisite_id = candidate.full_requisite_id
-    #    - trader_id = candidate.trader_id
-    #    - logger.info(f"Found static candidate for IncomingOrder ID {incoming_order.id}: Requisite ID {requisite_id}, Trader ID {trader_id}")
-
-    # 7. Check Dynamic Limits (within the same transaction):
-    #    - Query OrderHistory for the selected `requisite_id`:
-    #        - Sum `amount` for orders within the dynamic limit period (e.g., last 24h, current month).
-    #        - Compare sum + incoming_order.amount against FullRequisitesSettings.dynamic_limit_period_amount.
-    #    - If limits exceeded:
-    #        - logger.warning(f"Dynamic limit exceeded for Requisite ID {requisite_id} (Order ID: {incoming_order.id})")
-    #        - # Option 1: Return None, None (Caller handles status update, maybe retry logic needs adjustment)
-    #        - return None, None
-    #        - # Option 2: Raise LimitExceeded (Requires try...except in caller)
-    #        - # raise LimitExceeded(f"Dynamic limit exceeded for requisite {requisite_id}", limit_type="dynamic", order_id=incoming_order.id)
-    #        - # Option 3: Potentially try the *next* candidate (more complex query/loop)
-
-    # 8. Update last_used_at (if selection is final here):
-    #    - Get the ReqTrader object: req_trader = db_session.get(ReqTrader, (requisite_id, trader_id)) # Assuming composite PK
-    #    - if req_trader:
-    #        - req_trader.last_used_at = datetime.utcnow()
-    #        - db_session.add(req_trader)
-    #        - db_session.flush() # Ensure update happens before returning
-    #    - else: # Should not happen if candidate was found
-    #        - logger.error(f"Could not find ReqTrader for Requisite ID {requisite_id}, Trader ID {trader_id} after selection!")
-    #        - raise DatabaseError("Inconsistency: ReqTrader not found after selection.")
-
-    # 9. Return Success:
-    #    - logger.info(f"Successfully selected Requisite ID {requisite_id}, Trader ID {trader_id} for IncomingOrder ID {incoming_order.id}")
-    #    - return requisite_id, trader_id
-
-    # --- Placeholder Return --- #
-    logger.warning(f"Requisite selection logic for IncomingOrder ID {incoming_order.id} is not implemented yet.")
-    # Returning None, None as a default placeholder behavior
-    return None, None 
+    # Реальная логика выбора реквизита
+    try:
+        order_type = incoming_order.order_type
+        amount = incoming_order.amount_fiat if order_type == 'pay_in' else incoming_order.amount_crypto
+        # Построение запроса для статического выбора
+        query = (
+            db_session.query(ReqTrader, FullRequisitesSettings)
+            .join(Trader, ReqTrader.trader_id == Trader.id)
+            .join(FullRequisitesSettings, FullRequisitesSettings.requisite_id == ReqTrader.id)
+            .filter(Trader.in_work == True)
+            .filter(getattr(FullRequisitesSettings, 'pay_in' if order_type == 'pay_in' else 'pay_out') == True)
+            .filter(FullRequisitesSettings.lower_limit <= amount)
+            .filter(FullRequisitesSettings.upper_limit >= amount)
+            .with_for_update(skip_locked=True)
+            .order_by(Trader.trafic_priority.asc(), ReqTrader.last_used_at.asc().nullsfirst())
+            .limit(1)
+        )
+        result = query.one_or_none()
+        if not result:
+            logger.warning(f"No suitable static candidate found for IncomingOrder ID: {incoming_order.id}")
+            return None, None
+        req, frs = result
+        # Проверка динамических лимитов
+        period = timedelta(minutes=frs.turnover_limit_minutes)
+        window_start = datetime.utcnow() - period
+        total = (
+            db_session.query(func.coalesce(
+                func.sum(OrderHistory.amount_fiat if order_type == 'pay_in' else OrderHistory.amount_crypto), 0
+            ))
+            .filter(
+                OrderHistory.requisite_id == req.id,
+                OrderHistory.created_at >= window_start
+            )
+            .scalar() or 0
+        )
+        if total + amount > frs.total_limit:
+            logger.warning(f"Dynamic limit exceeded for Requisite ID {req.id} (Order ID: {incoming_order.id})")
+            raise LimitExceeded(f"Dynamic limit exceeded for requisite {req.id}", limit_type="dynamic", order_id=incoming_order.id)
+        # Обновление last_used_at
+        req.last_used_at = datetime.utcnow()
+        db_session.flush()
+        logger.info(f"Selected Requisite ID {req.id}, Trader ID {req.trader_id} for IncomingOrder ID {incoming_order.id}")
+        return req.id, req.trader_id
+    except Exception as e:
+        logger.error(f"Error finding suitable requisite: {e}", exc_info=True)
+        raise DatabaseError(f"Error finding suitable requisite for order {incoming_order.id}: {e}") from e 
