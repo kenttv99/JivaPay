@@ -2,6 +2,7 @@
 
 import logging
 from datetime import datetime
+from decimal import Decimal
 
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -9,14 +10,15 @@ from sqlalchemy import select
 # Attempt to import models, DB utils, other services, and exceptions
 try:
     # !! Models needed: IncomingOrder, OrderHistory, etc. !!
-    from backend.database.models import IncomingOrder, OrderHistory # Add others as needed
+    from backend.database.db import IncomingOrder, OrderHistory # Add others as needed
     from backend.database.utils import get_db_session, atomic_transaction, create_object, update_object_db
     from backend.utils.exceptions import (
         RequisiteNotFound, LimitExceeded, OrderProcessingError, DatabaseError, ConfigurationError, FraudDetectedError # Add others
     )
     from backend.utils.notifications import report_critical_error
     # !! Services needed: requisite_selector, balance_manager, fraud_detector (when created) !!
-    from backend.services import requisite_selector, balance_manager #, fraud_detector
+    from backend.services import requisite_selector, balance_manager, fraud_detector
+    from backend.services.fraud_detector import FraudStatus
     # !! Need config loader for retries !!
     from backend.utils.config_loader import get_typed_config_value
 except ImportError as e:
@@ -38,106 +40,84 @@ def process_incoming_order(incoming_order_id: int):
         generally caught and result in status updates for the IncomingOrder.
     """
     logger.info(f"Starting processing for IncomingOrder ID: {incoming_order_id}")
-
-    # --- 1. Idempotency Check (before main transaction) --- # 
-    # Check if an OrderHistory already exists for this incoming_order_id
-    # Or if the IncomingOrder status is already 'assigned', 'completed', 'failed' etc.
-    # TODO: Implement idempotency check
-    # Example:
-    # with get_db_session() as db_check:
-    #     existing_order_history = db_check.query(OrderHistory).filter(OrderHistory.incoming_order_id == incoming_order_id).first()
-    #     if existing_order_history:
-    #         logger.warning(f"OrderHistory already exists for IncomingOrder ID {incoming_order_id}. Skipping processing.")
-    #         return
-    #     inc_order_status = db_check.query(IncomingOrder.status).filter(IncomingOrder.id == incoming_order_id).scalar()
-    #     if inc_order_status not in ['new', 'retrying']: # Use Enums
-    #          logger.warning(f"IncomingOrder ID {incoming_order_id} has status {inc_order_status}. Skipping processing.")
-    #          return
-    logger.debug(f"Idempotency check passed for IncomingOrder ID: {incoming_order_id}")
+    # 1. Idempotency check: skip if already processed or not in correct status
+    with get_db_session() as db_check:
+        existing = db_check.query(OrderHistory).filter(OrderHistory.incoming_order_id == incoming_order_id).one_or_none()
+        if existing:
+            logger.warning(f"OrderHistory already exists for IncomingOrder ID {incoming_order_id}. Skipping.")
+            return
+        inc = db_check.query(IncomingOrder).filter(IncomingOrder.id == incoming_order_id).one_or_none()
+        if not inc or inc.status not in ['new', 'retrying']:
+            logger.warning(f"IncomingOrder {incoming_order_id} status '{inc.status if inc else None}' invalid for processing. Skipping.")
+            return
 
     failure_reason: str | None = None
     processing_exception: Exception | None = None
     assigned_requisite_id: int | None = None
     assigned_trader_id: int | None = None
 
-    # --- 2. Main Processing Logic (within an atomic transaction) --- #
+    # 2. Main processing transaction
     try:
         with get_db_session() as db_main:
             with atomic_transaction(db_main):
-                # TODO: Implement Main Processing Logic based on README_IMPLEMENTATION_PLAN.md 3.3
-                # --------------------------------------------------------------------------------
-
-                # 2.1 Load IncomingOrder with lock
-                # incoming_order = db_main.query(IncomingOrder).filter(IncomingOrder.id == incoming_order_id).with_for_update().one_or_none()
-                # if not incoming_order:
-                #     raise OrderProcessingError(f"IncomingOrder not found: {incoming_order_id}") # This specific error will likely abort before status update
-
-                # 2.2 Check Status
-                # if incoming_order.status not in ['new', 'retrying']: # Use Enums
-                #     logger.warning(f"IncomingOrder {incoming_order_id} status changed before processing ({incoming_order.status}). Aborting.")
-                #     # Exit transaction cleanly, idempotency check should have caught this but double-check
-                #     return
-
-                # !! Placeholder: Need the actual incoming_order object for next steps !!
-                # !! Remove this placeholder load once the real load+lock is implemented !!
-                incoming_order = db_main.get(IncomingOrder, incoming_order_id)
-                if not incoming_order: raise OrderProcessingError(f"IncomingOrder not found: {incoming_order_id}")
-
-                # 2.3 Call Fraud Detector (TODO: Create fraud_detector service)
-                # fraud_result = fraud_detector.check_incoming_order(incoming_order, db_main)
-                # if fraud_result == FraudStatus.DENY:
-                #     raise FraudDetectedError("Denied by fraud detector", reason="specific rule", order_id=incoming_order_id)
-                # if fraud_result == FraudStatus.REQUIRE_MANUAL_REVIEW:
-                #     raise FraudDetectedError("Requires manual review by fraud detector", reason="specific rule", order_id=incoming_order_id)
-                logger.debug(f"Fraud check passed (placeholder) for IncomingOrder ID: {incoming_order_id}")
-
-                # 2.4 Find Requisite
-                # req_id, trad_id = requisite_selector.find_suitable_requisite(incoming_order, db_main)
-                # assigned_requisite_id = req_id
-                # assigned_trader_id = trad_id
-                # if not assigned_requisite_id or not assigned_trader_id:
-                #     raise RequisiteNotFound(f"No suitable requisite found for order {incoming_order_id}")
-                # !! Using placeholder values !!
-                assigned_requisite_id = 1 # Placeholder
-                assigned_trader_id = 1 # Placeholder
-                logger.info(f"Requisite found (placeholder) for {incoming_order_id}: Req={assigned_requisite_id}, Trader={assigned_trader_id}")
-
-                # 2.5 Calculate Commissions (only needed if stored on OrderHistory)
-                # store_comm, trader_comm = balance_manager.calculate_commissions(order=None, db_session=db_main) # Need order obj or details
-                store_comm, trader_comm = Decimal("0.10"), Decimal("0.05") # Placeholder
-
-                # 2.6 Create OrderHistory
-                # order_history_data = {
-                #     "incoming_order_id": incoming_order.id,
-                #     "merchant_store_id": incoming_order.store_id,
-                #     "requisite_id": assigned_requisite_id,
-                #     "trader_id": assigned_trader_id,
-                #     "amount": incoming_order.amount,
-                #     "currency_id": incoming_order.currency_id,
-                #     "status": "pending", # Initial status, use Enum
-                #     "direction": incoming_order.direction, # Use Enum
-                #     "store_commission": store_comm, # Store calculated commission
-                #     "trader_commission": trader_comm, # Store calculated commission
-                #     "fixed_exchange_rate": None, # TODO: Fetch and fix rate if applicable
-                #     # ... other fields from incoming_order ...
-                # }
-                # new_order_history = create_object(db_main, OrderHistory, order_history_data)
-                logger.info(f"OrderHistory created (placeholder) for IncomingOrder ID: {incoming_order_id}")
-                new_order_history_id = 999 # Placeholder
-
-                # 2.7 Update IncomingOrder
-                # update_data = {
-                #     "status": "assigned", # Use Enum
-                #     "assigned_order_id": new_order_history.id,
-                #     "failure_reason": None,
-                #     "retry_count": incoming_order.retry_count, # Keep current count
-                #     "last_attempt_at": datetime.utcnow()
-                # }
-                # update_object_db(db_main, incoming_order, update_data)
-                logger.info(f"IncomingOrder {incoming_order_id} status updated to 'assigned' (placeholder).")
-
-                # If we reach here, the main transaction will commit automatically
-                logger.info(f"Successfully processed IncomingOrder ID: {incoming_order_id}. Assigned OrderHistory ID: {new_order_history_id}")
+                # 2.1 Load and lock the incoming order
+                incoming_order = (
+                    db_main.query(IncomingOrder)
+                    .filter(IncomingOrder.id == incoming_order_id)
+                    .with_for_update()
+                    .one_or_none()
+                )
+                if not incoming_order:
+                    raise OrderProcessingError(f"IncomingOrder not found: {incoming_order_id}")
+                # 2.2 Fraud detection
+                fraud_status = FraudStatus.ALLOW
+                try:
+                    fraud_status = fraud_detector.check_incoming_order(incoming_order, db_main)
+                except FraudDetectedError as fe:
+                    fraud_status = fe.limit_type if hasattr(fe, 'limit_type') else FraudStatus.DENY
+                if fraud_status == FraudStatus.DENY:
+                    incoming_order.status = 'failed'
+                    db_main.flush()
+                    raise FraudDetectedError("Order denied by fraud detector.", order_id=incoming_order_id)
+                if fraud_status == FraudStatus.REQUIRE_MANUAL_REVIEW:
+                    incoming_order.status = 'retrying'
+                    incoming_order.retry_count = (incoming_order.retry_count or 0) + 1
+                    db_main.flush()
+                    raise FraudDetectedError("Order requires manual fraud review.", order_id=incoming_order_id)
+                # 2.3 Select requisite
+                req_id, trader_id = requisite_selector.find_suitable_requisite(incoming_order, db_main)
+                if not req_id or not trader_id:
+                    raise RequisiteNotFound(f"No suitable requisite found for order {incoming_order_id}")
+                # 2.4 Calculate commissions
+                store_comm, trader_comm = balance_manager.calculate_commissions(incoming_order, db_main)
+                # 2.5 Create OrderHistory record
+                oh_data = {
+                    'incoming_order_id': incoming_order.id,
+                    'hash_id': '',  # TODO: generate unique hash
+                    'trader_id': trader_id,
+                    'requisite_id': req_id,
+                    'merchant_id': incoming_order.merchant_id,
+                    'gateway_id': incoming_order.gateway_id,
+                    'store_id': incoming_order.store_id,
+                    'method_id': incoming_order.target_method_id,
+                    'bank_id': incoming_order.target_bank_id,
+                    'crypto_currency_id': incoming_order.crypto_currency_id,
+                    'fiat_id': incoming_order.fiat_currency_id,
+                    'order_type': incoming_order.order_type,
+                    'exchange_rate': incoming_order.exchange_rate,
+                    'amount_currency': incoming_order.amount_crypto or Decimal('0'),
+                    'total_fiat': incoming_order.amount_fiat or Decimal('0'),
+                    'store_commission': store_comm,
+                    'trader_commission': trader_comm,
+                    'status': 'pending'
+                }
+                new_oh = create_object(db_main, OrderHistory, oh_data)
+                # 2.6 Update incoming order status
+                update_object_db(db_main, incoming_order, {
+                    'status': 'assigned',
+                    'retry_count': incoming_order.retry_count or 0
+                })
+                logger.info(f"Processed IncomingOrder {incoming_order_id}, created OrderHistory ID {new_oh.id}")
 
     except (RequisiteNotFound, LimitExceeded, FraudDetectedError, ConfigurationError, OrderProcessingError, DatabaseError) as e:
         # Catch expected processing errors from within the transaction
