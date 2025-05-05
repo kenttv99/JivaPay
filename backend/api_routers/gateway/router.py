@@ -4,6 +4,7 @@ import logging
 from typing import Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, Path, Body, Request, Response, UploadFile, File
 from sqlalchemy.orm import Session
+import io
 
 # Attempt imports (adjusting paths based on new location)
 try:
@@ -12,7 +13,9 @@ try:
     # from backend.shemas_enums.gateway import GatewayInitRequest, GatewayStatusResponse, GatewayConfirmPayload
     from backend.shemas_enums.order import IncomingOrderCreate, IncomingOrderRead # Reuse or adapt
     # !! Need Gateway Service !!
-    # from backend.services import gateway_service
+    from backend.services.gateway_service import handle_init_request, get_order_status, handle_client_confirmation
+    from backend.utils.s3_client import upload_fileobj
+    from backend.config.settings import settings
     from backend.utils.exceptions import JivaPayException, OrderProcessingError
 except ImportError as e:
     raise ImportError(f"Could not import required modules for gateway router (in api_routers/gateway/router.py): {e}")
@@ -42,26 +45,13 @@ def initialize_payin(
     logger.info(f"Gateway: Received Pay-In init request. Key: {merchant_api_key}. Data: {request_data.dict()}")
 
     try:
-        # TODO: Call gateway_service to handle request
-        # - Identify merchant store from API key
-        # - Validate request data against store settings (e.g., required params)
-        # - Create IncomingOrder
-        # - Return response (e.g., order ID, payment details, redirect URL?)
-        # result = gateway_service.handle_init_request(api_key=merchant_api_key, request_data=request_data, direction="PAYIN", db=db)
-
-        # Placeholder:
-        logger.warning("Gateway Pay-In init logic not implemented.")
-        from datetime import datetime
-        dummy_order = {
-            "id": 456, "merchant_store_id": 1, "status": "awaiting_client_confirmation",
-            "amount": request_data.amount, "currency_id": request_data.currency_id,
-            "payment_method_id": request_data.payment_method_id, "direction": "PAYIN",
-            "created_at": datetime.utcnow(), "retry_count": 0, # Fill other fields
-            "customer_id": request_data.customer_id,
-            "return_url": request_data.return_url,
-            "callback_url": request_data.callback_url,
-        }
-        return dummy_order
+        created_order = handle_init_request(
+            api_key=merchant_api_key,
+            request_data=request_data,
+            direction="PAYIN",
+            db=db
+        )
+        return created_order
 
     except JivaPayException as e:
         logger.warning(f"Gateway Pay-In init failed: {e}")
@@ -84,14 +74,8 @@ def get_payin_status(
     """Allows merchant/client to check the status of a Pay-In order."""
     logger.info(f"Gateway: Received status request for Pay-In order: {order_identifier}")
     try:
-        # TODO: Call gateway_service to get order status
-        # - Find IncomingOrder/OrderHistory by ID
-        # - Format status response
-        # status_info = gateway_service.get_order_status(order_identifier, db=db)
-
-        # Placeholder:
-        logger.warning(f"Gateway Pay-In status logic for {order_identifier} not implemented.")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found (placeholder)")
+        order = get_order_status(order_identifier, db)
+        return order
 
     except OrderProcessingError as e:
          raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -118,22 +102,15 @@ async def confirm_payin_payment(
 ):
     """Endpoint for the end-client to confirm they have made the payment (e.g., uploaded receipt)."""
     logger.info(f"Gateway: Received payment confirmation for Pay-In order: {order_identifier}. File provided: {receipt_file is not None}")
-    uploaded_url = None
     try:
-        # TODO: Call gateway_service to handle confirmation
-        # 1. Handle file upload if provided (save to S3 via utils.s3_client, get URL)
-        #    if receipt_file:
-        #        uploaded_url = s3_client.upload_file(receipt_file.file, f"receipts/{order_identifier}_{receipt_file.filename}")
-        # 2. Call order_status_manager.confirm_payment_by_client (needs appropriate actor)
-        #    - Need to determine the actor - is this endpoint authenticated? Or use system actor?
-        #    gateway_service.handle_client_confirmation(order_identifier, uploaded_url, db=db)
-
-        # Placeholder:
-        logger.warning(f"Gateway Pay-In confirmation logic for {order_identifier} not implemented.")
+        uploaded_url = None
         if receipt_file:
-             logger.info(f"(Placeholder) Received file: {receipt_file.filename}, type: {receipt_file.content_type}")
-        # Return Accepted or OK
-        return {"message": "Confirmation received (placeholder)"}
+            content = await receipt_file.read()
+            buffer = io.BytesIO(content)
+            key = f"receipts/{order_identifier}/{receipt_file.filename}"
+            uploaded_url = upload_fileobj(buffer, settings.S3_BUCKET_NAME, key)
+        updated = handle_client_confirmation(order_identifier, uploaded_url, db)
+        return updated
 
     except JivaPayException as e:
         logger.warning(f"Gateway Pay-In confirmation failed for {order_identifier}: {e}")
@@ -161,22 +138,13 @@ def initialize_payout(
     merchant_api_key = request.headers.get("X-API-KEY") # Example
     logger.info(f"Gateway: Received Pay-Out init request. Key: {merchant_api_key}. Data: {request_data.dict()}")
     try:
-        # TODO: Call gateway_service (similar to Pay-In init)
-        # result = gateway_service.handle_init_request(api_key=merchant_api_key, request_data=request_data, direction="PAYOUT", db=db)
-
-        # Placeholder:
-        logger.warning("Gateway Pay-Out init logic not implemented.")
-        from datetime import datetime
-        dummy_order = {
-            "id": 789, "merchant_store_id": 1, "status": "pending", # PayOut might start as pending
-            "amount": request_data.amount, "currency_id": request_data.currency_id,
-            "payment_method_id": request_data.payment_method_id, "direction": "PAYOUT",
-            "created_at": datetime.utcnow(), "retry_count": 0, # Fill other fields
-            "customer_id": request_data.customer_id,
-            "return_url": request_data.return_url,
-            "callback_url": request_data.callback_url,
-        }
-        return dummy_order
+        created_order = handle_init_request(
+            api_key=merchant_api_key,
+            request_data=request_data,
+            direction="PAYOUT",
+            db=db
+        )
+        return created_order
 
     except JivaPayException as e:
         logger.warning(f"Gateway Pay-Out init failed: {e}")
@@ -199,12 +167,8 @@ def get_payout_status(
     """Allows merchant/client to check the status of a Pay-Out order."""
     logger.info(f"Gateway: Received status request for Pay-Out order: {order_identifier}")
     try:
-        # TODO: Call gateway_service (similar to Pay-In status)
-        # status_info = gateway_service.get_order_status(order_identifier, db=db)
-
-        # Placeholder:
-        logger.warning(f"Gateway Pay-Out status logic for {order_identifier} not implemented.")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found (placeholder)")
+        order = get_order_status(order_identifier, db)
+        return order
 
     except OrderProcessingError as e:
          raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

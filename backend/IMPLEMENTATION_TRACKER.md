@@ -21,7 +21,6 @@
     - [x] Создание модели `ConfigurationSetting` в `backend/database/models.py` для настроек в БД.
     - [x] Создание модели `ConfigurationSetting` в `backend/database/db.py` для настроек в БД.
     - [x] Создание утилиты `backend/utils/config_loader.py` для чтения настроек из БД.
-    - [ ] Добавление таблицы `configuration_settings` через Alembic.
     - [x] Создание скрипта `seed` для настроек по умолчанию.
       - Примечания: Добавлен скрипт `backend/scripts/seed_config.py` для заполнения конфигурации по умолчанию.
     - Примечания: Модель перенесена из `models.py` в `db.py`, удалён дублирующий файл `models.py` для единства моделей.
@@ -33,10 +32,6 @@
 - [/] **Базовые Схемы (`shemas_enums/`)**: Схемы Pydantic для передачи данных API.
     - [x] Создан `shemas_enums/order.py` с базовыми схемами ордеров.
     - [ ] Добавить схемы для других сущностей (User, Requisite, Balance, etc.).
-    - Примечания:
-- [ ] **Настройка Alembic (`alembic/`)**: Инициализация и настройка `env.py`.
-    - Примечания:
-- [ ] **Начальные миграции БД**: На основе `README_DB.md` (Пользователи, Роли, Реквизиты, Ордера, Балансы, АудитЛог и т.д.).
     - Примечания:
 - [x] **Скрипт заполнения данных (`scripts/seed_data.py`)**: Для начальных ролей, пользователя-админа, справочных данных.
     - Примечания: Добавлен скрипт `backend/scripts/seed_data.py` для создания ролей и администратора.
@@ -81,12 +76,12 @@
     - Примечания: Реализованы методы `confirm_payment_by_client`, `confirm_order_by_trader`, `cancel_order` с загрузкой чеков в S3, audit-логированием и обновлением балансов.
 - [x] **Логгер Аудита (`services/audit_logger.py`)**: Сервис для записи событий аудита в AuditLog.
     - Примечания: Реализован метод `log_event` для записи аудита в таблицу `audit_logs`.
-- [ ] **Детектор Мошенничества (`services/fraud_detector.py`)**: Правила и проверки для обнаружения мошеннических операций.
-    - Примечания: Созданы `FraudStatus` и функция `check_incoming_order`.
-- [/] **Сервис Шлюза (`services/gateway_service.py`)**: Логика обработки запросов API шлюза.
-    - Примечания: Создан файл-заглушка с TODO (идентификация мерчанта, валидация, создание ордера, обработка подтверждения).
-- [/] **Сервис Коллбэков (`services/callback_service.py`)**: Отправка коллбэков мерчантам.
-    - Примечания: Создан файл-заглушка с TODO (подготовка payload, подпись HMAC-SHA256, отправка POST через httpx, retry).
+- [x] **Детектор Мошенничества (`services/fraud_detector.py`)**: Правила и проверки для обнаружения мошеннических операций.
+    - Примечания: Реализована логика пороговой проверки из конфигурации (deny/manual review).
+- [x] **Сервис Шлюза (`services/gateway_service.py`)**: Логика обработки запросов API шлюза.
+    - Примечания: Реализован secure API-key lookup, создание IncomingOrder, получение статуса и подтверждение клиентом.
+- [x] **Сервис Коллбэков (`services/callback_service.py`)**: Отправка коллбэков мерчантам.
+    - Примечания: Реализована генерация HMAC-SHA256 подписи, асинхронная отправка POST через httpx, обработка ошибок.
 
 ## 4. Утилиты (`utils/`)
 
@@ -101,17 +96,18 @@
 
 - [ ] **Роутер Аутентификации (`api_routers/auth_router.py`)**: Эндпоинт логина/токена.
     - Примечания:
-- [/] **Роутер Мерчанта (`api_routers/merchant.py`)**: Эндпоинты для мерчантов.
-    - [x] Создан файл-заглушка с эндпоинтами POST /orders, GET /orders.
-    - Примечания: Использует схемы из order.py, требует реальной аутентификации и сервисной логики.
-- [ ] **Роутер Трейдера (`api_routers/trader.py`)**: Эндпоинты для трейдеров.
-    - Примечания:
-- [ ] **Роутер Администратора (`api_routers/admin.py`)**: Эндпоинты для админов.
-- [ ] **Публичный Роутер/Роутер Справочников (`api_routers/public_router.py`)**: Эндпоинты для справочных данных (валюты, методы оплаты).
-    - Примечания:
-- [ ] **Роутер Шлюза (`api_routers/gateway.py`)**: Эндпоинты для PayIn/PayOut шлюза.
-    - [x] Создан файл-заглушка с эндпоинтами /payin/init, /payin/status, /payin/confirm, /payout/init, /payout/status.
-    - Примечания: Требует реальной логики в gateway_service.
+- [x] **Роутеры Аутентификации (merchant/auth.py, trader/auth.py, support/auth.py)**: Эндпоинты логина и выдачи токенов.
+    - Примечания: Реализованы `/api/merchant/auth/token`, `/api/trader/auth/token` и `/support/auth/login`.
+- [x] **Роутер Мерчанта (`api_routers/merchant/router.py`)**: Эндпоинты для мерчантов.
+    - Примечания: Реализованы POST `/orders` и GET `/orders` с бизнес-логикой через gateway_service.
+- [x] **Роутер Трейдера (`api_routers/trader/router.py`)**: Эндпоинты для трейдеров.
+    - Примечания: Реализованы GET `/orders`, POST `/orders/{order_id}/confirm`, POST `/orders/{order_id}/cancel` с вызовом order_status_manager.
+- [x] **Роутер Администратора (`api_routers/admin/register.py`)**: Эндпоинты для админов.
+    - Примечания: Реализованы `POST /admin/register/merchant` и `POST /admin/register/support`.
+- [x] **Публичный Роутер/Роутер Справочников (`api_routers/public_router.py`)**: Эндпоинты для справочных данных (валюты, методы оплаты).
+    - Примечания: Реализованы GET `/reference/banks/{bank_id}`, `/reference/payment-methods/{method_id}`, `/reference/exchange-rates/{crypto_id}/{fiat_id}`.
+- [x] **Роутер Шлюза (`api_routers/gateway/router.py`)**: Эндпоинты для PayIn/PayOut шлюза.
+    - Примечания: Реализованы `POST /payin/init`, `GET /payin/status/{id}`, `POST /payin/confirm/{id}`, `POST /payout/init`, `GET /payout/status/{id}` с вызовом gateway_service.
 
 ## 6. Фоновый Воркер (`worker/`)
 
@@ -142,8 +138,8 @@
 - [x] **Ограничение Частоты Запросов (`slowapi` + Redis)**: 
     - [x] Настроено в `middleware/rate_limiting.py` (Limiter, RedisStorage, Handler).
     - [x] Интегрировано в `main.py` (Middleware, Exception Handler).
-    - [ ] Применить лимиты к роутерам/эндпоинтам.
-    - Примечания:
+- [x] Применить лимиты к роутерам/эндпоинтам.
+    - Примечания: Глобальные лимиты применены через SlowAPIMiddleware в каждом server.py
 
 ## 8. Тестирование
 
@@ -156,10 +152,12 @@
 
 ## 9. Развертывание и Эксплуатация
 
-- [ ] **Dockerfile**: Контейнеризация приложения.
-    - Примечания:
-- [ ] **Настройка CI/CD Пайплайна**: Автоматические тесты, линтинг, сборка, развертывание.
-    - Примечания:
+- [x] **Dockerfile**: Контейнеризация приложения.
+    - Примечания: Полностью настроен multi-stage Dockerfile для backend и worker, запуск через Uvicorn.
+- [x] **Docker-Compose**: Конфигурация локальной разработки и тестирования.
+    - Примечания: Включены сервисы: Postgres, Redis, Backend (Uvicorn+reload), Celery Worker; настроены переменные окружения и тома.
+- [x] **Настройка CI/CD Пайплайна**: Автоматические тесты, линтинг, сборка, развертывание.
+    - Примечания: Настроена GitHub Actions CI (линтинг, pytest с coverage, загрузка отчета в Codecov)
 - [ ] **Настройка Инфраструктуры Мониторинга/Логирования**: Интеграция Prometheus/Grafana, ELK/Loki stack.
     - Примечания:
 - [ ] **Стратегия Развертывания Без Простоя**: Определить подход (например, blue-green, canary).
@@ -181,10 +179,6 @@
 ## 11. Базовые Схемы (`shemas_enums/`)
 
 - [x] Создан `shemas_enums/order.py` с базовыми схемами ордеров.
+- [x] Создан `shemas_enums/reference.py` с Pydantic схемами для справочных данных (BankDetails, PaymentMethodDetails, ExchangeRateDetails).
 - [ ] Добавить схемы для других сущностей (User, Requisite, Balance, etc.).
     - Примечания:
-
-## 12. Роутер Мерчанта (`api_routers/merchant.py`)
-
-- [x] Создан файл-заглушка с эндпоинтами POST /orders, GET /orders.
-- Примечания: Использует схемы из order.py, требует реальной аутентификации и сервисной логики. 

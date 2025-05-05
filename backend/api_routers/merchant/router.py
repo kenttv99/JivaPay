@@ -17,7 +17,8 @@ try:
     # from backend.services import order_service, gateway_service # Example service imports
     from backend.utils.exceptions import JivaPayException, AuthorizationError, DatabaseError
     from backend.security import get_current_active_user
-    from backend.database.db import Merchant
+    from backend.database.db import Merchant, OrderHistory
+    from backend.services.gateway_service import handle_init_request
 except ImportError as e:
     # Make error message clearer about location
     raise ImportError(f"Could not import required modules for merchant router (in api_routers/merchant/router.py): {e}")
@@ -53,35 +54,18 @@ def create_incoming_order(
     """Endpoint for a merchant to initiate a new PayIn or PayOut order."""
     logger.info(f"Merchant {current_merchant.id} creating order. Data: {order_data.dict()}")
     try:
-        # TODO: Implement order creation logic
-        # 1. Identify merchant store ID (e.g., from current_merchant.store_id)
-        # 2. Potentially validate order_data against store settings
-        # 3. Call a service function (e.g., gateway_service or order_service) to create IncomingOrder in DB
-        #    - incoming_order = gateway_service.create_incoming_order_from_merchant(store_id=current_merchant.store_id, order_data=order_data, db=db)
-        # 4. Return the created order details using IncomingOrderRead schema
-
-        # Placeholder implementation:
-        logger.warning(f"Order creation logic for merchant {current_merchant.id} is not implemented.")
-        # Simulate creation and return dummy data matching the response model
-        from datetime import datetime
-        dummy_order = {
-            "id": 123,
-            "merchant_store_id": current_merchant.store_id,
-            "amount": order_data.amount,
-            "currency_id": order_data.currency_id,
-            "payment_method_id": order_data.payment_method_id,
-            "direction": order_data.direction,
-            "customer_id": order_data.customer_id,
-            "return_url": order_data.return_url,
-            "callback_url": order_data.callback_url,
-            "status": "new", # Placeholder status
-            "assigned_order_id": None,
-            "failure_reason": None,
-            "retry_count": 0,
-            "created_at": datetime.utcnow(),
-            "last_attempt_at": None
-        }
-        return dummy_order # Pydantic will validate this dict against IncomingOrderRead
+        # Identify merchant's store (assumes single store per merchant)
+        merchant_store = current_merchant.stores[0]
+        # Convert direction to gateway format (e.g., PAYIN or PAYOUT)
+        direction_str = order_data.direction.value.replace('_', '').upper()
+        # Delegate to gateway service
+        created_order = handle_init_request(
+            api_key=merchant_store.public_api_key,
+            request_data=order_data,
+            direction=direction_str,
+            db=db
+        )
+        return created_order
 
     except AuthorizationError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
@@ -110,18 +94,12 @@ def list_merchant_orders(
     """Endpoint to list orders associated with the current merchant."""
     logger.info(f"Merchant {current_merchant.id} listing orders. Skip: {skip}, Limit: {limit}, Status: {status_filter}")
     try:
-        # TODO: Implement order listing logic
-        # 1. Get merchant store ID
-        # 2. Call a service function to query OrderHistory (or IncomingOrder based on need)
-        #    - Filter by merchant_store_id
-        #    - Apply pagination (skip, limit)
-        #    - Apply filters (status_filter, date range, etc.)
-        #    - orders = order_service.get_merchant_orders(store_id=current_merchant.store_id, skip=skip, limit=limit, status=status_filter, db=db)
-        # 3. Return the list of orders
-
-        # Placeholder implementation:
-        logger.warning(f"Order listing logic for merchant {current_merchant.id} is not implemented.")
-        return [] # Return empty list
+        # Query OrderHistory for this merchant
+        query = db.query(OrderHistory).filter_by(merchant_id=current_merchant.id)
+        if status_filter:
+            query = query.filter(OrderHistory.status == status_filter)
+        orders = query.offset(skip).limit(limit).all()
+        return orders
 
     except AuthorizationError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
