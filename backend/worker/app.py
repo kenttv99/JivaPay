@@ -85,15 +85,7 @@ celery_app.conf.update(
     # --- Result Backend Settings --- #
     result_expires=int(os.getenv('CELERY_RESULT_EXPIRES', '3600')), # Keep results for 1 hour by default
 
-    # --- Beat (Scheduler) Settings --- #
-    # (Configuration for Celery Beat if used directly in this app)
-    # beat_schedule = {
-    #     'poll-new-orders': {
-    #         'task': 'backend.worker.tasks.poll_new_orders_task', # Task defined in tasks.py
-    #         'schedule': 60.0, # Run every 60 seconds
-    #         'options': {'queue' : 'default'} # Run scheduler task on default queue
-    #     },
-    # }
+    # --- Beat (Scheduler) Settings --- # (removed; using real-time enqueueing instead)
 )
 
 logger.info("Celery application configured.")

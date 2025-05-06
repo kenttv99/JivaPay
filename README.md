@@ -24,3 +24,19 @@ JivaPay — это платформа для обработки платежей
 1. Клонируйте репозиторий.
 2. Настройте бэкенд, следуя инструкциям в папке `backend/`.
 3. Настройте фронтенд, следуя инструкциям в папке `frontend/`.
+
+## Запуск
+
+### Для разработки
+
+```bash
+# Запуск с Docker Compose
+docker-compose up -d
+
+# Запуск отдельных серверов
+uvicorn backend.servers.merchant.server:app --port 8001 --reload
+uvicorn backend.servers.trader.server:app --port 8002 --reload
+uvicorn backend.servers.gateway.server:app --port 8003 --reload
+uvicorn backend.servers.admin.server:app --port 8004 --reload
+uvicorn backend.servers.support.server:app --port 8005 --reload
+```

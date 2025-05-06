@@ -4,6 +4,8 @@ import logging
 from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
 
+from backend.database.db import OrderHistory
+
 # Attempt imports
 try:
     # !! Models needed: MerchantStore, IncomingOrder !!
@@ -22,6 +24,7 @@ try:
         AuthenticationError, AuthorizationError, ConfigurationError, 
         OrderProcessingError, DatabaseError, JivaPayException, S3Error
     )
+    from backend.worker.tasks import process_order_task
 except ImportError as e:
     raise ImportError(f"Could not import required modules for GatewayService: {e}")
 
@@ -86,6 +89,8 @@ def handle_init_request(
         })
         created_order = create_object(db, IncomingOrder, order_data)
         logger.info(f"Created IncomingOrder ID {created_order.id} for Store ID {merchant_store.id}")
+        # Immediately enqueue the order for processing to achieve real-time handling
+        process_order_task.delay(created_order.id)
         return created_order
     except Exception as e:
         msg = f"Failed to create IncomingOrder for Store {merchant_store.id}: {e}"

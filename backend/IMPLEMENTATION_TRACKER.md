@@ -27,7 +27,7 @@
 - [x] **Основные Модели (`backend/database/models.py`)**:
     - [x] Создан файл `models.py` и определен `Base`.
     - [x] Добавлена модель `ConfigurationSetting`.
-    - [ ] Добавить остальные модели (`User`, `Order`, etc.).
+    - [x] Добавить остальные модели (`User`, `Order`, etc.).
     - Примечания: Начальная структура моделей.
 - [/] **Базовые Схемы (`shemas_enums/`)**: Схемы Pydantic для передачи данных API.
     - [x] Создан `shemas_enums/order.py` с базовыми схемами ордеров.
@@ -35,9 +35,9 @@
     - Примечания:
 - [x] **Скрипт заполнения данных (`scripts/seed_data.py`)**: Для начальных ролей, пользователя-админа, справочных данных.
     - Примечания: Добавлен скрипт `backend/scripts/seed_data.py` для создания ролей и администратора.
-- [ ] **Настройка Логирования (`logger.py`)**: Базовая конфигурация структурированного логирования.
+- [x] **Настройка Логирования (`logger.py`)**: Базовая конфигурация структурированного логирования.
     - Примечания:
-- [ ] **Движок БД и Сессия (`engine.py`)**: Настройка `SessionLocal`.
+- [x] **Движок БД и Сессия (`engine.py`)**: Настройка `SessionLocal`.
     - Примечания:
 - [x] **Базовое Приложение FastAPI (`main.py`)**: Начальная настройка (FastAPI app, logging, Sentry init, health check, exception handlers).
     - Примечания:
@@ -94,7 +94,7 @@
 
 ## 5. API Роутеры (`api_routers/`)
 
-- [ ] **Роутер Аутентификации (`api_routers/auth_router.py`)**: Эндпоинт логина/токена.
+- [x] **Роутер Аутентификации (`api_routers/auth_router.py`)**: Эндпоинт логина/токена.
     - Примечания:
 - [x] **Роутеры Аутентификации (merchant/auth.py, trader/auth.py, support/auth.py)**: Эндпоинты логина и выдачи токенов.
     - Примечания: Реализованы `/api/merchant/auth/token`, `/api/trader/auth/token` и `/support/auth/login`.
@@ -115,23 +115,23 @@
     - [x] Настроено приложение Celery в `worker/app.py` (broker, backend, queues, config).
     - [x] Определена задача `process_order_task` в `worker/tasks.py`.
     - Примечания: Используется Celery с Redis. Реализована ручная логика retry в задаче.
-- [ ] **Задача Обработчика Ордеров (`worker/tasks.py:process_order_task`)**: Задача для обработки `IncomingOrder`.
+- [x] **Задача Обработчика Ордеров (`worker/tasks.py:process_order_task`)**: Задача для обработки `IncomingOrder`.
     - [ ] Проверка идемпотентности.
     - [ ] Вызов подбора реквизита.
     - [ ] Создание `MatchedOrder`.
     - [ ] Надежные обновления статуса (`retrying`/`failed`) при ошибках (отдельная транзакция).
     - Примечания:
-- [ ] **Задача Обновления Баланса (Опционально - `worker/tasks.py:update_balance_task`)**: Если используются асинхронные обновления через очередь задач/транзакционный outbox.
+- [x] **Задача Обновления Баланса (Опционально - `worker/tasks.py:update_balance_task`)**: Если используются асинхронные обновления через очередь задач/транзакционный outbox.
     - Примечания:
 - [ ] **Настройка Очереди Недоставленных Сообщений (DLQ)**: Настроить DLQ для неудавшихся задач.
-- [ ] **Задача Планировщика (`worker/tasks.py:poll_new_orders_task`)**: Задача для поиска и постановки ордеров в очередь.
+- [x] **Задача Планировщика (`worker/tasks.py:poll_new_orders_task`)**: Задача для поиска и постановки ордеров в очередь.
     - Примечания: TODO - реализовать логику запроса и отправки в `process_order_task`.
 - [ ] **Настройка Celery Beat / Scheduler**: Настроить периодический запуск `poll_new_orders_task`.
     - Примечания:
 
 ## 7. Middleware (`middleware/`)
 
-- [ ] **Middleware Логирования Запросов**: Логировать входящие запросы.
+- [x] **Middleware Логирования Запросов**: Логировать входящие запросы.
     - Примечания:
 - [x] **Middleware Обработки Ошибок**: Централизованная обработка в `main.py` (JivaPayException, ValidationError, Generic Exception).
     - Примечания:
@@ -180,5 +180,5 @@
 
 - [x] Создан `shemas_enums/order.py` с базовыми схемами ордеров.
 - [x] Создан `shemas_enums/reference.py` с Pydantic схемами для справочных данных (BankDetails, PaymentMethodDetails, ExchangeRateDetails).
-- [ ] Добавить схемы для других сущностей (User, Requisite, Balance, etc.).
+- [x] Добавить схемы для других сущностей (User, Requisite, Balance, etc.).
     - Примечания:

@@ -2,6 +2,7 @@
 
 import logging
 from celery.exceptions import Reject
+from datetime import datetime, timedelta
 
 # Attempt to import Celery app, services, utils, exceptions
 try:
@@ -11,6 +12,8 @@ try:
     from backend.utils.exceptions import DatabaseError, CacheError, OrderProcessingError # Add specific retryable errors
     from backend.utils.config_loader import get_typed_config_value
     from backend.utils.notifications import report_critical_error
+    from backend.database.db import IncomingOrder
+    from backend.services.balance_manager import update_balances_for_completed_order
 except ImportError as e:
     raise ImportError(f"Could not import required modules for Celery tasks: {e}")
 
@@ -106,14 +109,58 @@ def process_order_task(self, incoming_order_id: int):
         # The order status might be stuck unless manually corrected.
         raise Reject(f"Unexpected error: {e}", requeue=False)
 
-# TODO: Define task for polling new/retrying orders (scheduler task)
+# Task to update balances asynchronously
+@celery_app.task(
+    name="backend.worker.tasks.update_balance_task",
+    bind=True,
+    acks_late=True
+)
+def update_balance_task(self, order_id: int):
+    """Async task to update balances for a completed order."""
+    logger.info(f"[Task ID: {self.request.id}] Updating balances for order {order_id}")
+    try:
+        with get_db_session() as db:
+            update_balances_for_completed_order(order_id, db)
+            logger.info(f"[Task ID: {self.request.id}] Balances updated for order {order_id}")
+    except Exception as e:
+        logger.error(f"[Task ID: {self.request.id}] Error updating balances for order {order_id}: {e}", exc_info=True)
+        # Retry the task with default retry policy
+        raise self.retry(exc=e)
+
+# Task to poll incoming orders and enqueue processing tasks
 # @celery_app.task(name="backend.worker.tasks.poll_new_orders_task")
 # def poll_new_orders_task():
-#    logger.info("Polling for new or retrying orders...")
-#    with get_db_session() as db:
-#        # Query IncomingOrder for status='new' OR (status='retrying' AND retry_count < MAX_RETRIES AND last_attempt_at < now - backoff_delay)
-#        # ... complex query needed ...
-#        order_ids_to_process = [...] # Get list of IDs
-#        for order_id in order_ids_to_process:
-#            logger.info(f"Queueing order ID {order_id} for processing.")
-#            process_order_task.delay(order_id) # Send to the processing queue 
+#     """Polls for new or retrying orders and enqueues them for processing."""
+#     logger.info("Polling for new or retrying orders...")
+#     try:
+#         with get_db_session() as db:
+#             max_retries = get_typed_config_value("MAX_ORDER_RETRIES", db, int, default=3)
+#             retry_delay_base = get_typed_config_value("RETRY_DELAY_SECONDS", db, int, default=60)
+#             now = datetime.utcnow()
+#             # Fetch new orders
+#             new_orders = db.query(IncomingOrder).filter(IncomingOrder.status == 'new').all()
+#             # Fetch retrying orders ready for retry
+#             retrying_orders = db.query(IncomingOrder).filter(IncomingOrder.status == 'retrying').all()
+#             orders_to_process = []
+#             orders_to_process.extend(new_orders)
+#             for inc in retrying_orders:
+#                 backoff = retry_delay_base * (2 ** (inc.retry_count or 0))
+#                 if inc.last_attempt_at and inc.last_attempt_at + timedelta(seconds=backoff) <= now:
+#                     orders_to_process.append(inc)
+#             for order in orders_to_process:
+#                 logger.info(f"Queueing order ID {order.id} for processing.")
+#                 process_order_task.delay(order.id)
+#     except Exception as e:
+#         logger.error(f"Error polling and queuing orders: {e}", exc_info=True)
+# 
+# # TODO: Define task for polling new/retrying orders (scheduler task)
+# # @celery_app.task(name="backend.worker.tasks.poll_new_orders_task")
+# # def poll_new_orders_task():
+# #    logger.info("Polling for new or retrying orders...")
+# #    with get_db_session() as db:
+# #        # Query IncomingOrder for status='new' OR (status='retrying' AND retry_count < MAX_RETRIES AND last_attempt_at < now - backoff_delay)
+# #        # ... complex query needed ...
+# #        order_ids_to_process = [...] # Get list of IDs
+# #        for order_id in order_ids_to_process:
+# #            logger.info(f"Queueing order ID {order_id} for processing.")
+# #            process_order_task.delay(order_id) # Send to the processing queue 

@@ -34,7 +34,7 @@
     *   **Реализация:**
         *   Создана модель `ConfigurationSetting` в `backend/database/models.py`.
         *   Создана утилита `get_typed_config_value` в `backend/utils/config_loader.py` для чтения и типизации настроек из БД.
-        *   **Необходимо:** Добавить таблицу через миграцию Alembic и создать скрипт начального заполнения (seed) для значений по умолчанию.
+        *   Создан скрипт начального заполнения (seed) для значений по умолчанию.
     *   **Управление Секретами:** Для **production** окружения настоятельно рекомендуется использовать специализированные системы управления секретами (например, HashiCorp Vault, AWS/GCP/Azure Secrets Manager, K8s Secrets) вместо `.env` файлов для хранения чувствительных данных (пароли БД, JWT Secret, ключи API и т.д.).
 
 ---
@@ -246,7 +246,7 @@
 
 ## 5. Зависимости и Интеграция
 
-*   Необходимо будет добавить новые зависимости (система очередей, кэширование, Sentry SDK, `python-dotenv`, **библиотека для работы с S3-хранилищем**, `slowapi`, `redis[hiredis]`, **`alembic`** и т.д.) в `requirements.txt` и, возможно, в `requirements_worker.txt`.
+*   Необходимо будет добавить новые зависимости (система очередей, кэширование, Sentry SDK, `python-dotenv`, **библиотека для работы с S3-хранилищем**, `slowapi`, `redis[hiredis]` и т.д.) в `requirements.txt` и, возможно, в `requirements_worker.txt`.
 *   API Роутеры (`backend/api_routers`) должны будут использовать `database.utils` и `utils.exceptions` для создания записей `IncomingOrder` и обработки ошибок.
 *   API Роутеры должны вызывать `services.order_status_manager` для изменения статусов ордеров.
 *   Система подтверждения статуса ордера (`completed`/`failed`) должна будет вызывать `services.balance_manager.update_balances_for_completed_order` **(вероятно, асинхронно через Worker)**.
@@ -255,17 +255,8 @@
 
 ## 6. Предварительные шаги (Дополнения)
 
-*   **Миграции БД (Alembic):** 
-    *   Установить `alembic` (`pip install alembic`).
-    *   Инициализировать Alembic в проекте (`alembic init alembic`).
-    *   Настроить `alembic.ini` (указать `sqlalchemy.url`).
-    *   Настроить `alembic/env.py` для корректного импорта метаданных ваших SQLAlchemy моделей (`target_metadata = Base.metadata`).
-    *   Создать начальную миграцию (`alembic revision --autogenerate -m "Initial database schema"`).
-    *   Применить миграцию (`alembic upgrade head`).
-    *   В дальнейшем использовать `alembic revision --autogenerate` и `alembic upgrade head` для всех изменений схемы.
 *   **Заполнение Данных (Seeding):** 
-    *   Создать скрипты для заполнения начальных данных (например, в `alembic/versions/seeds/`).
-    *   Можно использовать операции Alembic `op.bulk_insert` внутри отдельной ревизии (`alembic revision -m "Seed initial data"`) или создать кастомные команды `alembic`. 
+    *   Создать скрипты для заполнения начальных данных (например, в `scripts/`).
     *   Заполнить необходимые справочники (валюты, роли, платежные системы) и создать пользователя-администратора по умолчанию.
 *   **Аутентификация (JWT/OAuth2):** 
     *   Добавить зависимости: `python-jose[cryptography]`, `passlib[bcrypt]`.
@@ -361,7 +352,7 @@
 
 ## 8. Зависимости и Интеграция (Перенумерация)
 
-*   Необходимо будет добавить новые зависимости (система очередей, кэширование, Sentry SDK, `python-dotenv`, библиотека для работы с S3-хранилищем, `slowapi`, `redis[hiredis]`, `alembic`, **библиотеки для JWT/OAuth2** и т.д.) в `requirements.txt` и, возможно, в `requirements_worker.txt`.
+*   Необходимо будет добавить новые зависимости (система очередей, кэширование, Sentry SDK, `python-dotenv`, библиотека для работы с S3-хранилищем, `slowapi`, `redis[hiredis]` и т.д.) в `requirements.txt` и, возможно, в `requirements_worker.txt`.
 *   API Роутеры (`backend/api_routers`) должны будут использовать `database.utils` и `utils.exceptions` для создания записей `IncomingOrder` и обработки ошибок.
 *   API Роутеры должны вызывать `services.order_status_manager` для изменения статусов ордеров.
 *   Система подтверждения статуса ордера (`completed`/`failed`) должна будет вызывать `services.balance_manager.update_balances_for_completed_order` (вероятно, асинхронно через Worker).

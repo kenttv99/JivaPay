@@ -3,7 +3,7 @@
 import logging
 from typing import List, Optional, Any # Any for placeholder user model
 
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Depends, HTTPException, status, Body, UploadFile, File
 from sqlalchemy.orm import Session
 
 # Attempt imports (adjusting paths based on new location)
@@ -19,6 +19,7 @@ try:
     from backend.security import get_current_active_user
     from backend.database.db import Merchant, OrderHistory
     from backend.services.gateway_service import handle_init_request
+    from backend.services.order_status_manager import confirm_payment_by_client as confirm_payment_service
 except ImportError as e:
     # Make error message clearer about location
     raise ImportError(f"Could not import required modules for merchant router (in api_routers/merchant/router.py): {e}")
@@ -110,8 +111,37 @@ def list_merchant_orders(
         logger.error(f"Unexpected error listing orders for merchant {current_merchant.id}: {e}", exc_info=True)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An internal error occurred.")
 
+# --- Client Payment Confirmation Endpoint --- #
+@router.post(
+    "/orders/{order_id}/confirm_payment",
+    response_model=OrderHistoryRead,
+    summary="Confirm payment by client and upload receipt",
+    tags=["Merchant Orders"]
+)
+async def confirm_payment_by_client(
+    order_id: int,
+    receipt_file: UploadFile = File(...),
+    db: Session = Depends(get_db_session),
+    current_merchant: Any = Depends(get_current_active_merchant)
+) -> OrderHistoryRead:
+    """Merchant confirms client payment and uploads receipt for the order."""
+    content = await receipt_file.read()
+    try:
+        updated_order = confirm_payment_service(
+            order_id=order_id,
+            receipt=content,
+            filename=receipt_file.filename,
+            db_session=db
+        )
+        return updated_order
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error confirming payment for order {order_id} by merchant {current_merchant.id}: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
 # TODO: Add other merchant endpoints:
 # - GET /orders/{order_id} (Get specific order details)
 # - POST /orders/{order_id}/confirm_payment (If merchant confirms client payment - depends on flow)
 # - GET /balance (Get merchant balance)
-# - etc. 
+# - etc.
