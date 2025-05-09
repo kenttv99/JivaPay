@@ -37,5 +37,8 @@ boto3 # Or aiobotocore for async
 # HTTP Client (for callbacks etc.)
 httpx
 
+# FastAPI forms parsing
+python-multipart
+
 # Add other project-specific dependencies below
 # ... 
