@@ -5,6 +5,7 @@ uvicorn[standard]
 # Database
 sqlalchemy
 psycopg2-binary # Or psycopg2 if you prefer compiling
+alembic
 
 # Configuration & Environment
 python-dotenv

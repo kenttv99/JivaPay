@@ -31,7 +31,7 @@ def upload_fileobj(file_obj: IO, bucket: str, key: str) -> str:
         ClientError: If upload fails.
     """
     try:
-        _s3_client.upload_fileobj(file_obj, bucket_name=bucket, key=key)
+        _s3_client.upload_fileobj(file_obj, Bucket=bucket, Key=key)
         url = f"{settings.S3_ENDPOINT_URL}/{bucket}/{key}"
         logger.info(f"Uploaded object to S3: {url}")
         return url

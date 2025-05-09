@@ -29,10 +29,16 @@
     - [x] Добавлена модель `ConfigurationSetting`.
     - [x] Добавить остальные модели (`User`, `Order`, etc.).
     - Примечания: Начальная структура моделей.
-- [/] **Базовые Схемы (`shemas_enums/`)**: Схемы Pydantic для передачи данных API.
+- [x] **Базовые Схемы (`shemas_enums/`)**: Схемы Pydantic для передачи данных API.
     - [x] Создан `shemas_enums/order.py` с базовыми схемами ордеров.
-    - [ ] Добавить схемы для других сущностей (User, Requisite, Balance, etc.).
-    - Примечания:
+    - [x] Создан `shemas_enums/reference.py` с Pydantic схемами для справочных данных (BankDetails, PaymentMethodDetails, ExchangeRateDetails).
+    - [x] Добавлены схемы для остальных ключевых сущностей:
+        * `user.py` — базовые схемы пользователя.
+        * `merchant.py` — Merchant, MerchantStore.
+        * `trader.py` — Trader и TraderCommission.
+        * `requisite.py` — ReqTrader и FullRequisiteSettings.
+        * `balance.py` — BalanceStore/Trader и истории.
+    - Примечания: закрыт пункт расширения Pydantic-схем, все основные модели покрыты, ORM-mode включён для чтения из SQLAlchemy.
 - [x] **Скрипт заполнения данных (`scripts/seed_data.py`)**: Для начальных ролей, пользователя-админа, справочных данных.
     - Примечания: Добавлен скрипт `backend/scripts/seed_data.py` для создания ролей и администратора.
 - [x] **Настройка Логирования (`logger.py`)**: Базовая конфигурация структурированного логирования.
@@ -180,5 +186,9 @@
 
 - [x] Создан `shemas_enums/order.py` с базовыми схемами ордеров.
 - [x] Создан `shemas_enums/reference.py` с Pydantic схемами для справочных данных (BankDetails, PaymentMethodDetails, ExchangeRateDetails).
-- [x] Добавить схемы для других сущностей (User, Requisite, Balance, etc.).
-    - Примечания:
+- [x] Добавлены схемы для остальных ключевых сущностей:
+    * `user.py` — базовые схемы пользователя.
+    * `merchant.py` — Merchant, MerchantStore.
+    * `trader.py` — Trader и TraderCommission.
+    * `requisite.py` — ReqTrader и FullRequisiteSettings.
+    * `balance.py` — BalanceStore/Trader и истории.

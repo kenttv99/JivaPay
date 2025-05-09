@@ -89,8 +89,12 @@ def process_incoming_order(incoming_order_id: int):
                 req_id, trader_id = requisite_selector.find_suitable_requisite(incoming_order, db_main)
                 if not req_id or not trader_id:
                     raise RequisiteNotFound(f"No suitable requisite found for order {incoming_order_id}")
-                # 2.4 Calculate commissions
-                store_comm, trader_comm = balance_manager.calculate_commissions(incoming_order, db_main)
+                # 2.4 Calculate commissions (IncomingOrder ещё не содержит trader_id, поэтому передаём явным аргументом)
+                store_comm, trader_comm = balance_manager.calculate_commissions(
+                    incoming_order,
+                    db_main,
+                    trader_id=trader_id,
+                )
                 # 2.5 Create OrderHistory record
                 oh_data = {
                     'incoming_order_id': incoming_order.id,

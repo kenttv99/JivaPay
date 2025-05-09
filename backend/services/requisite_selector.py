@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 # Attempt to import models, DB utils, and exceptions
 try:
     # !! These models need to be defined in backend/database/models.py !!
-    from backend.database.models import (
+    from backend.database.db import (
         IncomingOrder, Trader, ReqTrader, FullRequisitesSettings, OrderHistory
     )
     from backend.database.utils import atomic_transaction # Assuming we might update last_used_at within selection
