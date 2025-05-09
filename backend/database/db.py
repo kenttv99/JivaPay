@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
 from datetime import datetime, timezone
 from typing import Optional, List
-from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.ext.hybrid import hybrid_property
 
 Base = declarative_base()
 
@@ -132,8 +132,10 @@ class MerchantStore(Base):
     order_histories: Mapped[List["OrderHistory"]] = relationship(back_populates="store")
     incoming_orders: Mapped[List["IncomingOrder"]] = relationship(back_populates="store")
 
-    # Удобный доступ к владельцу-мерчанту через промежуточный MerchantStore
-    merchant = association_proxy("store", "merchant")
+    @hybrid_property
+    def merchant(self):
+        """Returns Merchant owner via linked MerchantStore."""
+        return self.store.merchant if self.store else None
 
 class StoreCommission(Base):
     __tablename__ = "store_commissions"
@@ -166,7 +168,10 @@ class BalanceStore(Base):
     crypto_currency: Mapped["CryptoCurrency"] = relationship(back_populates="balance_stores")
 
     # Удобный доступ к владельцу-мерчанту через промежуточный MerchantStore
-    merchant = association_proxy("store", "merchant")
+    @hybrid_property
+    def merchant(self):
+        """Returns Merchant owner via linked MerchantStore."""
+        return self.store.merchant if self.store else None
 
 class BalanceStoreHistory(Base):
     __tablename__ = "balance_store_history"
