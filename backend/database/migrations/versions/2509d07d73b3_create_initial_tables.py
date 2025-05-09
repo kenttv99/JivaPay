@@ -1,8 +1,8 @@
 """create_initial_tables
 
-Revision ID: 1ef2a0c14f32
+Revision ID: 2509d07d73b3
 Revises: 
-Create Date: 2025-05-10 00:36:31.937652
+Create Date: 2025-05-10 00:46:36.198978
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '1ef2a0c14f32'
+revision: str = '2509d07d73b3'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -433,7 +433,7 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['target_method_id'], ['payment_methods.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_incoming_orders_client_id'), 'incoming_orders', ['client_id'], unique=False)
+    op.create_index('ix_incoming_orders_client_id', 'incoming_orders', ['client_id'], unique=False)
     op.create_index(op.f('ix_incoming_orders_id'), 'incoming_orders', ['id'], unique=False)
     op.create_index('ix_incoming_orders_merchant_store', 'incoming_orders', ['merchant_id', 'store_id'], unique=False)
     op.create_index(op.f('ix_incoming_orders_order_type'), 'incoming_orders', ['order_type'], unique=False)
@@ -593,7 +593,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_incoming_orders_order_type'), table_name='incoming_orders')
     op.drop_index('ix_incoming_orders_merchant_store', table_name='incoming_orders')
     op.drop_index(op.f('ix_incoming_orders_id'), table_name='incoming_orders')
-    op.drop_index(op.f('ix_incoming_orders_client_id'), table_name='incoming_orders')
+    op.drop_index('ix_incoming_orders_client_id', table_name='incoming_orders')
     op.drop_table('incoming_orders')
     op.drop_index(op.f('ix_store_gateways_id'), table_name='store_gateways')
     op.drop_table('store_gateways')

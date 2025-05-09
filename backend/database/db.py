@@ -122,8 +122,8 @@ class MerchantStore(Base):
     gateway_require_amount_param: Mapped[bool] = mapped_column(Boolean, default=False)
 
     merchant: Mapped["Merchant"] = relationship(back_populates="stores")
-    crypto_currency: Mapped["CryptoCurrency"] = relationship()
-    fiat_currency: Mapped["FiatCurrency"] = relationship()
+    crypto_currency: Mapped["CryptoCurrency"] = relationship(back_populates="merchant_stores")
+    fiat_currency: Mapped["FiatCurrency"] = relationship(back_populates="merchant_stores")
     store_commissions: Mapped[List["StoreCommission"]] = relationship(back_populates="store", cascade="all, delete-orphan")
     store_gateways: Mapped[List["StoreGateway"]] = relationship(back_populates="store", cascade="all, delete-orphan")
     balance_stores: Mapped[List["BalanceStore"]] = relationship(back_populates="store", cascade="all, delete-orphan")
@@ -577,7 +577,7 @@ class FiatCurrency(Base):
     balance_trader_fiat_history: Mapped[List["BalanceTraderFiatHistory"]] = relationship(foreign_keys="[BalanceTraderFiatHistory.fiat_id]", back_populates="fiat")
     balance_traders: Mapped[List["BalanceTrader"]] = relationship(back_populates="fiat_currency")
     store_addresses: Mapped[List["StoreAddress"]] = relationship(back_populates="fiat_currency")
-    merchant_stores: Mapped[List["MerchantStore"]] = relationship(foreign_keys="[MerchantStore.fiat_currency_id]") # Removed back_populates if only one relationship needed
+    merchant_stores: Mapped[List["MerchantStore"]] = relationship(back_populates="fiat_currency")
 
     country: Mapped["Country"] = relationship(back_populates="fiat_currencies")
 
@@ -590,11 +590,10 @@ class CryptoCurrency(Base):
     description: Mapped[Optional[str]] = mapped_column(String(255))
     access: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    merchant_stores: Mapped[List["MerchantStore"]] = relationship(foreign_keys="[MerchantStore.crypto_currency_id]")
+    merchant_stores: Mapped[List["MerchantStore"]] = relationship(back_populates="crypto_currency")
     balance_stores: Mapped[List["BalanceStore"]] = relationship(back_populates="crypto_currency")
     balance_store_history: Mapped[List["BalanceStoreHistory"]] = relationship(back_populates="crypto_currency")
     trader_balance_history: Mapped[List["BalanceTraderCryptoHistory"]] = relationship(back_populates="crypto_currency")
-    # traders: Mapped[List["Trader"]] = relationship(back_populates="crypto_currency") # Corrected this, should link via trader.crypto_currency_id
 
 class Country(Base):
     __tablename__ = "countries"
