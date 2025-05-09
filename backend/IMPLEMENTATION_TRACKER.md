@@ -15,20 +15,20 @@
 
 - [x] **Создание Базовых Директорий**: `backend/services/`, `backend/utils/`, `backend/worker/` (с файлами `__init__.py`).
     - Примечания: Созданы начальные директории для сервисов, утилит и воркера.
-- [ ] **Конфигурация**:
+- [x] **Конфигурация**:
     - [x] Обработка переменных окружения (`.env`, `pydantic-settings`) для секретов и базовых подключений.
-      - Примечания: Реализовано через Pydantic Settings в `backend/config/settings.py`.
-    - [x] Создание модели `ConfigurationSetting` в `backend/database/models.py` для настроек в БД.
+      - Примечания: Реализовано через Pydantic Settings в `backend/config/settings.py`. **Критическое исправление v2025.05.10**: Обеспечена консистентность `.env` и `docker-compose.yml` для `DATABASE_URL`, `POSTGRES_USER/PASSWORD/DB`. Устранены жестко прописанные URL в `docker-compose.yml` для API-сервисов (теперь используют `env_file`), что решило проблему `password authentication failed`. Скорректирован `.env` для правильного использования внутренних и внешних портов и сборки URL из частей.
+    - [x] Создание модели `ConfigurationSetting` в `backend/database/models.py`.
     - [x] Создание модели `ConfigurationSetting` в `backend/database/db.py` для настроек в БД.
     - [x] Создание утилиты `backend/utils/config_loader.py` для чтения настроек из БД.
     - [x] Создание скрипта `seed` для настроек по умолчанию.
-      - Примечания: Добавлен скрипт `backend/scripts/seed_config.py` для заполнения конфигурации по умолчанию.
+      - Примечания: Добавлен скрипт `backend/scripts/seed_config.py` для заполнения конфигурации по умолчанию. **Дополнение v2025.05.10**: Рекомендовано создать миграцию Alembic для добавления `RATE_LIMIT_DEFAULT` в `configuration_settings` для обеспечения его наличия в БД.
     - Примечания: Модель перенесена из `models.py` в `db.py`, удалён дублирующий файл `models.py` для единства моделей.
-- [x] **Основные Модели (`backend/database/models.py`)**:
-    - [x] Создан файл `models.py` и определен `Base`.
+- [x] **Основные Модели (`backend/database/db.py`)**:
+    - [x] Создан файл `db.py` и определен `Base`.
     - [x] Добавлена модель `ConfigurationSetting`.
     - [x] Добавить остальные модели (`User`, `Order`, etc.).
-    - Примечания: Начальная структура моделей.
+    - Примечания: Начальная структура моделей. **Критическое исправление v2025.05.10**: Устранены конфликты `relationship` и `@hybrid_property` (удалены гибридные свойства `merchant` в `MerchantStore`, `BalanceStore`). **Исправление v2025.05.10**: Устранены `SAWarning` о конфликтующих `relationship` путем добавления `back_populates` в моделях `MerchantStore`, `FiatCurrency`, `CryptoCurrency`. Рекомендовано сгенерировать "проверочную" миграцию Alembic после этих изменений в `relationship`.
 - [x] **Базовые Схемы (`shemas_enums/`)**: Схемы Pydantic для передачи данных API.
     - [x] Создан `shemas_enums/order.py` с базовыми схемами ордеров.
     - [x] Создан `shemas_enums/reference.py` с Pydantic схемами для справочных данных (BankDetails, PaymentMethodDetails, ExchangeRateDetails).
@@ -168,6 +168,9 @@
     - Примечания:
 - [ ] **Стратегия Развертывания Без Простоя**: Определить подход (например, blue-green, canary).
     - Примечания:
+- [ ] **Конфигурация Redis (на хосте сервера)**:
+    - Статус: [ ]
+    - Примечания: **Рекомендация v2025.05.10**: Обнаружено предупреждение Redis `Memory overcommit must be enabled!`. Рекомендовано исправить на хост-машине сервера (`vm.overcommit_memory = 1`) для стабильности в production.
 
 ## 10. Документация
 
@@ -182,13 +185,12 @@
 
 *Не забывайте обновлять этот трекер по мере выполнения задач.* 
 
-## 11. Базовые Схемы (`shemas_enums/`)
+## 11. Миграции Базы Данных (Alembic)
 
-- [x] Создан `shemas_enums/order.py` с базовыми схемами ордеров.
-- [x] Создан `shemas_enums/reference.py` с Pydantic схемами для справочных данных (BankDetails, PaymentMethodDetails, ExchangeRateDetails).
-- [x] Добавлены схемы для остальных ключевых сущностей:
-    * `user.py` — базовые схемы пользователя.
-    * `merchant.py` — Merchant, MerchantStore.
-    * `trader.py` — Trader и TraderCommission.
-    * `requisite.py` — ReqTrader и FullRequisiteSettings.
-    * `balance.py` — BalanceStore/Trader и истории.
+- [x] Начальная настройка Alembic (`alembic.ini`, `env.py`).
+  - Примечания: **Критическое исправление v2025.05.10**: `script_location` в `alembic.ini` исправлен на `%(here)s`. `sys.path` в `env.py` скорректирован для правильного импорта модуля `backend`, что решило `ModuleNotFoundError`.
+- [x] Создание и применение начальной миграции для всей схемы БД.
+  - Примечания: **Критическое исправление v2025.05.10**: Предыдущая "начальная" миграция (`bf61fdc9c46b`) была некорректной (не создавала ключевые таблицы, а пыталась их модифицировать). Рекомендовано удалить ее, очистить локальную БД и сгенерировать новую чистую начальную миграцию (`alembic revision -m "create_full_initial_schema" --autogenerate`), затем вручную откорректировать порядок создания таблиц в ней для соблюдения FK-зависимостей. Это должно решить ошибку `relation "..." does not exist` при `alembic upgrade head`.
+- [ ] Добавление миграции для `RATE_LIMIT_DEFAULT` в `configuration_settings`.
+  - Статус: [ ]
+  - Примечания: Рекомендовано после решения основных проблем с запуском.
