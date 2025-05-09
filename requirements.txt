@@ -19,6 +19,9 @@ celery[redis] # If using Celery
 redis[hiredis]
 slowapi
 
+# Email validation for Pydantic
+email-validator
+
 # Error Reporting
 sentry-sdk[fastapi]
 

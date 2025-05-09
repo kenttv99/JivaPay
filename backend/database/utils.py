@@ -10,11 +10,11 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError, NoResultFound
 # Attempt to import SessionLocal and Base
 try:
     from backend.database.engine import SessionLocal
-    from backend.database.models import Base # Assuming Base is defined here
+    from backend.database.db import Base # Base declared in db.py
 except ImportError:
     # Adjust relative path if needed for different execution contexts
     from .engine import SessionLocal
-    from .models import Base
+    from .db import Base
 
 # Attempt to import custom exceptions
 try:
