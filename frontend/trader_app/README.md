@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# JivaPay Приложение Трейдера
 
-## Getting Started
+Это приложение трейдера платформы JivaPay, построенное на Next.js и TypeScript. Оно предоставляет трейдерам интерфейс для:
 
-First, run the development server:
+- Управления и настройки реквизитов платежей
+- Получения и обработки назначенных ордеров с обновлениями в реальном времени
+- Отслеживания истории фиатных и крипто балансов
 
+## Документация
+
+- [Обзор проекта](../../README.md)
+- [План архитектуры фронтенда](../../frontend/README_ARCHITECTURE_PLAN.md)
+- [Руководство по структуре фронтенда](../../frontend_structure_guide.md)
+
+## Быстрый старт
+
+Установите зависимости:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+# или
+yarn install
+# или
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Запустите сервер разработки:
+```bash
+npm run dev
+# или
+yarn dev
+# или
+pnpm dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Откройте http://localhost:3000 в браузере.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Сборка для продакшена
 
-## Learn More
+```bash
+npm run build
+npm run start
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Вклад в проект
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Соблюдайте стандарты кодирования, описанные в `eslint.config.mjs` и `tsconfig.json`. Для тестирования смотрите рекомендации в плане архитектуры фронтенда.

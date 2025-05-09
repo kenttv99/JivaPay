@@ -1,0 +1,37 @@
+# Core FastAPI & Server
+fastapi
+uvicorn[standard]
+
+# Database
+sqlalchemy
+psycopg2-binary # Or psycopg2 if you prefer compiling
+alembic
+
+# Configuration & Environment
+python-dotenv
+pydantic-settings
+
+# Asynchronous Tasks (Choose one)
+celery[redis] # If using Celery
+# dramatiq[redis, watch] # If using Dramatiq
+
+# Caching & Rate Limiting
+redis[hiredis]
+slowapi
+
+# Error Reporting
+sentry-sdk[fastapi]
+
+# Authentication (Will be needed soon)
+python-jose[cryptography]
+passlib[bcrypt]
+oauth2 # Typically part of fastapi or other libs, but explicitly listed if needed
+
+# S3 Storage (Will be needed soon)
+boto3 # Or aiobotocore for async
+
+# HTTP Client (for callbacks etc.)
+httpx
+
+# Add other project-specific dependencies below
+# ... 
