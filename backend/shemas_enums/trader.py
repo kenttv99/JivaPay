@@ -20,7 +20,7 @@ class TraderRead(TraderBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes= True
 
 
 class TraderCommissionRead(BaseModel):
@@ -31,4 +31,4 @@ class TraderCommissionRead(BaseModel):
     updated_at: datetime
 
     class Config:
-        orm_mode = True 
+        from_attributes= True 

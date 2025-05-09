@@ -5,4 +5,4 @@ class SupportLogin(BaseModel):
     password: str = Field(..., min_length=6, description="Password for support account")
 
     class Config:
-        orm_mode = True 
+        from_attributes= True 

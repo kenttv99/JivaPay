@@ -18,6 +18,7 @@ celery[redis] # If using Celery
 # Caching & Rate Limiting
 redis[hiredis]
 slowapi
+cachetools
 
 # Email validation for Pydantic
 email-validator

@@ -1,4 +1,6 @@
-from pydantic import BaseSettings, Field
+# pydantic v2: BaseSettings вынесен в пакет pydantic_settings
+from pydantic_settings import BaseSettings
+from pydantic import Field
 
 class Settings(BaseSettings):
     # Database settings
@@ -25,9 +27,11 @@ class Settings(BaseSettings):
     S3_BUCKET_NAME: str = Field(None, env='S3_BUCKET_NAME')
     S3_ENDPOINT_URL: str = Field(None, env='S3_ENDPOINT_URL')
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = 'utf-8'
+    # pydantic v2 -> model_config вместо класса Config
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+    }
 
 # Singleton for app
 settings = Settings() 

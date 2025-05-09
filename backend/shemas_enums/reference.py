@@ -11,7 +11,7 @@ class BankDetails(BaseModel):
     access: bool = Field(..., description="Is the bank available for transactions?")
 
     class Config:
-        orm_mode = True
+        from_attributes= True
 
 class PaymentMethodDetails(BaseModel):
     id: int
@@ -20,7 +20,7 @@ class PaymentMethodDetails(BaseModel):
     access: bool = Field(..., description="Is the payment method active?")
 
     class Config:
-        orm_mode = True
+        from_attributes= True
 
 class ExchangeRateDetails(BaseModel):
     id: int
@@ -33,4 +33,4 @@ class ExchangeRateDetails(BaseModel):
     updated_at: Optional[datetime] = Field(None, description="Timestamp of last update")
 
     class Config:
-        orm_mode = True 
+        from_attributes= True 

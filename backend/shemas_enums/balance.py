@@ -12,7 +12,7 @@ class BalanceStoreRead(BaseModel):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes= True
 
 
 class BalanceTraderRead(BaseModel):
@@ -23,7 +23,7 @@ class BalanceTraderRead(BaseModel):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes= True
 
 
 class BalanceStoreHistoryRead(BaseModel):
@@ -38,7 +38,7 @@ class BalanceStoreHistoryRead(BaseModel):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes= True
 
 
 class BalanceTraderFiatHistoryRead(BaseModel):
@@ -54,7 +54,7 @@ class BalanceTraderFiatHistoryRead(BaseModel):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes= True
 
 
 class BalanceTraderCryptoHistoryRead(BaseModel):
@@ -70,4 +70,4 @@ class BalanceTraderCryptoHistoryRead(BaseModel):
     created_at: datetime
 
     class Config:
-        orm_mode = True 
+        from_attributes= True 

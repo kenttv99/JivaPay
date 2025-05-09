@@ -34,7 +34,7 @@ class IncomingOrderRead(OrderBase):
     last_attempt_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True # Enable reading data from ORM models
+        from_attributes= True # Enable reading data from ORM models
         # For Pydantic v2: from_attributes = True
 
 # --- Order History Schemas --- #
@@ -55,7 +55,7 @@ class OrderHistoryRead(IncomingOrderRead):
     disputed_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes= True
         # For Pydantic v2: from_attributes = True
 
 # --- Schemas for Status Updates --- #

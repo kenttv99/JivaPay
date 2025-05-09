@@ -22,7 +22,7 @@ class RequisiteRead(RequisiteBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes= True
 
 
 class FullRequisiteSettingsRead(BaseModel):
@@ -37,4 +37,4 @@ class FullRequisiteSettingsRead(BaseModel):
     turnover_day_max: Decimal
 
     class Config:
-        orm_mode = True 
+        from_attributes= True 

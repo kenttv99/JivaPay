@@ -18,7 +18,7 @@ class MerchantRead(MerchantBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes= True
 
 
 class MerchantStoreBase(BaseModel):
@@ -44,4 +44,4 @@ class MerchantStoreRead(MerchantStoreBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True 
+        from_attributes= True 
