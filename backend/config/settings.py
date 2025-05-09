@@ -1,6 +1,7 @@
 # pydantic v2: BaseSettings вынесен в пакет pydantic_settings
 from pydantic_settings import BaseSettings
 from pydantic import Field
+from typing import Optional
 
 class Settings(BaseSettings):
     # Database settings
@@ -10,8 +11,8 @@ class Settings(BaseSettings):
     REDIS_URL: str = Field(..., env='REDIS_URL')
 
     # Celery settings
-    CELERY_BROKER_URL: str = Field(None, env='CELERY_BROKER_URL')
-    CELERY_RESULT_BACKEND: str = Field(None, env='CELERY_RESULT_BACKEND')
+    CELERY_BROKER_URL: Optional[str] = Field(None, env='CELERY_BROKER_URL')
+    CELERY_RESULT_BACKEND: Optional[str] = Field(None, env='CELERY_RESULT_BACKEND')
 
     # Sentry
     SENTRY_DSN: str = Field(None, env='SENTRY_DSN')
@@ -31,6 +32,7 @@ class Settings(BaseSettings):
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",
+        "extra": "ignore",
     }
 
 # Singleton for app

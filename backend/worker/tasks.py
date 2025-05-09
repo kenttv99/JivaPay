@@ -127,6 +127,11 @@ def update_balance_task(self, order_id: int):
         # Retry the task with default retry policy
         raise self.retry(exc=e)
 
+# Backward compatibility alias (legacy import path in order_status_manager etc.)
+# Celery will treat it as the same task but we expose different name at python level.
+
+update_balances_task = update_balance_task
+
 # Task to poll incoming orders and enqueue processing tasks
 # @celery_app.task(name="backend.worker.tasks.poll_new_orders_task")
 # def poll_new_orders_task():
