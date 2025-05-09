@@ -49,7 +49,7 @@ services:
       S3_SECRET_KEY: minio123
       S3_BUCKET_NAME: jivapay
     ports:
-      - '8001:8000'
+      - '18001:8000'
     depends_on:
       - postgres
       - redis
