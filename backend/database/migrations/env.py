@@ -2,11 +2,16 @@ from logging.config import fileConfig
 import os
 from dotenv import load_dotenv
 from pathlib import Path
+import sys
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
+
+# Добавляем путь к корневой директории проекта JivaPay
+# Это JivaPay, если env.py в JivaPay/backend/database/migrations/env.py
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 
 from backend.database.db import Base
 
