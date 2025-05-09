@@ -10,12 +10,12 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - '5432:5432'
+      - '15432:5432'
 
   redis:
     image: redis:6-alpine
     ports:
-      - '6379:6379'
+      - '16379:6379'
 
   # S3-compatible storage for development
   minio:
