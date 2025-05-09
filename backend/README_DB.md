@@ -53,7 +53,7 @@
     *   stores: Mapped[List["MerchantStore"]] = relationship(back_populates="merchant")
     *   incoming_orders: Mapped[List["IncomingOrder"]] = relationship(back_populates="merchant")
     *   order_history: Mapped[List["OrderHistory"]] = relationship(back_populates="merchant")
-    *   balance_stores: Mapped[List["BalanceStore"]] = relationship(back_populates="merchant")
+    *   balance_stores: Mapped[List["BalanceStore"]] = relationship("BalanceStore", secondary="merchant_stores", primaryjoin="Merchant.id == MerchantStore.merchant_id", secondaryjoin="BalanceStore.store_id == MerchantStore.id", viewonly=True, lazy="dynamic") # Связь через merchant_stores
 
 *   `merchant_stores`: Хранит информацию о магазинах, созданных мерчантами.
     *   **Ключевые поля:**
@@ -61,7 +61,6 @@
         *   `store_name`: Название магазина.
         *   `crypto_currency_id`: Основная *криптовалюта* для баланса и работы магазина.
         *   `fiat_currency_id`: Основное *фиатное* направление работы магазина.
-        *   `balance`: Текущий *крипто*-баланс магазина (DECIMAL 20, 8).
         *   `lower_limit`, `upper_limit`: Лимиты (мин/макс) для суммы ордеров *в фиатной валюте* (DECIMAL 20, 2).
         *   `public_api_key`, `private_api_key`: API ключи магазина (Внимание: `private_api_key` требует безопасного хранения/хеширования в приложении).
         *   `pay_in_enabled`, `pay_out_enabled`: Флаги, разрешающие прием (PayIn) или выплаты (PayOut) для всего магазина.
@@ -163,7 +162,7 @@
     *   `created_at`, `updated_at`: Временные метки.
     *   incoming_order: Mapped["IncomingOrder"] = relationship(back_populates="assigned_order_rel")
     *   trader: Mapped["Trader"] = relationship(back_populates="order_history")
-    *   requisite: Mapped["ReqTrader"] = relationship() # Связь без back_populates
+    *   requisite: Mapped["ReqTrader"] = relationship(back_populates="order_histories")
     *   merchant: Mapped["Merchant"] = relationship(back_populates="order_history")
     *   store: Mapped["MerchantStore"] = relationship(back_populates="order_history")
     *   balance_store_history: Mapped[List["BalanceStoreHistory"]] = relationship(back_populates="order")
