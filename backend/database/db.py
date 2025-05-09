@@ -5,6 +5,7 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
 from datetime import datetime, timezone
 from typing import Optional, List
+from sqlalchemy.ext.associationproxy import association_proxy
 
 Base = declarative_base()
 
@@ -87,7 +88,15 @@ class Merchant(Base):
     stores: Mapped[List["MerchantStore"]] = relationship(back_populates="merchant", cascade="all, delete-orphan")
     incoming_orders: Mapped[List["IncomingOrder"]] = relationship(back_populates="merchant")
     order_histories: Mapped[List["OrderHistory"]] = relationship(back_populates="merchant")
-    balance_stores: Mapped[List["BalanceStore"]] = relationship(back_populates="merchant") # Assuming relationship exists
+    # Дружественная связь к BalanceStore через промежуточную таблицу merchant_stores.
+    balance_stores: Mapped[List["BalanceStore"]] = relationship(
+        "BalanceStore",
+        secondary="merchant_stores",
+        primaryjoin="Merchant.id == MerchantStore.merchant_id",
+        secondaryjoin="BalanceStore.store_id == MerchantStore.id",
+        viewonly=True,
+        lazy="dynamic",
+    )
     store_addresses: Mapped[List["StoreAddress"]] = relationship(back_populates="merchant") # Assuming relationship exists
 
 class MerchantStore(Base):
@@ -123,6 +132,9 @@ class MerchantStore(Base):
     order_histories: Mapped[List["OrderHistory"]] = relationship(back_populates="store")
     incoming_orders: Mapped[List["IncomingOrder"]] = relationship(back_populates="store")
 
+    # Удобный доступ к владельцу-мерчанту через промежуточный MerchantStore
+    merchant = association_proxy("store", "merchant")
+
 class StoreCommission(Base):
     __tablename__ = "store_commissions"
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
@@ -152,6 +164,9 @@ class BalanceStore(Base):
 
     store: Mapped["MerchantStore"] = relationship(back_populates="balance_stores")
     crypto_currency: Mapped["CryptoCurrency"] = relationship(back_populates="balance_stores")
+
+    # Удобный доступ к владельцу-мерчанту через промежуточный MerchantStore
+    merchant = association_proxy("store", "merchant")
 
 class BalanceStoreHistory(Base):
     __tablename__ = "balance_store_history"
