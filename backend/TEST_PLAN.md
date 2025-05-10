@@ -12,15 +12,15 @@
 | Сервис | Команда | Ожидаемый результат |
 | ------ | ------- | ------------------- |
 | Docker-контейнеры | `docker compose ps` | Все контейнеры в состоянии `Up` |
-| Postgres | `docker exec -it postgres-1 pg_isready` | `accepting connections` |
-| Redis | `docker exec -it redis-1 redis-cli PING` | `PONG` |
-| Backend APIs | `curl -fsSL http://127.0.0.1:8000/health` | `{"status":"ok"}` |
-| Worker | в логах `worker-1` строка `ready.` | Есть |
+| Postgres | `docker compose exec postgres pg_isready` | `accepting connections` |
+| Redis | `docker compose exec redis redis-cli PING` | `PONG` |
+| Backend APIs | `curl -fsSL http://127.0.0.1:<PORT>/health` (merchant 18001, trader 8002, gateway 8003, admin 8004, support 8005) | `{"status":"ok"}` |
+| Worker | в логах сервиса `worker` строка `ready.` | Есть |
 
 ## 2. Проверка базовой аутентификации
 1. Получить токен администратора (seed-данные):
    ```bash
-   curl -X POST http://127.0.0.1:8000/api/admin/auth/token \
+   curl -X POST http://127.0.0.1:8004/api/admin/auth/token \
         -d 'username=admin@example.com&password=admin123' \
         -H 'Content-Type: application/x-www-form-urlencoded'
    # → JSON с `access_token`
@@ -33,7 +33,7 @@
 
 ```bash
 # 101 быстрый запрос в цикле
-for i in $(seq 1 101); do curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8000/health; done
+for i in $(seq 1 101); do curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:18001/health; done
 ```
 Ожидаем: первые 100 → 200, 101-й → 429.
 
@@ -41,13 +41,13 @@ for i in $(seq 1 101); do curl -s -o /dev/null -w "%{http_code}\n" http://127.0.
 ```bash
 TOKEN=<ADMIN_TOKEN>
 # 4.1 Мерчант
-curl -X POST http://127.0.0.1:8000/admin/register/merchant \
+curl -X POST http://127.0.0.1:8004/admin/register/merchant \
      -H "Authorization: Bearer $TOKEN" \
      -H 'Content-Type: application/json' \
      -d '{"email":"merchant1@example.com","password":"m123","company_name":"Shop Ltd"}'
 # 4.2 Логин мерчанта → получить MERCHANT_TOKEN
 # 4.3 Создать магазин
-curl -X POST http://127.0.0.1:8000/api/merchant/stores \
+curl -X POST http://127.0.0.1:18001/api/merchant/stores \
      -H "Authorization: Bearer $MERCHANT_TOKEN" \
      -H 'Content-Type: application/json' \
      -d '{"store_name":"Main Store","crypto_currency_id":1,"fiat_currency_id":1}'
@@ -58,7 +58,7 @@ curl -X POST http://127.0.0.1:8000/api/merchant/stores \
 ```bash
 API_KEY=<PUBLIC_API_KEY_STORE>
 # Init pay-in
-curl -X POST http://127.0.0.1:8000/payin/init \
+curl -X POST http://127.0.0.1:8003/payin/init \
      -H 'Content-Type: application/json' \
      -H "X-API-KEY: $API_KEY" \
      -d '{"amount":100.50,"customer_id":"CUST-42"}'
@@ -71,7 +71,7 @@ curl -X POST http://127.0.0.1:8000/payin/init \
 ## 6. Проверка Celery
 ```bash
 # Отправить ping-задачу
-curl -X POST http://127.0.0.1:8000/debug/celery/ping
+curl -X POST http://127.0.0.1:8004/debug/celery/ping
 # Логи worker: task succeeded → "pong"
 ```
 
