@@ -30,7 +30,6 @@ def get_config_value(key: str, db: Session, default: Optional[str] = None) -> Op
     Returns:
         The configuration value as a string, or the default value.
     """
-    # TODO: Implement caching (e.g., TTLCache or Redis) to avoid frequent DB queries.
     try:
         setting = db.query(ConfigurationSetting).filter(ConfigurationSetting.key == key).one_or_none()
         if setting:

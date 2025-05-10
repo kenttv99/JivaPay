@@ -41,4 +41,6 @@ httpx
 python-multipart
 
 # Add other project-specific dependencies below
-# ... 
+# ...
+
+aioboto3>=12.0 

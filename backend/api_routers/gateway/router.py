@@ -14,7 +14,7 @@ try:
     from backend.shemas_enums.order import IncomingOrderCreate, IncomingOrderRead # Reuse or adapt
     # !! Need Gateway Service !!
     from backend.services.gateway_service import handle_init_request, get_order_status, handle_client_confirmation
-    from backend.utils.s3_client import upload_fileobj
+    from backend.utils.s3_client import upload_file_async
     from backend.config.settings import settings
     from backend.utils.exceptions import JivaPayException, OrderProcessingError
 except ImportError as e:
@@ -107,8 +107,9 @@ async def confirm_payin_payment(
         if receipt_file:
             content = await receipt_file.read()
             buffer = io.BytesIO(content)
+            buffer.seek(0)
             key = f"receipts/{order_identifier}/{receipt_file.filename}"
-            uploaded_url = upload_fileobj(buffer, settings.S3_BUCKET_NAME, key)
+            uploaded_url = await upload_file_async(buffer, settings.S3_BUCKET_NAME, key)
         updated = handle_client_confirmation(order_identifier, uploaded_url, db)
         return updated
 

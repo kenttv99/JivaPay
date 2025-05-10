@@ -86,8 +86,11 @@
     - Примечания: Реализована логика пороговой проверки из конфигурации (deny/manual review).
 - [x] **Сервис Шлюза (`services/gateway_service.py`)**: Логика обработки запросов API шлюза.
     - Примечания: Реализован secure API-key lookup, создание IncomingOrder, получение статуса и подтверждение клиентом.
+    - [/] **TODO**: Реализовать глубокую валидацию входящих запросов (проверка разрешённых валют, обязательных полей, лимитов магазина).
+        - Добавить unit-тесты на валидацию.
 - [x] **Сервис Коллбэков (`services/callback_service.py`)**: Отправка коллбэков мерчантам.
     - Примечания: Реализована генерация HMAC-SHA256 подписи, асинхронная отправка POST через httpx, обработка ошибок.
+    - [/] **TODO**: Финализировать структуру payload для мерчанта, задокументировать в README_API, опционально логировать body ответа мерчанта.
 
 ## 4. Утилиты (`utils/`)
 
@@ -106,6 +109,10 @@
     - Примечания: Реализованы `/api/merchant/auth/token`, `/api/trader/auth/token` и `/support/auth/login`.
 - [x] **Роутер Мерчанта (`api_routers/merchant/router.py`)**: Эндпоинты для мерчантов.
     - Примечания: Реализованы POST `/orders` и GET `/orders` с бизнес-логикой через gateway_service.
+    - [/] **TODO**: Добавить:
+        * GET `/orders/{order_id}` (детали ордера)
+        * GET `/balance` (текущий баланс магазина)
+        * При необходимости другие вспомогательные эндпоинты.
 - [x] **Роутер Трейдера (`api_routers/trader/router.py`)**: Эндпоинты для трейдеров.
     - Примечания: Реализованы GET `/orders`, POST `/orders/{order_id}/confirm`, POST `/orders/{order_id}/cancel` с вызовом order_status_manager.
 - [x] **Роутер Администратора (`api_routers/admin/register.py`)**: Эндпоинты для админов.
@@ -132,8 +139,7 @@
 - [ ] **Настройка Очереди Недоставленных Сообщений (DLQ)**: Настроить DLQ для неудавшихся задач.
 - [x] **Задача Планировщика (`worker/tasks.py:poll_new_orders_task`)**: Задача для поиска и постановки ордеров в очередь.
     - Примечания: TODO - реализовать логику запроса и отправки в `process_order_task`.
-- [ ] **Настройка Celery Beat / Scheduler**: Настроить периодический запуск `poll_new_orders_task`.
-    - Примечания:
+    - [/] **TODO**: Разкомментировать и довести до production-уровня `poll_new_orders_task`; настроить Celery Beat (или внешнее расписание) для её выполнения.
 
 ## 7. Middleware (`middleware/`)
 
@@ -144,6 +150,7 @@
 - [x] **Ограничение Частоты Запросов (`slowapi` + Redis)**: 
     - [x] Настроено в `middleware/rate_limiting.py` (Limiter, RedisStorage, Handler).
     - [x] Интегрировано в `main.py` (Middleware, Exception Handler).
+    - [x] TODO закрыт: Чтение лимитов из БД реализовано в `get_default_rate_limit()`; комментарии в коде актуализированы.
 - [x] Применить лимиты к роутерам/эндпоинтам.
     - Примечания: Глобальные лимиты применены через SlowAPIMiddleware в каждом server.py
 
@@ -172,25 +179,20 @@
     - Статус: [ ]
     - Примечания: **Рекомендация v2025.05.10**: Обнаружено предупреждение Redis `Memory overcommit must be enabled!`. Рекомендовано исправить на хост-машине сервера (`vm.overcommit_memory = 1`) для стабильности в production.
 
-## 10. Документация
+## 10. Миграции Базы Данных (Alembic)
 
-- [ ] **Документация API (Авто-генерируемая)**: Убедиться, что спецификация OpenAPI точна и удобна для пользователя.
-    - Примечания:
-- [x] **Обновления README_IMPLEMENTATION_PLAN.md**: План обновлен для отражения подхода к конфигурации.
-    - Примечания:
-- [ ] **Обновления README**: Поддерживать файлы документации (`README_DB.md`, `README_COMPONENTS.md`, и т.д.) в актуальном состоянии.
-    - Примечания:
-
----
-
-*Не забывайте обновлять этот трекер по мере выполнения задач.* 
-
-## 11. Миграции Базы Данных (Alembic)
-
-- [x] Начальная настройка Alembic (`alembic.ini`, `env.py`).
-  - Примечания: **Критическое исправление v2025.05.10**: `script_location` в `alembic.ini` исправлен на `%(here)s`. `sys.path` в `env.py` скорректирован для правильного импорта модуля `backend`, что решило `ModuleNotFoundError`.
-- [x] Создание и применение начальной миграции для всей схемы БД.
-  - Примечания: **Критическое исправление v2025.05.10**: Предыдущая "начальная" миграция (`bf61fdc9c46b`) была некорректной (не создавала ключевые таблицы, а пыталась их модифицировать). Рекомендовано удалить ее, очистить локальную БД и сгенерировать новую чистую начальную миграцию (`alembic revision -m "create_full_initial_schema" --autogenerate`), затем вручную откорректировать порядок создания таблиц в ней для соблюдения FK-зависимостей. Это должно решить ошибку `relation "..." does not exist` при `alembic upgrade head`.
 - [ ] Добавление миграции для `RATE_LIMIT_DEFAULT` в `configuration_settings`.
-  - Статус: [ ]
   - Примечания: Рекомендовано после решения основных проблем с запуском.
+- [/] Добавление миграции для `RATE_LIMIT_DEFAULT` в `configuration_settings`.
+  - Примечания: seed-скрипт уже добавляет ключ при инициализации, но для существующих БД нужна миграция Alembic «`add_rate_limit_default_setting`»:
+    ```python
+    def upgrade():
+        op.execute("""
+            INSERT INTO configuration_settings(key, value, description)
+            VALUES ('RATE_LIMIT_DEFAULT', '100/minute', 'Default per-IP rate-limit (100 req/min)')
+            ON CONFLICT (key) DO NOTHING;
+        """)
+    def downgrade():
+        op.execute("DELETE FROM configuration_settings WHERE key='RATE_LIMIT_DEFAULT';")
+    ```
+    Сгенерировать и применить на сервере.
