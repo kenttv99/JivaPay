@@ -10,7 +10,7 @@ WORKDIR /app
 # Install dependencies
 COPY requirements.txt .
 RUN pip install --upgrade pip --disable-pip-version-check \
-    && pip install --no-cache-dir --disable-pip-version-check --jobs 4 -r requirements.txt
+    && pip install --no-cache-dir --disable-pip-version-check -r requirements.txt
 
 # Copy application code
 COPY . . 
