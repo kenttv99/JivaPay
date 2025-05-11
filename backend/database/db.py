@@ -68,6 +68,8 @@ class User(Base):
     trader_profile: Mapped[Optional["Trader"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     admin_profile: Mapped[Optional["Admin"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     support_profile: Mapped[Optional["Support"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    # New TeamLead profile (manages traders)
+    teamlead_profile: Mapped[Optional["TeamLead"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
     audit_logs: Mapped[List["AuditLog"]] = relationship(back_populates="user")
 
@@ -214,11 +216,15 @@ class Trader(Base):
     time_zone_id: Mapped[Optional[int]] = mapped_column(ForeignKey('time_zones.id'))
     base_pay_in_limit: Mapped[Decimal] = mapped_column(DECIMAL(20, 2), nullable=False, default=0) # Base limit set before token creation
     base_pay_out_limit: Mapped[Decimal] = mapped_column(DECIMAL(20, 2), nullable=False, default=0) # Base limit set before token creation
+    # Link to TeamLead supervising this trader (nullable)
+    team_lead_id: Mapped[Optional[int]] = mapped_column(ForeignKey('teamleads.id', ondelete='SET NULL'), index=True)
 
     user: Mapped["User"] = relationship(back_populates="trader_profile")
     preferred_fiat_currency: Mapped[Optional["FiatCurrency"]] = relationship(foreign_keys=[preferred_fiat_currency_id])
     crypto_currency: Mapped[Optional["CryptoCurrency"]] = relationship()
     time_zone: Mapped[Optional["TimeZone"]] = relationship(back_populates="traders")
+    # Relationship back to TeamLead
+    team_lead: Mapped[Optional["TeamLead"]] = relationship(back_populates="traders", foreign_keys=[team_lead_id])
 
     trader_commissions: Mapped[List["TraderCommission"]] = relationship(back_populates="trader", cascade="all, delete-orphan")
     trader_addresses: Mapped[List["TraderAddress"]] = relationship(back_populates="trader", cascade="all, delete-orphan")
@@ -665,5 +671,21 @@ class UploadedDocument(Base):
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
 
     order: Mapped["OrderHistory"] = relationship(back_populates="uploaded_documents")
+
+# =====================
+# === ТИМЛИДЫ (TeamLeads)
+# =====================
+
+class TeamLead(Base):
+    """TeamLead oversees a group of traders, can enable/disable their traffic and view stats."""
+
+    __tablename__ = "teamleads"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False)
+    username: Mapped[str] = mapped_column(String(100), nullable=False)
+
+    user: Mapped["User"] = relationship(back_populates="teamlead_profile")
+    traders: Mapped[List["Trader"]] = relationship(back_populates="team_lead")
 
     

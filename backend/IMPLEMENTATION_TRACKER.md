@@ -29,6 +29,8 @@
     - [x] Добавлена модель `ConfigurationSetting`.
     - [x] Добавить остальные модели (`User`, `Order`, etc.).
     - Примечания: Начальная структура моделей. **Критическое исправление v2025.05.10**: Устранены конфликты `relationship` и `@hybrid_property` (удалены гибридные свойства `merchant` в `MerchantStore`, `BalanceStore`). **Исправление v2025.05.10**: Устранены `SAWarning` о конфликтующих `relationship` путем добавления `back_populates` в моделях `MerchantStore`, `FiatCurrency`, `CryptoCurrency`. Рекомендовано сгенерировать "проверочную" миграцию Alembic после этих изменений в `relationship`.
+    - [x] Добавлена модель `TeamLead` и связь с `Trader`.
+      Примечания: модель и связи реализованы v2025.05.11.
 - [x] **Базовые Схемы (`shemas_enums/`)**: Схемы Pydantic для передачи данных API.
     - [x] Создан `shemas_enums/order.py` с базовыми схемами ордеров.
     - [x] Создан `shemas_enums/reference.py` с Pydantic схемами для справочных данных (BankDetails, PaymentMethodDetails, ExchangeRateDetails).
@@ -121,6 +123,8 @@
     - Примечания: Реализованы GET `/reference/banks/{bank_id}`, `/reference/payment-methods/{method_id}`, `/reference/exchange-rates/{crypto_id}/{fiat_id}`.
 - [x] **Роутер Шлюза (`api_routers/gateway/router.py`)**: Эндпоинты для PayIn/PayOut шлюза.
     - Примечания: Реализованы `POST /payin/init`, `GET /payin/status/{id}`, `POST /payin/confirm/{id}`, `POST /payout/init`, `GET /payout/status/{id}` с вызовом gateway_service.
+- [x] **Роутер Тимлида (`api_routers/teamlead/*`)**: login + управление трейдерами.  
+  Примечания: реализация готова (`auth.py`, `router.py`); планируется покрыть тестами и при необходимости добавить SSE.
 
 ## 6. Фоновый Воркер (`worker/`)
 
@@ -179,20 +183,11 @@
     - Статус: [ ]
     - Примечания: **Рекомендация v2025.05.10**: Обнаружено предупреждение Redis `Memory overcommit must be enabled!`. Рекомендовано исправить на хост-машине сервера (`vm.overcommit_memory = 1`) для стабильности в production.
 
-## 10. Миграции Базы Данных (Alembic)
+## 10. (раздел снят)
 
-- [ ] Добавление миграции для `RATE_LIMIT_DEFAULT` в `configuration_settings`.
-  - Примечания: Рекомендовано после решения основных проблем с запуском.
-- [/] Добавление миграции для `RATE_LIMIT_DEFAULT` в `configuration_settings`.
-  - Примечания: seed-скрипт уже добавляет ключ при инициализации, но для существующих БД нужна миграция Alembic «`add_rate_limit_default_setting`»:
-    ```python
-    def upgrade():
-        op.execute("""
-            INSERT INTO configuration_settings(key, value, description)
-            VALUES ('RATE_LIMIT_DEFAULT', '100/minute', 'Default per-IP rate-limit (100 req/min)')
-            ON CONFLICT (key) DO NOTHING;
-        """)
-    def downgrade():
-        op.execute("DELETE FROM configuration_settings WHERE key='RATE_LIMIT_DEFAULT';")
-    ```
-    Сгенерировать и применить на сервере.
+*Миграции временно не ведутся, так как БД пересоздаётся с нуля при разработке.*
+
+## 11. Серверы (`backend/servers/`)
+
+- [x] Добавить `teamlead/server.py` и сервис `teamlead_api` в docker-compose.  
+  Примечания: `server.py` создан ранее, сервис `teamlead_api` добавлен в docker-compose v2025.05.11.
