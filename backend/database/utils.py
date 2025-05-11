@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__) # Use standard logging
 
 ModelType = TypeVar("ModelType", bound=Base) # Generic type for SQLAlchemy models
 
-@contextmanager
+# FastAPI dependency that yields a DB session and гарантирует закрытие
 def get_db_session() -> Generator[Session, None, None]:
     """Provides a transactional scope around a series of operations.
 
