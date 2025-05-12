@@ -61,8 +61,12 @@
     - [x] Хеширование паролей (`backend/config/crypto.py`).
     - [x] Зависимости FastAPI Security (`OAuth2PasswordBearer`, `get_current_user`).
     - Примечания: Настроены `create_access_token`, `get_current_user`, `get_current_active_user`.
-- [x] **Эндпоинт Логина** (`/auth/token` в `merchant/auth.py`, `trader/auth.py`).
-    - Примечания: Реализованы оба эндпоинта, возвращают JWT.
+- [x] **Эндпоинт Логина мерчанта** (`/merchant/auth/token`).
+    - Примечания: Аутентификация через `User` и `merchant_profile`, используется `get_db_session`, возвращает JWT.
+- [x] **Эндпоинт Логина трейдера** (`/trader/auth/token`).
+    - Примечания: Аутентификация через `User` и `trader_profile`, используется `get_db_session`, возвращает JWT.
+- [x] **Эндпоинт Логина саппорта** (`/support/auth/login`).
+    - Примечания: Аутентификация через `User` и `support_profile`, убран импорт `SessionLocal`.
 - [x] **Защита Эндпоинтов**: Применены зависимости `get_current_active_user` и `get_current_active_merchant`.
     - Примечания: Роутеры мерчанта и трейдера защищены JWT-зависимостью.
 

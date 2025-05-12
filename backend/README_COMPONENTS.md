@@ -1,6 +1,55 @@
-# Документация по компонентам backend (кроме таблиц БД)
+# Справочник компонентов бэкенда
 
----
+В этом документе перечислены ключевые компоненты серверной части JivaPay, их назначение и расположение в проекте.
+
+## 1. API-роутеры (`backend/api_routers`)
+- `admin` — эндпоинты администратора (логин, управление пользователями, регистрация, отладка Celery).
+- `merchant` — операции мерчанта (логин, создание/просмотр ордеров).
+- `trader` — операции трейдера (логин, подтверждение/отмена ордеров).
+- `support` — операции саппорта (логин, поиск и просмотр ордеров и пользователей).
+- `teamlead` — операции тимлида (логин, управление трафиком трейдеров, статистика).
+- `gateway` — публичный шлюз Pay-In/Pay-Out (инициация, статус, подтверждение).
+- `public_router.py` — справочные данные (валюты, методы оплаты, курсы).
+
+## 2. Модели и ORM (`backend/database`)
+- `db.py` — основные SQLAlchemy-модели (`User`, `MerchantStore`, `Trader`, `OrderHistory` и др.).
+- `utils.py` — утилиты работы с сессией (get_db_session, atomic_transaction, CRUD-функции).
+- `migrations/` — скрипты Alembic для регистраций и изменений схемы БД.
+
+## 3. Сервисы (`backend/services`)
+- `user_service.py` — логика работы с пользователями и ролями.
+- `order_processor.py` — оркестрация обработки входящих ордеров.
+- `balance_manager.py` — расчет и обновление балансов.
+- `reference_data.py` — кэширование и выдача справочных данных.
+- `requisite_selector.py` — подбор подходящих реквизитов.
+- `order_status_manager.py` — подтверждение и отмена ордеров.
+- `audit_logger.py` — запись событий аудита.
+- `fraud_detector.py` — проверки анти-фрода.
+- `gateway_service.py` — логика публичного API-шлюза.
+- `callback_service.py` — отправка коллбэков мерчантам.
+
+## 4. Утилиты и скрипты (`backend/utils`, `backend/scripts`)
+- `utils/exceptions.py` — кастомные исключения.
+- `utils/config_loader.py` — чтение и типизация настроек из БД.
+- `utils/notifications.py` — отправка оповещений о критических ошибках.
+- `utils/s3_client.py` — работа с S3 (MinIO).
+- `scripts/seed_config.py` — сидирование конфигураций.
+- `scripts/seed_data.py` — сидирование ролей и администратора.
+- `scripts/init_db.py` — инициализация схемы БД без миграций.
+
+## 5. Фоновый воркер (`backend/worker`)
+- `app.py` — настройка Celery (broker, backend, очереди).
+- `tasks.py` — задачи обработки ордеров и балансов.
+- `scheduler.py` — планировщик задач (при необходимости).
+
+## 6. Middleware и основные настройки (`backend/middleware`, `backend/config`)
+- `middleware/rate_limiting.py` — ограничение частоты запросов.
+- `config/settings.py` — Pydantic Settings для конфигурации приложения.
+- `servers/*/server.py` — точки входа FastAPI (подключение middleware, роутеров).
+
+## 7. Docker и развертывание
+- `Dockerfile` — контейнеризация приложения.
+- `docker-compose.yml` — локальная разработка и тестирование всех сервисов.
 
 ## 1. Общая структура
 

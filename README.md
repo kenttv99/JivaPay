@@ -1,18 +1,18 @@
 # JivaPay
 
-JivaPay — это платформа для обработки платежей, которая позволяет мерчантам интегрировать безопасные и эффективные решения оплаты в свои приложения.
+JivaPay — платформа для обработки платежей, позволяющая торговым и сервисным приложениям обеспечивать безопасный и эффективный приём и выплату средств.
 
 ## Документация
 
-- **Backend**
+- **Бэкенд**
   - [План реализации](backend/README_IMPLEMENTATION_PLAN.md)
   - [Справочник компонентов](backend/README_COMPONENTS.md)
   - [Схема базы данных](backend/README_DB.md)
   - [Утилиты](backend/README_UTILITIES.md)
   - [Трекер реализации](backend/IMPLEMENTATION_TRACKER.md)
-- **Frontend**
-  - [План архитектуры](frontend/README_ARCHITECTURE_PLAN.md)
-  - [Руководство по структуре](frontend_structure_guide.md)
+- **Фронтенд**
+  - [План архитектуры фронтенда](frontend/README_ARCHITECTURE_PLAN.md)
+  - [Руководство по структуре фронтенд-проектов](frontend_structure_guide.md)
 - **Приложения**
   - [Приложение мерчанта](frontend/merchant_app/README.md)
   - [Приложение администратора](frontend/admin_app/README.md)
@@ -21,22 +21,43 @@ JivaPay — это платформа для обработки платежей
 
 ## Быстрый старт
 
-1. Клонируйте репозиторий.
-2. Настройте бэкенд, следуя инструкциям в папке `backend/`.
-3. Настройте фронтенд, следуя инструкциям в папке `frontend/`.
+1. Клонируйте репозиторий:
+   ```bash
+   git clone <URL_репозитория>
+   ```
+2. Скопируйте шаблон файла окружения и заполните переменные:
+   ```bash
+   cp .env.example .env
+   ```
+3. Запустите все сервисы в контейнерах Docker:
+   ```bash
+   docker compose up -d
+   ```
+4. Если база пуста, выполните сидирование данных:
+   ```bash
+   docker compose exec merchant_api python -m backend.scripts.seed_config
+   docker compose exec merchant_api python -m backend.scripts.seed_data
+   ```
 
-## Запуск
+## Запуск в режиме разработки
 
-### Для разработки
+- Запуск через Docker Compose:
+  ```bash
+  docker compose up -d
+  ```
+- Запуск отдельных сервисов локально:
+  ```bash
+  uvicorn backend.servers.merchant.server:app --host 0.0.0.0 --port 8001 --reload
+  uvicorn backend.servers.trader.server:app --host 0.0.0.0 --port 8002 --reload
+  uvicorn backend.servers.gateway.server:app --host 0.0.0.0 --port 8003 --reload
+  uvicorn backend.servers.admin.server:app --host 0.0.0.0 --port 8004 --reload
+  uvicorn backend.servers.support.server:app --host 0.0.0.0 --port 8005 --reload
+  uvicorn backend.servers.teamlead.server:app --host 0.0.0.0 --port 8006 --reload
+  ```
 
-```bash
-# Запуск с Docker Compose
-docker-compose up -d
+## Структура репозитория
 
-# Запуск отдельных серверов
-uvicorn backend.servers.merchant.server:app --port 8001 --reload
-uvicorn backend.servers.trader.server:app --port 8002 --reload
-uvicorn backend.servers.gateway.server:app --port 8003 --reload
-uvicorn backend.servers.admin.server:app --port 8004 --reload
-uvicorn backend.servers.support.server:app --port 8005 --reload
-```
+- `/backend` — серверная часть (API, модели, сервисы, утилиты)
+- `/frontend` — клиентская часть (SPA-приложения для разных ролей)
+- `/docker-compose.yml` — конфигурация Docker Compose для разработки
+- `/README.md` — этот файл

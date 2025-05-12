@@ -1,260 +1,64 @@
-# Рекомендации по структуре Next.js приложений
+# Руководство по структуре фронтенд-проектов JivaPay
 
-Это руководство описывает рекомендуемую структуру для управления API-запросами и стилями в отдельных Next.js приложениях (например, `trader_app`, `merchant_app`), предполагая использование `src/` директории и App Router.
+Данный документ описывает рекомендуемую структуру для мульти-SPA фронтенд-приложений JivaPay на TypeScript.
 
-## 1. Управление запросами (API, состояние)
+## 1. Монорепозиторий и общие пакеты
+- Использовать PNPM Workspaces или Turborepo для организации монорепозитория.
+- Общие пакеты:
+  - `packages/ui-kit` — стилизованные компоненты UI и тема.
+  - `packages/types` — автоматически генерируемые TypeScript-типы из OpenAPI.
+  - `packages/utils` — утилиты без зависимостей от UI.
+  - `packages/hooks` — переиспользуемые React-хуки.
+  - `packages/config` — конфигурации ESLint, Prettier, TSConfig.
+  - `packages/i18n` — конфигурация и переводы.
 
-### Клиент для API
+## 2. Структура каждого приложения
+В каждом приложении (`merchant_app`, `trader_app`, `admin_app`, `support_app`, `teamlead_app`) рекомендуется иметь:
 
-*   **Где:** Создайте директорию `src/lib/api` или `src/services/api`.
-*   **Что:** Функции для взаимодействия с вашим бэкендом или сторонними API. Используйте `fetch` или библиотеку вроде `axios`.
-*   **Пример:**
-    ```typescript
-    // src/lib/api/auth.ts
-    import axios from 'axios'; // или ваш настроенный инстанс
+```
+/<app>_app/
+  ├── src/
+  │   ├── assets/         # Статика, изображения, шрифты
+  │   ├── components/     # Общие UI-компоненты
+  │   ├── layouts/        # Обёртки страниц (хедер, сайдбар)
+  │   ├── pages/          # Маршруты или страницы приложения
+  │   ├── services/       # HTTP/SSE клиенты для API
+  │   ├── hooks/          # Кастомные хуки
+  │   ├── store/          # Глобальное состояние (React Query/Redux)
+  │   ├── types/          # Локальные типы/интерфейсы
+  │   ├── utils/          # Вспомогательные функции
+  │   ├── styles/         # Глобальные переменные и темы
+  │   └── index.tsx       # Точка входа (ReactDOM.render или аналог)
+  ├── public/            # Публичные ресурсы (favicon, robots.txt)
+  ├── package.json
+  ├── tsconfig.json
+  ├── .eslintrc.js
+  └── .prettierrc
+```
 
-    const apiClient = axios.create({ baseURL: '/api' }); // Пример с Next.js API routes или вашим бэкендом
+## 3. API-клиент и управление состоянием
+- **Сервис API**: в `services/api.ts` или `services/{entity}.ts` на базе Axios или Fetch.
+- **Типизация**: импорт типов из `packages/types`.
+- **Server State**: использовать React Query или RTK Query для кэширования и фетчинга.
+- **SSE/WS**: реализовать в `services/sse.ts` или через кастомный хук `hooks/useSSE.ts`.
 
-    export const loginUser = async (credentials) => {
-      const response = await apiClient.post('/auth/login', credentials);
-      return response.data;
-    };
+## 4. Стили и тема
+- **UI-библиотека**: выбрать MUI, Ant Design, Chakra UI или Tailwind CSS.
+- **Global styles**: определить переменные и сброс стилей в `styles/globals.css` или `styles/theme.ts`.
+- **Component styles**: CSS Modules или CSS-in-JS для изоляции.
 
-    // src/lib/api/products.ts
-    export const getProducts = async () => { /* ... */ };
-    ```
+## 5. Интернационализация
+- Использовать `i18next` или аналог.
+- Разместить файлы переводов в `packages/i18n/locales`.
+- Подключить провайдер в корневом компоненте.
 
-### Управление состоянием данных с сервера (Client-Side)
+## 6. Тестирование
+- **Unit**: Jest/Vitest для утилит и хуков.
+- **Компонентные**: React Testing Library / Storybook.
+- **E2E**: Cypress или Playwright для сквозных сценариев.
 
-*   **Рекомендация:** Используйте `React Query (TanStack Query)` или `SWR` для упрощения получения, кэширования и синхронизации серверных данных.
-*   **Где:** Хуки можно вызывать в компонентах или создать кастомные хуки в `src/hooks/api` или `src/lib/api/hooks.ts`.
-*   **Пример (с React Query):**
-    ```typescript
-    // src/hooks/api/useProducts.ts
-    import { useQuery } from '@tanstack/react-query';
-    import { getProducts } from '@/lib/api/products'; // Используем alias @/, если настроили
-
-    export const useProducts = () => {
-      return useQuery({ queryKey: ['products'], queryFn: getProducts });
-    };
-
-    // В компоненте:
-    // import { useProducts } from '@/hooks/api/useProducts';
-    // const { data: products, isLoading, error } = useProducts();
-    ```
-
-### Next.js App Router (Server Components & Server Actions)
-
-*   **Получение данных:** В Server Components (`*.tsx` файлы в `src/app/` без `"use client"`) можно получать данные напрямую, используя `fetch` или ваш API-клиент.
-*   **Мутации данных (Создание/Обновление/Удаление):** Используйте Server Actions. Определяйте их в файлах с директивой `"use server"` (в `src/actions/` или прямо в компонентах) и вызывайте из Client Components (`"use client"`).
-
-## 2. Управление стилями
-
-### Глобальные стили
-
-*   **Где:** `src/app/globals.css` (или `src/styles/globals.css`).
-*   **Что:** Стили для всего приложения (сброс, базовые стили `body`, CSS переменные). Импортируйте в корневой `layout.tsx`.
-*   **Пример (`src/app/layout.tsx`):**
-    ```typescript
-    import type { Metadata } from "next";
-    import { Inter } from "next/font/google";
-    import "@/app/globals.css"; // Импорт глобальных стилей
-
-    const inter = Inter({ subsets: ["latin"] });
-
-    export const metadata: Metadata = {
-      title: "Create Next App",
-      description: "Generated by create next app",
-    };
-
-    export default function RootLayout({
-      children,
-    }: Readonly<{
-      children: React.ReactNode;
-    }>) {
-      return (
-        <html lang="en">
-          <body className={inter.className}>{children}</body>
-        </html>
-      );
-    }
-    ```
-
-### Локальные стили (CSS Modules)
-
-*   **Рекомендация:** Основной способ стилизации компонентов.
-*   **Где:** Файлы `[ComponentName].module.css` рядом с компонентами (например, `src/components/Button/Button.module.css`).
-*   **Что:** Локализованные стили. Импортируйте объект стилей в компонент.
-*   **Пример:**
-    ```css
-    /* src/components/Button/Button.module.css */
-    .button {
-      background-color: blue;
-      color: white;
-      padding: 10px 15px;
-      border: none;
-      cursor: pointer;
-      transition: background-color 0.2s ease-in-out; /* Пример */
-    }
-    .button:hover {
-      background-color: darkblue;
-    }
-    ```
-    ```typescript
-    // src/components/Button/Button.tsx
-    import styles from './Button.module.css';
-
-    interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-        children: React.ReactNode;
-    }
-
-    export function Button({ children, ...props }: ButtonProps) {
-      return <button className={styles.button} {...props}>{children}</button>;
-    }
-    ```
-
-### Tailwind CSS
-
-*   Если используется, классы применяются прямо в JSX.
-*   Конфигурация: `tailwind.config.ts`.
-*   Глобальные стили: `globals.css` с директивами `@tailwind`.
-
-### CSS-in-JS (Styled Components, Emotion)
-
-*   Возможно использование, но требует дополнительной настройки для App Router. CSS Modules или Tailwind обычно проще.
-
-### Организация компонентов и стилей
-
-*   `src/components/`: Общие, переиспользуемые компоненты.
-*   `src/app/.../components/`: Компоненты, специфичные для конкретного маршрута или раздела.
-*   Держите файлы `.module.css` рядом с соответствующими файлами `.tsx`.
-
-### Общие стили/переменные
-
-*   Используйте CSS Custom Properties (переменные) в `globals.css`.
-    ```css
-    /* src/app/globals.css */
-    :root {
-      --primary-color: #0070f3;
-      --secondary-color: #1a1a1a;
-      --text-color: #333;
-      --background-color: #fff;
-      --default-padding: 1rem;
-      --border-radius: 8px;
-    }
-
-    body {
-      padding: var(--default-padding);
-      background-color: var(--background-color);
-      color: var(--text-color);
-    }
-
-    /* Можно определить темную тему */
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --primary-color: #3b82f6; /* Пример другого оттенка */
-        --secondary-color: #e5e5e5;
-        --text-color: #f0f0f0;
-        --background-color: #1a1a1a;
-      }
-    }
-    ```
-
-## 3. Управление состоянием для современного UX (Скелетоны, Загрузка, Ошибки)
-
-Правильное управление состояниями загрузки, ошибок и данных — ключ к современному UX.
-
-### 3.1. Состояние серверных данных (Data Fetching)
-
-*   **Инструменты:** `React Query (TanStack Query)` или `SWR`.
-*   **Преимущества для UX:**
-    *   **Встроенные состояния:** Предоставляют `isLoading`, `isFetching`, `isError`, `data`, `error`.
-    *   **Кэширование:** Ускоряет повторные загрузки, улучшает воспринимаемую производительность.
-    *   **Автоматизация:** Повторные запросы, обновление при фокусе и т.д.
-
-### 3.2. Интеграция скелетонов (Skeletons)
-
-*   **Логика:** Показывайте скелетоны, когда `isLoading` равно `true` (из React Query/SWR).
-*   **Где:** Условный рендеринг в JSX компонента.
-*   **Компоненты скелетонов:** Создайте переиспользуемые компоненты-плейсхолдеры (`src/components/Skeletons/`).
-*   **Пример (с React Query):
-    ```typescript jsx
-    // src/app/profile/page.tsx (или клиентский компонент)
-    "use client";
-
-    import { useQuery } from '@tanstack/react-query';
-    import { getUserProfile } from '@/lib/api/user';
-    import UserProfileCard from '@/components/UserProfileCard';
-    import UserProfileSkeleton from '@/components/Skeletons/UserProfileSkeleton';
-    import ErrorDisplay from '@/components/ErrorDisplay';
-
-    export default function ProfilePage() {
-      const { data: user, isLoading, isError, error } = useQuery({
-        queryKey: ['userProfile'],
-        queryFn: getUserProfile
-      });
-
-      if (isLoading) {
-        return <UserProfileSkeleton />; // Показываем скелетон
-      }
-
-      if (isError) {
-        return <ErrorDisplay message={error?.message || 'Failed to load profile.'} />;
-      }
-
-      if (!user) {
-         return <div>No profile data found.</div>; // Пустое состояние
-      }
-
-      return <UserProfileCard user={user} />;
-    }
-    ```
-
-### 3.3. Next.js App Router для загрузки
-
-*   **`loading.tsx`:** Создайте этот файл рядом с `page.tsx` для автоматического показа скелетона на уровне маршрута во время серверного рендеринга и получения данных Server Components. Next.js использует его как `fallback` для `React.Suspense`.
-    ```typescript jsx
-    // src/app/dashboard/loading.tsx
-    import DashboardSkeleton from '@/components/Skeletons/DashboardSkeleton';
-
-    export default function Loading() {
-      return <DashboardSkeleton />;
-    }
-    ```
-*   **`React.Suspense`:** Используйте для гранулярного контроля загрузки *внутри* страницы, оборачивая асинхронные Server Components.
-    ```typescript jsx
-    // src/app/some-page/page.tsx
-    import { Suspense } from 'react';
-    import MyAsyncComponent from '@/components/MyAsyncComponent';
-    import MySkeleton from '@/components/Skeletons/MySkeleton';
-
-    export default function SomePage() {
-      return (
-        <div>
-          <h1>My Page</h1>
-          <Suspense fallback={<MySkeleton />}>
-             <MyAsyncComponent />
-          </Suspense>
-          {/* Другие компоненты */}
-        </div>
-      );
-    }
-    ```
-
-### 3.4. Состояние мутаций (POST/PUT/DELETE)
-
-*   **Server Actions:** Используйте хук `useFormStatus` из `react-dom` в клиентских компонентах для отслеживания `pending` состояния формы и блокировки/индикации во время выполнения.
-*   **React Query/SWR:** Используйте `useMutation` для управления состоянием мутаций (`isPending`, `isError` и т.д.).
-
-### 3.5. Обработка ошибок и пустых состояний
-
-*   **Ошибки:** Используйте `isError` / `error` из React Query/SWR и файл `error.tsx` в Next.js для обработки ошибок рендеринга на уровне маршрута.
-*   **Пустые состояния:** После загрузки (`isLoading: false`) и без ошибок (`isError: false`), проверьте наличие данных (`data`). Если их нет, отобразите компонент "Empty State".
-
-## 4. Общие рекомендации
-
-*   **Консистентность:** Придерживайтесь выбранных подходов во всем приложении.
-*   **Структура `src`:** Используйте логические подпапки (`components`, `lib`, `hooks`, `styles`, `utils`, `app`, `actions`).
-*   **Масштабирование:** Эта структура позволяет легко добавлять новые разделы и функциональность. При необходимости разбивайте большие модули на более мелкие.
-
-**Примечание:** Эта структура применяется *внутри каждого* отдельного Next.js приложения (`frontend/trader_app`, `frontend/merchant_app`, и т.д.). 
+## 7. CI/CD для фронтенда
+- Проверка типов (TS), линтинг (ESLint), форматирование (Prettier).
+- Юнит и компонентные тесты.
+- Сборка изменённых приложений (Turborepo changed files).
+- Деплой на разные поддомены (`merchant.jivapay.com`, etc.). 

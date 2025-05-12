@@ -264,23 +264,16 @@
 *   **Заполнение Данных (Seeding):** 
     *   Создать скрипты для заполнения начальных данных (например, в `scripts/`).
     *   Заполнить необходимые справочники (валюты, роли, платежные системы) и создать пользователя-администратора по умолчанию.
-*   **Аутентификация (JWT/OAuth2):** 
-    *   Добавить зависимости: `python-jose[cryptography]`, `passlib[bcrypt]`.
-    *   Создать файл `backend/security.py` (или аналогичный).
-    *   В `security.py`:
-        *   Определить настройки: `SECRET_KEY`, `ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES` (из конфигурации).
-        *   Реализовать функции: `create_access_token`, `verify_access_token`.
-        *   Реализовать функцию `get_password_hash` (используя `passlib`). `verify_password` уже есть в `crypto.py`.
-        *   Определить `OAuth2PasswordBearer` схему (`oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/merchant/auth/token")` - **URL нужно будет адаптировать для каждой роли!**).
-        *   Реализовать функцию `get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db))`:
-            *   Верифицирует токен.
-            *   Извлекает ID пользователя из токена.
-            *   Загружает пользователя из БД.
-            *   Возвращает объект пользователя или выбрасывает `HTTPException` (401/403).
-        *   Реализовать функцию `get_current_active_user` (проверяет `is_active` пользователя).
-    *   Обновить эндпоинт логина (`/auth/login` или лучше переделать на `/auth/token` по стандарту OAuth2): должен принимать `username` (email) и `password` через `OAuth2PasswordRequestForm`, проверять их, и в случае успеха генерировать и возвращать `access_token` (и тип токена `bearer`).
-    *   Защитить **все** остальные эндпоинты роутера, добавив зависимость `current_user: User = Depends(get_current_active_user)`.
-    *   Повторить настройку аутентификации для **каждой роли** (Merchant, Trader, Admin, Support) со своими моделями пользователей и, возможно, отдельными `tokenUrl`.
+*   **Аутентификация (JWT/OAuth2):**
+    *   Установлены зависимости: `python-jose[cryptography]`, `passlib[bcrypt]`.
+    *   Создан файл `backend/security.py` с реализацией `create_access_token`, `verify_access_token`, `get_current_user` и `get_current_active_user`.
+    *   Использован `OAuth2PasswordBearer` с соответствующими `tokenUrl`:
+        - `/merchant/auth/token` — мерчант
+        - `/trader/auth/token` — трейдер
+        - `/admin/auth/token` — администратор
+        - `/support/auth/login` — саппорт (принимает JSON)
+    *   Эндпоинты логина реализованы через основную таблицу `User` и профили (`merchant_profile`, `trader_profile`, `admin_profile`, `support_profile`), во всех роутерах используется `Depends(get_db_session)` вместо кастомных `get_db` или `SessionLocal`.
+    *   Все остальные эндпоинты (кроме логина) защищены через зависимости `get_current_active_user` или `get_current_active_<role>` (FastAPI `Depends`).
 *   **(Если решено) Аудит Лог:** 
     *   **Задача:** Настроить запись действий пользователей и системы.
     *   **Шаги:**

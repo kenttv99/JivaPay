@@ -1,46 +1,36 @@
-# JivaPay Merchant App
+# Приложение мерчанта JivaPay
 
-This is the Merchant application of the JivaPay platform, built with Next.js and TypeScript. It provides merchants with an interface to:
+Приложение мерчанта предоставляет интерфейс для управления магазинами, API-ключами и настройками обратных вызовов, а также отслеживания входящих заявок и истории ордеров.
 
-- Manage stores, API keys, and callback settings
-- Track incoming orders and order history
-- Monitor and configure balances and limits
+## Документация
 
-## Documentation
+- [Обзор проекта](../../README.md)
+- [План архитектуры фронтенда](../../frontend/README_ARCHITECTURE_PLAN.md)
+- [Руководство по структуре фронтенд-проектов](../../frontend_structure_guide.md)
 
-- [Project Overview](../../README.md)
-- [Frontend Architecture Plan](../../frontend/README_ARCHITECTURE_PLAN.md)
-- [Frontend Structure Guide](../../frontend_structure_guide.md)
+## Быстрый старт
 
-## Getting Started
+1. Установите зависимости:
+   ```bash
+   pnpm install    # или npm install, yarn install
+   ```
+2. Запустите сервер разработки:
+   ```bash
+   pnpm dev        # или npm run dev, yarn dev
+   ```
+3. Откройте в браузере:
+   ```
+   http://localhost:3000
+   ```
 
-Install dependencies:
-```bash
-npm install
-# or
-yarn install
-# or
-pnpm install
-```
-
-Start the development server:
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-```
-
-Open http://localhost:3000 in your browser to view the application.
-
-## Build for Production
+## Сборка и запуск в продакшене
 
 ```bash
-npm run build
-npm run start
+pnpm build       # сборка
+pnpm start       # запуск сервера
 ```
 
-## Contributing
+## Стандарты кода и тестирование
 
-Please adhere to coding standards defined in `eslint.config.mjs` and `tsconfig.json`. For testing, see the frontend testing guidelines in the architecture plan.
+- Соблюдайте правила линтинга (ESLint) и форматирования (Prettier), настроенные в `tsconfig.json` и соответствующих конфигурационных файлах.
+- Для тестирования компонентов и логики используйте Jest/Vitest и React Testing Library.

@@ -15,31 +15,26 @@
 
 ## Быстрый старт
 
-Установите зависимости:
+1. Установите зависимости:
 ```bash
-npm install
-# или
-yarn install
-# или
-pnpm install
+pnpm install    # или yarn install, npm install
 ```
 
-Запустите сервер разработки:
+2. Запустите сервер разработки:
 ```bash
-npm run dev
-# или
-yarn dev
-# или
-pnpm dev
+pnpm dev        # или yarn dev, npm run dev
 ```
 
-Откройте http://localhost:3000 в браузере, чтобы просмотреть приложение.
+3. Откройте в браузере:
+```text
+http://localhost:3000
+```
 
-## Сборка для продакшена
+## Сборка и запуск в продакшене
 
 ```bash
-npm run build
-npm run start
+pnpm build       # сборка
+pnpm start       # запуск
 ```
 
 ## Вклад в проект
