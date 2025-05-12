@@ -114,10 +114,16 @@
 - [x] **Роутеры Аутентификации (merchant/auth.py, trader/auth.py, support/auth.py)**: Эндпоинты логина и выдачи токенов.
     - Примечания: Реализованы `/api/merchant/auth/token`, `/api/trader/auth/token` и `/support/auth/login`.
 - [x] **Роутер Мерчанта (`api_routers/merchant/router.py`)**: Эндпоинты для мерчантов.
-    - Примечания: Реализованы POST `/orders` и GET `/orders` с бизнес-логикой через gateway_service.
-    - [/] **TODO**: Добавить:
-        * GET `/orders/{order_id}` (детали ордера)
-        * GET `/balance` (текущий баланс магазина)
+    - Примечания: Реализованы POST `/orders`, GET `/orders`, POST `/orders/{order_id}/confirm_payment`.
+    - [/] **TODO: Управление магазинами**
+        * POST `/stores` — создание магазина.
+        * GET `/stores` — список магазинов.
+        * GET `/stores/{store_id}` — детали магазина.
+        * PATCH `/stores/{store_id}` — обновление настроек магазина.
+        * DELETE `/stores/{store_id}` — удаление магазина.
+    - [/] **TODO: Дополнительно**
+        * GET `/orders/{order_id}` — детали ордера.
+        * GET `/balance` — текущий баланс магазина.
         * При необходимости другие вспомогательные эндпоинты.
 - [x] **Роутер Трейдера (`api_routers/trader/router.py`)**: Эндпоинты для трейдеров.
     - Примечания: Реализованы GET `/orders`, POST `/orders/{order_id}/confirm`, POST `/orders/{order_id}/cancel` с вызовом order_status_manager.

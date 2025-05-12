@@ -52,6 +52,7 @@
    curl -X POST http://127.0.0.1:8004/admin/auth/token \
         -d 'username=admin@example.com&password=adminpass' \
         -H 'Content-Type: application/x-www-form-urlencoded'
+        eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBleGFtcGxlLmNvbSIsImV4cCI6MTc0NzA4MzE1Mn0.19fWASh5gCCsguanstKJYfpo7aSXxKSSH_09tXqLOkg
    ```
    - Ожидается JSON: `{"access_token":"...","token_type":"bearer"}`.
 2. Попытка доступа без токена:
@@ -81,14 +82,14 @@
    curl -X POST http://127.0.0.1:8004/admin/register/support \
         -H "Authorization: Bearer $ADMIN_TOKEN" \
         -H 'Content-Type: application/json' \
-        -d '{"email":"support1@example.com","password":"s123","access_to":["orders","users"]}'
+        -d '{"email":"support1@example.com","password":"string111","access_to":["orders","users"]}'
    # → 201
    ```
 3. Успешный вход саппорта:
    ```bash
    curl -X POST http://127.0.0.1:8005/support/auth/login \
         -H 'Content-Type: application/json' \
-        -d '{"email":"support1@example.com","password":"s123"}'
+        -d '{"email":"support1@example.com","password":"string111"}'
    ```
    - Ожидается JSON: `{"id":<ID>,"email":"support1@example.com"}`.
 
@@ -97,7 +98,7 @@
 1. Выполните 101 быстрый запрос к `/health`:
    ```bash
    for i in $(seq 1 101); do
-     curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8001/health
+     curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:18001/health
    done
    ```
 2. Первые 100 ответов должны быть `200`, 101-й — `429`.
@@ -109,24 +110,25 @@
    curl -X POST http://127.0.0.1:8004/admin/register/merchant \
         -H "Authorization: Bearer $ADMIN_TOKEN" \
         -H 'Content-Type: application/json' \
-        -d '{"email":"merchant1@example.com","password":"m123","company_name":"Shop Ltd"}'
+        -d '{"email":"merchant1@example.com","password":"merchant111","company_name":"Shop Ltd"}'
    ```
    - Ожидается HTTP `201` и JSON с данными мерчанта.
 2. Получите токен мерчанта:
    ```bash
-   curl -X POST http://127.0.0.1:8001/merchant/auth/token \
-        -d 'username=merchant1@example.com&password=m123' \
+   curl -X POST http://127.0.0.1:18001/merchant/auth/token \
+        -d 'username=merchant1@example.com&password=merchant111' \
         -H 'Content-Type: application/x-www-form-urlencoded'
    ```
+   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtZXJjaGFudDFAZXhhbXBsZS5jb20iLCJleHAiOjE3NDcwODMyODN9.pgRHiBPgCwoZaIQ6tJxB0IK3PDQ9W41iEKwWH-pGQHU
    - Ожидается JSON с `access_token`.
-3. Создайте Pay-In заказ:
+3. Создайте входящий ордер (Pay-In):
    ```bash
-   curl -X POST http://127.0.0.1:8001/merchant/orders \
+   curl -X POST http://127.0.0.1:18001/merchant/orders \
         -H "Authorization: Bearer $MERCHANT_TOKEN" \
         -H 'Content-Type: application/json' \
-        -d '{"direction":"PAYIN","amount_fiat":100.50,"fiat_currency_id":1,"crypto_currency_id":1,"customer_id":"CUST-42"}'
+        -d '{"direction":"pay_in","amount":100.50,"currency_id":1,"payment_method_id":1,"customer_id":"CUST-42"}'
    ```
-   - Ожидается HTTP `201` и запись в таблице `incoming_orders` со статусом `new`.
+   - Ожидается HTTP `201` и JSON с данными `IncomingOrder` (статус `new`).
 
 ## 6. Поток Pay-In через Gateway
 

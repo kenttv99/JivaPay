@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, selectinload
 
 # Attempt imports (adjusting paths based on new location)
 try:
-    from backend.database.utils import get_db_session
+    from backend.database.utils import get_db_session, create_object, update_object_db
     from backend.shemas_enums.order import IncomingOrderCreate, IncomingOrderRead, OrderHistoryRead # Import schemas
     # !! Need authentication dependency and user model !!
     # from backend.security import get_current_active_merchant # Assuming specific auth per role
@@ -17,9 +17,11 @@ try:
     # from backend.services import order_service, gateway_service # Example service imports
     from backend.utils.exceptions import JivaPayException, AuthorizationError, DatabaseError
     from backend.security import get_current_active_user
-    from backend.database.db import Merchant, OrderHistory
+    from backend.database.db import Merchant, OrderHistory, MerchantStore
     from backend.services.gateway_service import handle_init_request
     from backend.services.order_status_manager import confirm_payment_by_client as confirm_payment_service
+    from backend.shemas_enums.merchant import MerchantStoreCreate, MerchantStoreRead, MerchantStoreUpdate
+    import secrets
 except ImportError as e:
     # Make error message clearer about location
     raise ImportError(f"Could not import required modules for merchant router (in api_routers/merchant/router.py): {e}")
@@ -140,8 +142,115 @@ async def confirm_payment_by_client(
         logger.error(f"Error confirming payment for order {order_id} by merchant {current_merchant.id}: {e}", exc_info=True)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
+# Add merchant store management endpoints
+@router.post(
+    "/stores",
+    response_model=MerchantStoreRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a new store for the current merchant",
+    tags=["Merchant Stores"]
+)
+def create_store(
+    store_data: MerchantStoreCreate,
+    db: Session = Depends(get_db_session),
+    current_merchant: Any = Depends(get_current_active_merchant)
+):
+    """Create a new store for the current merchant."""
+    logger.info(f"Merchant {current_merchant.id} creating store. Data: {store_data.dict()}")
+    try:
+        public_key = secrets.token_urlsafe(32)
+        private_key = secrets.token_urlsafe(64)
+        data = store_data.dict()
+        data.update({
+            "merchant_id": current_merchant.id,
+            "public_api_key": public_key,
+            "private_api_key": private_key
+        })
+        new_store = create_object(db, MerchantStore, data)
+        db.commit()
+        return new_store
+    except Exception as e:
+        logger.error(f"Error creating store for merchant {current_merchant.id}: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+@router.get(
+    "/stores",
+    response_model=List[MerchantStoreRead],
+    summary="List stores for the current merchant",
+    tags=["Merchant Stores"]
+)
+def list_stores(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db_session),
+    current_merchant: Any = Depends(get_current_active_merchant)
+):
+    """List stores for the current merchant."""
+    stores = db.query(MerchantStore).filter_by(merchant_id=current_merchant.id).offset(skip).limit(limit).all()
+    return stores
+
+@router.get(
+    "/stores/{store_id}",
+    response_model=MerchantStoreRead,
+    summary="Get details of a specific store",
+    tags=["Merchant Stores"]
+)
+def get_store(
+    store_id: int,
+    db: Session = Depends(get_db_session),
+    current_merchant: Any = Depends(get_current_active_merchant)
+):
+    """Get details of a specific store."""
+    store = db.query(MerchantStore).filter_by(id=store_id, merchant_id=current_merchant.id).one_or_none()
+    if not store:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Store not found")
+    return store
+
+@router.patch(
+    "/stores/{store_id}",
+    response_model=MerchantStoreRead,
+    summary="Update settings of an existing store",
+    tags=["Merchant Stores"]
+)
+def update_store(
+    store_id: int,
+    store_update: MerchantStoreUpdate,
+    db: Session = Depends(get_db_session),
+    current_merchant: Any = Depends(get_current_active_merchant)
+):
+    """Update settings of an existing store."""
+    store = db.query(MerchantStore).filter_by(id=store_id, merchant_id=current_merchant.id).one_or_none()
+    if not store:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Store not found")
+    try:
+        update_data = store_update.dict(exclude_unset=True)
+        updated = update_object_db(db, store, update_data)
+        db.commit()
+        return updated
+    except Exception as e:
+        logger.error(f"Error updating store {store_id} for merchant {current_merchant.id}: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+@router.delete(
+    "/stores/{store_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a store for the current merchant",
+    tags=["Merchant Stores"]
+)
+def delete_store(
+    store_id: int,
+    db: Session = Depends(get_db_session),
+    current_merchant: Any = Depends(get_current_active_merchant)
+):
+    """Delete a store for the current merchant."""
+    store = db.query(MerchantStore).filter_by(id=store_id, merchant_id=current_merchant.id).one_or_none()
+    if not store:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Store not found")
+    try:
+        db.delete(store)
+        db.commit()
+    except Exception as e:
+        logger.error(f"Error deleting store {store_id} for merchant {current_merchant.id}: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
 # TODO: Add other merchant endpoints:
-# - GET /orders/{order_id} (Get specific order details)
-# - POST /orders/{order_id}/confirm_payment (If merchant confirms client payment - depends on flow)
-# - GET /balance (Get merchant balance)
-# - etc.

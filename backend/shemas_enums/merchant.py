@@ -44,4 +44,26 @@ class MerchantStoreRead(MerchantStoreBase):
     updated_at: datetime
 
     class Config:
-        from_attributes= True 
+        from_attributes= True
+
+
+class MerchantStoreCreate(MerchantStoreBase):
+    """Schema for creating a new merchant store."""
+    pass
+
+
+class MerchantStoreUpdate(BaseModel):
+    """Schema for updating an existing merchant store."""
+    store_name: Optional[str] = None
+    crypto_currency_id: Optional[int] = None
+    fiat_currency_id: Optional[int] = None
+    lower_limit: Optional[Decimal] = None
+    upper_limit: Optional[Decimal] = None
+    callback_url: Optional[AnyUrl] = None
+    pay_in_enabled: Optional[bool] = None
+    pay_out_enabled: Optional[bool] = None
+    trafic_access: Optional[bool] = None
+    access: Optional[bool] = None
+
+    class Config:
+        from_attributes = True 
