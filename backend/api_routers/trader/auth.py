@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from pydantic import BaseModel
 from datetime import timedelta
 
-from backend.database.db import Trader
+from backend.database.db import User
 from backend.config.crypto import verify_password
 from backend.config.logger import get_logger
 from backend.database.utils import get_db_session
@@ -15,14 +15,6 @@ router = APIRouter()
 logger = get_logger("trader_auth")
 
 
-def get_db():
-    db = next(get_db_session())
-    try:
-        yield db
-    finally:
-        db.close()
-
-
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -31,10 +23,16 @@ class Token(BaseModel):
 @router.post("/auth/token", response_model=Token)
 def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db_session)
 ):
-    user = db.query(Trader).filter_by(email=form_data.username).first()
-    if not user or not verify_password(form_data.password, user.password_hash):
+    # Authenticate trader via User table and trader_profile
+    user: User | None = (
+        db.query(User)
+        .options(selectinload(User.trader_profile))
+        .filter(User.email == form_data.username)
+        .first()
+    )
+    if not user or not user.trader_profile or not verify_password(form_data.password, user.password_hash):
         logger.warning(f"Failed trader login attempt: {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
