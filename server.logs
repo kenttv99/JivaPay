@@ -1,0 +1,2 @@
+root@mail:/home_dev/jp# curl -X POST http://127.0.0.1:8004/admin/auth/token         -d 'username=admin@example.com&password=admin123'         -H 'Content-Type: application/x-www-form-urlencoded'
+{"detail":"Incorrect email or password"}root@mail:/home_dev/jp#

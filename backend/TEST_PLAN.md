@@ -5,10 +5,17 @@
 ## 0. Предусловия
 1. Все контейнеры запущены командой `docker compose up -d`.  
 2. На сервере доступны `curl`, `docker`, `psql` и `redis-cli` (в контейнере).
-3. В `.env` и Alembic-миграциях применены актуальные конфиги.
+3. В `.env` применены актуальные конфиги.
 4. Конфигурация Redis `vm.overcommit_memory=1` установлена **на хосте** и контейнер `redis` перезапущен.
+5. **Первичное заполнение БД (только при пустой базе):**  
+   ```bash
+   # Конфиг и роли
+   docker compose exec merchant_api python -m backend.scripts.seed_config
+   docker compose exec merchant_api python -m backend.scripts.seed_data
+   ```  
+   Скрипты создадут дефолтного администратора `admin@example.com / admin123` и системные справочники.
 
-## 1. Проверка состояниЯ сервисов
+## 1. Проверка состояния сервисов
 | Сервис | Команда | Ожидаемый результат |
 | ------ | ------- | ------------------- |
 | Docker-контейнеры | `docker compose ps` | Все контейнеры в состоянии `Up` |
@@ -17,7 +24,7 @@
 | Backend APIs | `curl -fsSL http://127.0.0.1:<PORT>/health` (merchant 18001, trader 8002, gateway 8003, admin 8004, support 8005, teamlead 8006) | `{"status":"ok"}` |
 | Worker | в логах сервиса `worker` строка `ready.` | Есть |
 
-## 2. Проверка базовой аутентификации
+## 2. Проверка базовой аутентификации администратора
 1. Получить токен администратора (seed-данные):
    ```bash
    curl -X POST http://127.0.0.1:8004/admin/auth/token \
@@ -37,7 +44,7 @@ for i in $(seq 1 101); do curl -s -o /dev/null -w "%{http_code}\n" http://127.0.
 ```
 Ожидаем: первые 100 → 200, 101-й → 429.
 
-## 4. Создание мерчанта и магазина
+## 4. Создание мерчанта и заказа
 ```bash
 TOKEN=<ADMIN_TOKEN>
 # 4.1 Мерчант

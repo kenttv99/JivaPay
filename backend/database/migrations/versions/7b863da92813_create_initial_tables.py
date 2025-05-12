@@ -1,8 +1,8 @@
 """create_initial_tables
 
-Revision ID: 2509d07d73b3
+Revision ID: 7b863da92813
 Revises: 
-Create Date: 2025-05-10 00:46:36.198978
+Create Date: 2025-05-11 23:17:32.451613
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '2509d07d73b3'
+revision: str = '7b863da92813'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -210,33 +210,14 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('user_id')
     )
-    op.create_table('traders',
+    op.create_table('teamleads',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('first_name', sa.String(length=100), nullable=True),
-    sa.Column('last_name', sa.String(length=100), nullable=True),
-    sa.Column('avatar_url', sa.String(length=255), nullable=True),
-    sa.Column('preferred_fiat_currency_id', sa.Integer(), nullable=True),
-    sa.Column('crypto_currency_id', sa.Integer(), nullable=True),
-    sa.Column('verification_level', sa.String(length=50), nullable=False),
-    sa.Column('pay_in', sa.Boolean(), nullable=False),
-    sa.Column('pay_out', sa.Boolean(), nullable=False),
-    sa.Column('trafic_priority', sa.Integer(), nullable=False),
-    sa.Column('in_work', sa.Boolean(), nullable=False),
-    sa.Column('two_factor_auth_token', sa.String(length=32), nullable=True),
-    sa.Column('time_zone_id', sa.Integer(), nullable=True),
-    sa.Column('base_pay_in_limit', sa.DECIMAL(precision=20, scale=2), nullable=False),
-    sa.Column('base_pay_out_limit', sa.DECIMAL(precision=20, scale=2), nullable=False),
-    sa.ForeignKeyConstraint(['crypto_currency_id'], ['crypto_currencies.id'], ),
-    sa.ForeignKeyConstraint(['preferred_fiat_currency_id'], ['fiat_currencies.id'], ),
-    sa.ForeignKeyConstraint(['time_zone_id'], ['time_zones.id'], ),
+    sa.Column('username', sa.String(length=100), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('user_id')
     )
-    op.create_index('ix_trader_priority_lookup', 'traders', ['in_work', 'trafic_priority'], unique=False)
-    op.create_index(op.f('ix_traders_in_work'), 'traders', ['in_work'], unique=False)
-    op.create_index(op.f('ix_traders_trafic_priority'), 'traders', ['trafic_priority'], unique=False)
     op.create_table('avalible_bank_methods',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('fiat_id', sa.Integer(), nullable=False),
@@ -250,17 +231,6 @@ def upgrade() -> None:
     )
     op.create_index('ix_avalible_bank_method_lookup', 'avalible_bank_methods', ['fiat_id', 'bank_id', 'method_id'], unique=True)
     op.create_index(op.f('ix_avalible_bank_methods_id'), 'avalible_bank_methods', ['id'], unique=False)
-    op.create_table('balance_traders',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('trader_id', sa.Integer(), nullable=False),
-    sa.Column('fiat_currency_id', sa.Integer(), nullable=False),
-    sa.Column('balance', sa.DECIMAL(precision=20, scale=2), nullable=False),
-    sa.Column('updated_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['fiat_currency_id'], ['fiat_currencies.id'], ),
-    sa.ForeignKeyConstraint(['trader_id'], ['traders.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_balance_traders_id'), 'balance_traders', ['id'], unique=False)
     op.create_table('merchant_stores',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('merchant_id', sa.Integer(), nullable=False),
@@ -287,6 +257,58 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('public_api_key')
     )
+    op.create_table('traders',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('first_name', sa.String(length=100), nullable=True),
+    sa.Column('last_name', sa.String(length=100), nullable=True),
+    sa.Column('avatar_url', sa.String(length=255), nullable=True),
+    sa.Column('preferred_fiat_currency_id', sa.Integer(), nullable=True),
+    sa.Column('crypto_currency_id', sa.Integer(), nullable=True),
+    sa.Column('verification_level', sa.String(length=50), nullable=False),
+    sa.Column('pay_in', sa.Boolean(), nullable=False),
+    sa.Column('pay_out', sa.Boolean(), nullable=False),
+    sa.Column('trafic_priority', sa.Integer(), nullable=False),
+    sa.Column('in_work', sa.Boolean(), nullable=False),
+    sa.Column('two_factor_auth_token', sa.String(length=32), nullable=True),
+    sa.Column('time_zone_id', sa.Integer(), nullable=True),
+    sa.Column('base_pay_in_limit', sa.DECIMAL(precision=20, scale=2), nullable=False),
+    sa.Column('base_pay_out_limit', sa.DECIMAL(precision=20, scale=2), nullable=False),
+    sa.Column('team_lead_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['crypto_currency_id'], ['crypto_currencies.id'], ),
+    sa.ForeignKeyConstraint(['preferred_fiat_currency_id'], ['fiat_currencies.id'], ),
+    sa.ForeignKeyConstraint(['team_lead_id'], ['teamleads.id'], ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['time_zone_id'], ['time_zones.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('user_id')
+    )
+    op.create_index('ix_trader_priority_lookup', 'traders', ['in_work', 'trafic_priority'], unique=False)
+    op.create_index(op.f('ix_traders_in_work'), 'traders', ['in_work'], unique=False)
+    op.create_index(op.f('ix_traders_team_lead_id'), 'traders', ['team_lead_id'], unique=False)
+    op.create_index(op.f('ix_traders_trafic_priority'), 'traders', ['trafic_priority'], unique=False)
+    op.create_table('balance_stores',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('store_id', sa.Integer(), nullable=False),
+    sa.Column('crypto_currency_id', sa.Integer(), nullable=False),
+    sa.Column('balance', sa.DECIMAL(precision=20, scale=8), nullable=False),
+    sa.Column('updated_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['crypto_currency_id'], ['crypto_currencies.id'], ),
+    sa.ForeignKeyConstraint(['store_id'], ['merchant_stores.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_balance_stores_id'), 'balance_stores', ['id'], unique=False)
+    op.create_table('balance_traders',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('trader_id', sa.Integer(), nullable=False),
+    sa.Column('fiat_currency_id', sa.Integer(), nullable=False),
+    sa.Column('balance', sa.DECIMAL(precision=20, scale=2), nullable=False),
+    sa.Column('updated_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['fiat_currency_id'], ['fiat_currencies.id'], ),
+    sa.ForeignKeyConstraint(['trader_id'], ['traders.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_balance_traders_id'), 'balance_traders', ['id'], unique=False)
     op.create_table('req_traders',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('fiat_id', sa.Integer(), nullable=False),
@@ -312,57 +334,6 @@ def upgrade() -> None:
     op.create_index(op.f('ix_req_traders_id'), 'req_traders', ['id'], unique=False)
     op.create_index(op.f('ix_req_traders_status'), 'req_traders', ['status'], unique=False)
     op.create_index(op.f('ix_req_traders_trader_id'), 'req_traders', ['trader_id'], unique=False)
-    op.create_table('trader_addresses',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('trader_id', sa.Integer(), nullable=False),
-    sa.Column('address', sa.String(length=255), nullable=False),
-    sa.Column('fiat_currency_id', sa.Integer(), nullable=False),
-    sa.Column('status', sa.String(length=50), nullable=False),
-    sa.Column('created_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['fiat_currency_id'], ['fiat_currencies.id'], ),
-    sa.ForeignKeyConstraint(['trader_id'], ['traders.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index('ix_trader_address_status', 'trader_addresses', ['status'], unique=False)
-    op.create_index(op.f('ix_trader_addresses_id'), 'trader_addresses', ['id'], unique=False)
-    op.create_index(op.f('ix_trader_addresses_status'), 'trader_addresses', ['status'], unique=False)
-    op.create_table('trader_commissions',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('trader_id', sa.Integer(), nullable=False),
-    sa.Column('commission_payin', sa.DECIMAL(precision=20, scale=2), nullable=False),
-    sa.Column('commission_payout', sa.DECIMAL(precision=20, scale=2), nullable=False),
-    sa.Column('updated_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['trader_id'], ['traders.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_trader_commissions_id'), 'trader_commissions', ['id'], unique=False)
-    op.create_table('balance_stores',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('store_id', sa.Integer(), nullable=False),
-    sa.Column('crypto_currency_id', sa.Integer(), nullable=False),
-    sa.Column('balance', sa.DECIMAL(precision=20, scale=8), nullable=False),
-    sa.Column('updated_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['crypto_currency_id'], ['crypto_currencies.id'], ),
-    sa.ForeignKeyConstraint(['store_id'], ['merchant_stores.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_balance_stores_id'), 'balance_stores', ['id'], unique=False)
-    op.create_table('full_requisites_settings',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('requisite_id', sa.Integer(), nullable=False),
-    sa.Column('pay_in', sa.Boolean(), nullable=False),
-    sa.Column('pay_out', sa.Boolean(), nullable=False),
-    sa.Column('lower_limit', sa.DECIMAL(precision=20, scale=2), nullable=False),
-    sa.Column('upper_limit', sa.DECIMAL(precision=20, scale=2), nullable=False),
-    sa.Column('total_limit', sa.DECIMAL(precision=20, scale=2), nullable=False),
-    sa.Column('turnover_limit_minutes', sa.Integer(), nullable=False),
-    sa.Column('turnover_day_max', sa.DECIMAL(precision=20, scale=2), nullable=False),
-    sa.ForeignKeyConstraint(['requisite_id'], ['req_traders.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('requisite_id')
-    )
-    op.create_index(op.f('ix_full_requisites_settings_id'), 'full_requisites_settings', ['id'], unique=False)
     op.create_table('store_addresses',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('store_id', sa.Integer(), nullable=False),
@@ -398,6 +369,46 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_store_gateways_id'), 'store_gateways', ['id'], unique=False)
+    op.create_table('trader_addresses',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('trader_id', sa.Integer(), nullable=False),
+    sa.Column('address', sa.String(length=255), nullable=False),
+    sa.Column('fiat_currency_id', sa.Integer(), nullable=False),
+    sa.Column('status', sa.String(length=50), nullable=False),
+    sa.Column('created_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['fiat_currency_id'], ['fiat_currencies.id'], ),
+    sa.ForeignKeyConstraint(['trader_id'], ['traders.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index('ix_trader_address_status', 'trader_addresses', ['status'], unique=False)
+    op.create_index(op.f('ix_trader_addresses_id'), 'trader_addresses', ['id'], unique=False)
+    op.create_index(op.f('ix_trader_addresses_status'), 'trader_addresses', ['status'], unique=False)
+    op.create_table('trader_commissions',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('trader_id', sa.Integer(), nullable=False),
+    sa.Column('commission_payin', sa.DECIMAL(precision=20, scale=2), nullable=False),
+    sa.Column('commission_payout', sa.DECIMAL(precision=20, scale=2), nullable=False),
+    sa.Column('updated_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['trader_id'], ['traders.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_trader_commissions_id'), 'trader_commissions', ['id'], unique=False)
+    op.create_table('full_requisites_settings',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('requisite_id', sa.Integer(), nullable=False),
+    sa.Column('pay_in', sa.Boolean(), nullable=False),
+    sa.Column('pay_out', sa.Boolean(), nullable=False),
+    sa.Column('lower_limit', sa.DECIMAL(precision=20, scale=2), nullable=False),
+    sa.Column('upper_limit', sa.DECIMAL(precision=20, scale=2), nullable=False),
+    sa.Column('total_limit', sa.DECIMAL(precision=20, scale=2), nullable=False),
+    sa.Column('turnover_limit_minutes', sa.Integer(), nullable=False),
+    sa.Column('turnover_day_max', sa.DECIMAL(precision=20, scale=2), nullable=False),
+    sa.ForeignKeyConstraint(['requisite_id'], ['req_traders.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('requisite_id')
+    )
+    op.create_index(op.f('ix_full_requisites_settings_id'), 'full_requisites_settings', ['id'], unique=False)
     op.create_table('incoming_orders',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('merchant_id', sa.Integer(), nullable=False),
@@ -484,7 +495,7 @@ def upgrade() -> None:
     sa.UniqueConstraint('incoming_order_id')
     )
     op.create_index(op.f('ix_order_history_client_id'), 'order_history', ['client_id'], unique=False)
-    op.create_index(op.f('ix_order_history_created_at'), 'order_history', ['created_at'], unique=False)
+    op.create_index('ix_order_history_created_at', 'order_history', ['created_at'], unique=False)
     op.create_index(op.f('ix_order_history_hash_id'), 'order_history', ['hash_id'], unique=True)
     op.create_index(op.f('ix_order_history_id'), 'order_history', ['id'], unique=False)
     op.create_index(op.f('ix_order_history_merchant_id'), 'order_history', ['merchant_id'], unique=False)
@@ -585,7 +596,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_order_history_merchant_id'), table_name='order_history')
     op.drop_index(op.f('ix_order_history_id'), table_name='order_history')
     op.drop_index(op.f('ix_order_history_hash_id'), table_name='order_history')
-    op.drop_index(op.f('ix_order_history_created_at'), table_name='order_history')
+    op.drop_index('ix_order_history_created_at', table_name='order_history')
     op.drop_index(op.f('ix_order_history_client_id'), table_name='order_history')
     op.drop_table('order_history')
     op.drop_index('ix_incoming_orders_status_created', table_name='incoming_orders')
@@ -595,6 +606,14 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_incoming_orders_id'), table_name='incoming_orders')
     op.drop_index('ix_incoming_orders_client_id', table_name='incoming_orders')
     op.drop_table('incoming_orders')
+    op.drop_index(op.f('ix_full_requisites_settings_id'), table_name='full_requisites_settings')
+    op.drop_table('full_requisites_settings')
+    op.drop_index(op.f('ix_trader_commissions_id'), table_name='trader_commissions')
+    op.drop_table('trader_commissions')
+    op.drop_index(op.f('ix_trader_addresses_status'), table_name='trader_addresses')
+    op.drop_index(op.f('ix_trader_addresses_id'), table_name='trader_addresses')
+    op.drop_index('ix_trader_address_status', table_name='trader_addresses')
+    op.drop_table('trader_addresses')
     op.drop_index(op.f('ix_store_gateways_id'), table_name='store_gateways')
     op.drop_table('store_gateways')
     op.drop_index(op.f('ix_store_commissions_id'), table_name='store_commissions')
@@ -603,31 +622,25 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_store_addresses_id'), table_name='store_addresses')
     op.drop_index('ix_store_address_status', table_name='store_addresses')
     op.drop_table('store_addresses')
-    op.drop_index(op.f('ix_full_requisites_settings_id'), table_name='full_requisites_settings')
-    op.drop_table('full_requisites_settings')
-    op.drop_index(op.f('ix_balance_stores_id'), table_name='balance_stores')
-    op.drop_table('balance_stores')
-    op.drop_index(op.f('ix_trader_commissions_id'), table_name='trader_commissions')
-    op.drop_table('trader_commissions')
-    op.drop_index(op.f('ix_trader_addresses_status'), table_name='trader_addresses')
-    op.drop_index(op.f('ix_trader_addresses_id'), table_name='trader_addresses')
-    op.drop_index('ix_trader_address_status', table_name='trader_addresses')
-    op.drop_table('trader_addresses')
     op.drop_index(op.f('ix_req_traders_trader_id'), table_name='req_traders')
     op.drop_index(op.f('ix_req_traders_status'), table_name='req_traders')
     op.drop_index(op.f('ix_req_traders_id'), table_name='req_traders')
     op.drop_index('ix_req_trader_status', table_name='req_traders')
     op.drop_table('req_traders')
-    op.drop_table('merchant_stores')
     op.drop_index(op.f('ix_balance_traders_id'), table_name='balance_traders')
     op.drop_table('balance_traders')
-    op.drop_index(op.f('ix_avalible_bank_methods_id'), table_name='avalible_bank_methods')
-    op.drop_index('ix_avalible_bank_method_lookup', table_name='avalible_bank_methods')
-    op.drop_table('avalible_bank_methods')
+    op.drop_index(op.f('ix_balance_stores_id'), table_name='balance_stores')
+    op.drop_table('balance_stores')
     op.drop_index(op.f('ix_traders_trafic_priority'), table_name='traders')
+    op.drop_index(op.f('ix_traders_team_lead_id'), table_name='traders')
     op.drop_index(op.f('ix_traders_in_work'), table_name='traders')
     op.drop_index('ix_trader_priority_lookup', table_name='traders')
     op.drop_table('traders')
+    op.drop_table('merchant_stores')
+    op.drop_index(op.f('ix_avalible_bank_methods_id'), table_name='avalible_bank_methods')
+    op.drop_index('ix_avalible_bank_method_lookup', table_name='avalible_bank_methods')
+    op.drop_table('avalible_bank_methods')
+    op.drop_table('teamleads')
     op.drop_table('supports')
     op.drop_index(op.f('ix_payment_methods_id'), table_name='payment_methods')
     op.drop_table('payment_methods')
