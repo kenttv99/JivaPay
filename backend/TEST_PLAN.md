@@ -1,123 +1,211 @@
-# ПЛАН РУЧНОГО ТЕСТИРОВАНИЯ JivaPay
+# План ручного тестирования JivaPay
 
-Версия документа: v2025.05.10
+Версия: v2025.05.10
 
 ## 0. Предусловия
-1. Все контейнеры запущены командой `docker compose up -d`.  
-2. На сервере доступны `curl`, `docker`, `psql` и `redis-cli` (в контейнере).
-3. В `.env` применены актуальные конфиги.
-4. Конфигурация Redis `vm.overcommit_memory=1` установлена **на хосте** и контейнер `redis` перезапущен.
-5. **Первичное заполнение БД (только при пустой базе):**  
+
+1. Установлены инструменты: `docker`, `curl`, `psql` на хосте.
+2. Переменные окружения в файле `.env` актуальны.
+3. На хосте для Redis выставлен `vm.overcommit_memory = 1`, контейнер перезапущен.
+4. Запустите все сервисы:
    ```bash
-   # Конфиг и роли
+   docker compose up -d
+   ```
+5. Если база пуста, выполните сидирование:
+   ```bash
    docker compose exec merchant_api python -m backend.scripts.seed_config
    docker compose exec merchant_api python -m backend.scripts.seed_data
-   ```  
-   Скрипты создадут дефолтного администратора `admin@example.com / admin123` и системные справочники.
+   ```
 
 ## 1. Проверка состояния сервисов
-| Сервис | Команда | Ожидаемый результат |
-| ------ | ------- | ------------------- |
-| Docker-контейнеры | `docker compose ps` | Все контейнеры в состоянии `Up` |
-| Postgres | `docker compose exec postgres pg_isready` | `accepting connections` |
-| Redis | `docker compose exec redis redis-cli PING` | `PONG` |
-| Backend APIs | `curl -fsSL http://127.0.0.1:<PORT>/health` (merchant 18001, trader 8002, gateway 8003, admin 8004, support 8005, teamlead 8006) | `{"status":"ok"}` |
-| Worker | в логах сервиса `worker` строка `ready.` | Есть |
 
-## 2. Проверка базовой аутентификации администратора
-1. Получить токен администратора (seed-данные):
+1. Убедитесь, что все контейнеры `Up`:
+   ```bash
+   docker compose ps
+   ```
+2. Проверьте доступность PostgreSQL:
+   ```bash
+   docker compose exec postgres pg_isready
+   # → accepting connections
+   ```
+3. Проверьте Redis:
+   ```bash
+   docker compose exec redis redis-cli PING
+   # → PONG
+   ```
+4. Проверьте endpoint `/health` каждого API:
+   ```bash
+   curl -fsSL http://127.0.0.1:<PORT>/health
+   ```
+   - PORT: 8001 (merchant), 8002 (trader), 8003 (gateway), 8004 (admin), 8005 (support), 8006 (teamlead).
+   - Ожидается `{"status":"ok"}`.
+5. Проверьте воркер:
+   ```bash
+   docker compose logs worker --tail=50
+   # в логах должна быть строка `ready.`
+   ```
+
+## 2. Аутентификация администратора
+
+1. Получите токен администратора:
    ```bash
    curl -X POST http://127.0.0.1:8004/admin/auth/token \
-        -d 'username=admin@example.com&password=admin123' \
+        -d 'username=admin@example.com&password=adminpass' \
         -H 'Content-Type: application/x-www-form-urlencoded'
-   # → JSON с `access_token`
    ```
-2. Попытка запроса защищённого ресурса без токена → 401.
-3. Повтор с заголовком `Authorization: Bearer <TOKEN>` → 200.
+   - Ожидается JSON: `{"access_token":"...","token_type":"bearer"}`.
+2. Попытка доступа без токена:
+   ```bash
+   curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8004/admin/users
+   # → 401
+   ```
+3. Доступ с токеном:
+   ```bash
+   curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8004/admin/users \
+        -H "Authorization: Bearer <TOKEN>"
+   # → 200
+   ```
 
-## 3. Тест лимитов Rate-Limiter
-> После применения миграции с записью `RATE_LIMIT_DEFAULT` = `100-m`.
+## 3. Аутентификация саппорта
 
-```bash
-# 101 быстрый запрос в цикле
-for i in $(seq 1 101); do curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:18001/health; done
-```
-Ожидаем: первые 100 → 200, 101-й → 429.
-
-## 4. Создание мерчанта и заказа
-```bash
-TOKEN=<ADMIN_TOKEN>
-# 4.1 Мерчант
-curl -X POST http://127.0.0.1:8004/admin/register/merchant \
-     -H "Authorization: Bearer $TOKEN" \
+1. Попытка входа с некорректными данными:
+   ```bash
+   curl -s -o /dev/null -w "%{http_code}" \
+     -X POST http://127.0.0.1:8005/support/auth/login \
      -H 'Content-Type: application/json' \
-     -d '{"email":"merchant1@example.com","password":"m123","company_name":"Shop Ltd"}'
-# 4.2 Логин мерчанта → получить MERCHANT_TOKEN
-# 4.3 Создать заказ (Pay-In) – пока store-эндпоинт не реализован
-curl -X POST http://127.0.0.1:18001/merchant/orders \
-     -H "Authorization: Bearer $MERCHANT_TOKEN" \
-     -H 'Content-Type: application/json' \
-     -d '{"direction":"PAYIN","amount_fiat":100.50,"fiat_currency_id":1,"crypto_currency_id":1,"customer_id":"CUST-42"}'
-```
-Ожидаем HTTP 201 и запись в таблице `incoming_orders` со статусом `new`.
+     -d '{"email":"nonexistent@example.com","password":"wrong"}'
+   # → 401
+   ```
+2. Создайте саппорта через админа (если еще не создан):
+   ```bash
+   curl -X POST http://127.0.0.1:8004/admin/register/support \
+        -H "Authorization: Bearer $ADMIN_TOKEN" \
+        -H 'Content-Type: application/json' \
+        -d '{"email":"support1@example.com","password":"s123","access_to":["orders","users"]}'
+   # → 201
+   ```
+3. Успешный вход саппорта:
+   ```bash
+   curl -X POST http://127.0.0.1:8005/support/auth/login \
+        -H 'Content-Type: application/json' \
+        -d '{"email":"support1@example.com","password":"s123"}'
+   ```
+   - Ожидается JSON: `{"id":<ID>,"email":"support1@example.com"}`.
 
-## 5. Пай-ин поток (Gateway)
-```bash
-API_KEY=<PUBLIC_API_KEY_STORE>
-# Init pay-in
-curl -X POST http://127.0.0.1:8003/gateway/payin/init \
-     -H 'Content-Type: application/json' \
-     -H "X-API-KEY: $API_KEY" \
-     -d '{"amount":100.50,"customer_id":"CUST-42"}'
-```
-Ответ: `invoice_id`, `payment_details`.
+## 4. Тест Rate Limiter
 
-1. Проверить, что в БД создан `incoming_orders` со статусом `new`.
-2. В логах worker появилось задание `process_order_task` → статус `assigned`.
+1. Выполните 101 быстрый запрос к `/health`:
+   ```bash
+   for i in $(seq 1 101); do
+     curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8001/health
+   done
+   ```
+2. Первые 100 ответов должны быть `200`, 101-й — `429`.
 
-## 6. Проверка Celery
-```bash
-# Отправить ping-задачу
-curl -X POST http://127.0.0.1:8004/admin/debug/celery/ping
-# Логи worker: task succeeded → "pong"
-```
+## 5. Создание мерчанта и заказов
 
-## 7. Баланс-менеджер (happy-path)
-После подтверждения трейдером:
-1. `order_status_manager` меняет статус на `completed`.
-2. Проверить изменения в таблицах `balance_store`, `balance_trader`, истории.
+1. Создайте мерчанта (используйте `$ADMIN_TOKEN`):
+   ```bash
+   curl -X POST http://127.0.0.1:8004/admin/register/merchant \
+        -H "Authorization: Bearer $ADMIN_TOKEN" \
+        -H 'Content-Type: application/json' \
+        -d '{"email":"merchant1@example.com","password":"m123","company_name":"Shop Ltd"}'
+   ```
+   - Ожидается HTTP `201` и JSON с данными мерчанта.
+2. Получите токен мерчанта:
+   ```bash
+   curl -X POST http://127.0.0.1:8001/merchant/auth/token \
+        -d 'username=merchant1@example.com&password=m123' \
+        -H 'Content-Type: application/x-www-form-urlencoded'
+   ```
+   - Ожидается JSON с `access_token`.
+3. Создайте Pay-In заказ:
+   ```bash
+   curl -X POST http://127.0.0.1:8001/merchant/orders \
+        -H "Authorization: Bearer $MERCHANT_TOKEN" \
+        -H 'Content-Type: application/json' \
+        -d '{"direction":"PAYIN","amount_fiat":100.50,"fiat_currency_id":1,"crypto_currency_id":1,"customer_id":"CUST-42"}'
+   ```
+   - Ожидается HTTP `201` и запись в таблице `incoming_orders` со статусом `new`.
 
-## 8. Callback-service
-Проверить, что HTTP POST отправлен на `callback_url` мерчанта (можно задать httpbin URL и смотреть логи).
+## 6. Поток Pay-In через Gateway
 
-## 9. Негативные сценарии
-| Тест | Ожидаемый результат |
-| ---- | ------------------- |
-| Отправить Pay-in без `amount` | 422 Unprocessable Entity |
-| Завысить `amount` > `upper_limit` магазина | 400 + `LimitExceeded` |
-| Превышение лимитов Rate-Limiter | 429 |
+1. Возьмите `API_KEY` вашего магазина из таблицы `merchant_store`.
+2. Инициируйте платёж:
+   ```bash
+   curl -X POST http://127.0.0.1:8003/gateway/payin/init \
+        -H 'Content-Type: application/json' \
+        -H "X-API-KEY: $API_KEY" \
+        -d '{"amount":100.50,"customer_id":"CUST-42"}'
+   ```
+   - Ожидается JSON с `invoice_id` и деталями платежа.
+3. Удостоверьтесь, что в `incoming_orders` появился заказ со статусом `new`.
+4. Проверьте логи воркера: должна быть запись о запуске `process_order_task`, статус заказа — `assigned`.
 
-## 10. Завершение
+## 7. Проверка Celery
+
+1. Отправьте ping задачу:
+   ```bash
+   curl -X POST http://127.0.0.1:8004/admin/debug/celery/ping \
+        -H "Authorization: Bearer $ADMIN_TOKEN"
+   ```
+2. В логах воркера найдите сообщение `pong`.
+
+## 8. Happy-path баланс-менеджера
+
+1. Подтвердите платёж трейдером:
+   ```bash
+   curl -X PATCH http://127.0.0.1:8002/trader/orders/<ORDER_ID>/confirm \
+        -H "Authorization: Bearer $TRADER_TOKEN" \
+        -F file=@receipt.png
+   ```
+2. Статус заказа должен стать `completed`.
+3. Проверьте таблицы `balance_store`, `balance_trader` и истории (`*_history`).
+
+## 9. Callback Service
+
+1. В настройках магазина (`merchant_store.callback_url`) укажите `https://httpbin.org/post`.
+2. Повторите подтверждение заказа (как в Разделе 7).
+3. Убедитесь, что HTTP POST с данными отправлен на httpbin (проверка логов httpbin).
+
+## 10. Негативные сценарии
+
+1. Pay-In без обязательного поля `amount`:
+   ```bash
+   curl -X POST http://127.0.0.1:8003/gateway/payin/init \
+        -H 'Content-Type: application/json' \
+        -H "X-API-KEY: $API_KEY" \
+        -d '{"customer_id":"CUST-42"}'
+   ```
+   - Ожидается HTTP `422`.
+2. Pay-In с суммой выше лимита:
+   ```bash
+   curl -X POST http://127.0.0.1:8003/gateway/payin/init \
+        -H 'Content-Type: application/json' \
+        -H "X-API-KEY: $API_KEY" \
+        -d '{"amount":999999,"customer_id":"CUST-42"}'
+   ```
+   - Ожидается HTTP `400` и ошибка `LimitExceeded`.
+3. Повтор теста Rate Limiter — см. Раздел 4.
+
+## 11. Управление трейдерами Тимлидом
+
+1. Получите токен тимлида:
+   ```bash
+   curl -X POST http://127.0.0.1:8006/teamlead/auth/token \
+        -d 'username=lead1@example.com&password=lead123' \
+        -H 'Content-Type: application/x-www-form-urlencoded'
+   ```
+2. Переключите трафик трейдера:
+   ```bash
+   curl -X PATCH http://127.0.0.1:8006/teamlead/traders/$TRADER_ID/traffic \
+        -H "Authorization: Bearer $TEAMLEAD_TOKEN" \
+        -H 'Content-Type: application/json' \
+        -d '{"in_work":false}'
+   ```
+   - Ожидается HTTP `200` и `{"trader_id": <ID>, "in_work": false}`.
+3. Повторите с `{"in_work":true}` — трафик должен восстановиться.
+
+## 12. Завершение
 * Удостоверьтесь, что в логах нет ошибок `ERROR`/`WARNING` кроме известных benign-messages.
 * Обновите `IMPLEMENTATION_TRACKER.md` — отметьте выполненные тесты в разделе 8 «Тестирование».  
-
-## 7. Управление трейдерами Тимлидом
-### 7.1 Логин Тимлида
-```bash
-curl -X POST http://127.0.0.1:8006/teamlead/auth/token \
-     -d 'username=lead1@example.com&password=lead123' \
-     -H 'Content-Type: application/x-www-form-urlencoded'
-# → JSON с `access_token` (TEAMLEAD_TOKEN)
-```
-### 7.2 Переключить трафик трейдера
-```bash
-TRADER_ID=<ID_Трейдера>
-curl -X PATCH http://127.0.0.1:8006/teamlead/traders/$TRADER_ID/traffic \
-     -H "Authorization: Bearer $TEAMLEAD_TOKEN" \
-     -H 'Content-Type: application/json' \
-     -d '{"in_work": false}'
-```
-Ожидаем: 200 и `{"trader_id": TRADER_ID, "in_work": false}`. Повтор с `true` включает трафик обратно.
-
----
-**Важно:** Перед каждым блоком тестов очищайте логи (`docker compose logs -f --tail=0`) и/или метрики, чтобы проще отслеживать результат. 

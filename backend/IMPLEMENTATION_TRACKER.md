@@ -117,8 +117,10 @@
         * При необходимости другие вспомогательные эндпоинты.
 - [x] **Роутер Трейдера (`api_routers/trader/router.py`)**: Эндпоинты для трейдеров.
     - Примечания: Реализованы GET `/orders`, POST `/orders/{order_id}/confirm`, POST `/orders/{order_id}/cancel` с вызовом order_status_manager.
-- [x] **Роутер Администратора (`api_routers/admin/register.py`)**: Эндпоинты для админов.
-    - Примечания: Реализованы `POST /admin/register/merchant` и `POST /admin/register/support`.
+- [x] **Роутер Саппорта (`api_routers/support/auth.py`)**: Эндпоинт логина саппорта и доступ к ограниченному набору операций.
+    - Примечания: Реализован `POST /support/auth/login`; support видит только часть админского функционала (например, просмотр, поиск).  
+- [x] **Роутер Администратора (`api_routers/admin/*`)**: Полный набор эндпоинтов, включает функционал саппорта и расширенные возможности.
+    - Примечания: Реализованы `POST /admin/auth/token`, `GET /admin/users`, `POST /admin/register/merchant`, `POST /admin/register/support`, `POST /admin/debug/celery/ping`.
 - [x] **Публичный Роутер/Роутер Справочников (`api_routers/public_router.py`)**: Эндпоинты для справочных данных (валюты, методы оплаты).
     - Примечания: Реализованы GET `/reference/banks/{bank_id}`, `/reference/payment-methods/{method_id}`, `/reference/exchange-rates/{crypto_id}/{fiat_id}`.
 - [x] **Роутер Шлюза (`api_routers/gateway/router.py`)**: Эндпоинты для PayIn/PayOut шлюза.
