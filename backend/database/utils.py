@@ -43,6 +43,18 @@ def get_db_session() -> Generator[Session, None, None]:
         logger.debug(f"DB Session {id(db)} closed.")
         db.close()
 
+# Context-manager variant for direct 'with' usage without breaking generator-based dependency
+@contextmanager
+def get_db_session_cm() -> Generator[Session, None, None]:
+    """Provides a transactional scope around operations via contextmanager."""
+    db = SessionLocal()
+    logger.debug(f"DB Session {id(db)} opened (cm).")
+    try:
+        yield db
+    finally:
+        logger.debug(f"DB Session {id(db)} closed (cm).")
+        db.close()
+
 @contextmanager
 def atomic_transaction(db_session: Session) -> Generator[None, None, None]:
     """Provides a context manager for atomic database transactions.

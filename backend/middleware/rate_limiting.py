@@ -10,7 +10,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from slowapi.extension import RateLimitExceeded  # Re-export for clarity in main.py
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-from backend.database.utils import get_db_session
+from backend.database.utils import get_db_session_cm
 from backend.utils.config_loader import get_typed_config_value
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ else:
 # Read default rate limit from DB configuration
 def get_default_rate_limit() -> str:
     """Fetch the default rate limit from DB (RATE_LIMIT_DEFAULT key)."""
-    with get_db_session() as db:
+    with get_db_session_cm() as db:
         # default format: "100/minute"
         limit = get_typed_config_value("RATE_LIMIT_DEFAULT", db, str, default="100/minute")
     return limit

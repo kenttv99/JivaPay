@@ -8,7 +8,7 @@ from backend.api_routers.admin.debug import router as admin_debug_router
 app = FastAPI(title="Admin API")
 logger = get_logger("admin_server")
 
-app.include_router(register.router, prefix="/admin", tags=["admin"])
+app.include_router(register.router, prefix="/admin", tags=["admin"]) 
 app.include_router(admin_auth_router, prefix="/admin", tags=["admin"])
 app.include_router(admin_debug_router, prefix="/admin", tags=["debug"])
 
