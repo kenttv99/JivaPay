@@ -2,7 +2,7 @@
 
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Body
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from backend.database.utils import get_db_session
 from backend.database.db import Trader, TeamLead
@@ -36,7 +36,7 @@ def trader_stats(
     db: Session = Depends(get_db_session),
     current_teamlead: TeamLead = Depends(get_current_active_teamlead)
 ):
-    trader = db.query(Trader).filter_by(id=trader_id, team_lead_id=current_teamlead.id).one_or_none()
+    trader = db.query(Trader).options(selectinload(Trader.user)).filter_by(id=trader_id, team_lead_id=current_teamlead.id).one_or_none()
     if not trader:
         raise HTTPException(status_code=404, detail="Trader not found")
     # TODO: implement statistics gathering (orders, turnover, etc.)

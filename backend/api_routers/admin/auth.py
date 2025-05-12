@@ -3,7 +3,7 @@ from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from pydantic import BaseModel
 
 from backend.database.utils import get_db_session
@@ -29,7 +29,7 @@ def login_for_access_token(
 ):
     """Authenticate admin via email/password and return JWT Bearer token."""
     # Admins are linked to User via admin_profile relationship
-    user: User | None = db.query(User).filter(User.email == form_data.username).first()
+    user: User | None = db.query(User).options(selectinload(User.admin_profile)).filter(User.email == form_data.username).first()
     if not user or not user.admin_profile:
         logger.warning("Failed admin login attempt (user not admin?): %s", form_data.username)
         raise HTTPException(

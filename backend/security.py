@@ -3,8 +3,9 @@ from typing import Optional
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
 from backend.config.settings import settings
-from backend.database.utils import get_db_session, get_db_session_cm
+from backend.database.utils import get_db_session
 from backend.database.db import User
 
 # OAuth2 scheme for bearer token
@@ -27,7 +28,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return encoded_jwt
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db_session)) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -41,14 +42,14 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
     except JWTError:
         raise credentials_exception
     # Retrieve user from DB
-    with get_db_session_cm() as session:
-        user = session.query(User).filter_by(email=username).one_or_none()
-        if user is None:
-            raise credentials_exception
-        return user
+    user = db.query(User).filter_by(email=username).one_or_none()
+    if user is None:
+        raise credentials_exception
+    return user
 
 
 def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
+    """Ensure the current user is active and return the session-bound instance."""
     if not current_user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
     return current_user 

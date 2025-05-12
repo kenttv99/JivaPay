@@ -4,7 +4,7 @@ import logging
 from typing import List, Optional, Any # Any for placeholder user model
 
 from fastapi import APIRouter, Depends, HTTPException, status, Body, UploadFile, File
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 # Attempt imports (adjusting paths based on new location)
 try:
@@ -31,7 +31,7 @@ def get_current_active_merchant(
     db: Session = Depends(get_db_session)
 ) -> Merchant:
     """Retrieve the Merchant profile for the currently authenticated user."""
-    merchant = db.query(Merchant).filter_by(user_id=current_user.id).one_or_none()
+    merchant = db.query(Merchant).options(selectinload(Merchant.stores)).filter_by(user_id=current_user.id).one_or_none()
     if not merchant:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User is not a merchant")
     return merchant
