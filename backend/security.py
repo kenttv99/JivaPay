@@ -4,7 +4,7 @@ from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from backend.config.settings import settings
-from backend.database.utils import get_db_session
+from backend.database.utils import get_db_session, get_db_session_cm
 from backend.database.db import User
 
 # OAuth2 scheme for bearer token
@@ -41,7 +41,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
     except JWTError:
         raise credentials_exception
     # Retrieve user from DB
-    with get_db_session() as session:
+    with get_db_session_cm() as session:
         user = session.query(User).filter_by(email=username).one_or_none()
         if user is None:
             raise credentials_exception

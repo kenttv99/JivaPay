@@ -7,7 +7,7 @@ import logging
 from typing import Optional, Dict, Any
 
 from backend.database.db import AuditLog
-from backend.database.utils import create_object, get_db_session
+from backend.database.utils import create_object, get_db_session_cm
 from backend.utils.exceptions import DatabaseError
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ def log_event(
         details: Additional context data.
     """
     try:
-        with get_db_session() as session:
+        with get_db_session_cm() as session:
             create_object(session, AuditLog, {
                 'user_id': user_id,
                 'action': action,

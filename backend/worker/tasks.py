@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 try:
     from backend.worker.app import celery_app
     from backend.services import order_processor
-    from backend.database.utils import get_db_session # Needed for config_loader
+    from backend.database.utils import get_db_session, get_db_session_cm # Needed for config_loader
     from backend.utils.exceptions import DatabaseError, CacheError, OrderProcessingError # Add specific retryable errors
     from backend.utils.config_loader import get_typed_config_value
     from backend.utils.notifications import report_critical_error
@@ -53,7 +53,7 @@ def process_order_task(self, incoming_order_id: int):
     max_retries = 3 # Default
     retry_delay_base = 60 # Default delay in seconds (e.g., 1 minute)
     try:
-        with get_db_session() as db_config:
+        with get_db_session_cm() as db_config:
             max_retries = get_typed_config_value("MAX_ORDER_RETRIES", db_config, int, default=3)
             # We'll use Celery's countdown for delay, backoff factor is implicit in increasing countdown
             retry_delay_base = get_typed_config_value("RETRY_DELAY_SECONDS", db_config, int, default=60)
@@ -119,7 +119,7 @@ def update_balance_task(self, order_id: int):
     """Async task to update balances for a completed order."""
     logger.info(f"[Task ID: {self.request.id}] Updating balances for order {order_id}")
     try:
-        with get_db_session() as db:
+        with get_db_session_cm() as db:
             update_balances_for_completed_order(order_id, db)
             logger.info(f"[Task ID: {self.request.id}] Balances updated for order {order_id}")
     except Exception as e:

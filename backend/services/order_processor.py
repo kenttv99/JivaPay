@@ -12,7 +12,7 @@ from sqlalchemy import select
 try:
     # !! Models needed: IncomingOrder, OrderHistory, etc. !!
     from backend.database.db import IncomingOrder, OrderHistory # Add others as needed
-    from backend.database.utils import get_db_session, atomic_transaction, create_object, update_object_db
+    from backend.database.utils import get_db_session, get_db_session_cm, atomic_transaction, create_object, update_object_db
     from backend.utils.exceptions import (
         RequisiteNotFound, LimitExceeded, OrderProcessingError, DatabaseError, ConfigurationError, FraudDetectedError # Add others
     )
@@ -42,7 +42,7 @@ def process_incoming_order(incoming_order_id: int):
     """
     logger.info(f"Starting processing for IncomingOrder ID: {incoming_order_id}")
     # 1. Idempotency check: skip if already processed or not in correct status
-    with get_db_session() as db_check:
+    with get_db_session_cm() as db_check:
         existing = db_check.query(OrderHistory).filter(OrderHistory.incoming_order_id == incoming_order_id).one_or_none()
         if existing:
             logger.warning(f"OrderHistory already exists for IncomingOrder ID {incoming_order_id}. Skipping.")
@@ -59,7 +59,7 @@ def process_incoming_order(incoming_order_id: int):
 
     # 2. Main processing transaction
     try:
-        with get_db_session() as db_main:
+        with get_db_session_cm() as db_main:
             with atomic_transaction(db_main):
                 # 2.1 Load and lock the incoming order
                 incoming_order = (
@@ -143,7 +143,7 @@ def process_incoming_order(incoming_order_id: int):
         logger.info(f"Attempting to update status for failed IncomingOrder ID: {incoming_order_id}")
         # Update status (retrying or failed) reliably in separate transaction
         try:
-            with get_db_session() as db_status:
+            with get_db_session_cm() as db_status:
                 with atomic_transaction(db_status):
                     order_to_update = db_status.query(IncomingOrder).filter_by(id=incoming_order_id).one_or_none()
                     if not order_to_update:
