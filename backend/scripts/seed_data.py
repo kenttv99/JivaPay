@@ -7,7 +7,7 @@ Usage:
 
 import logging
 from sqlalchemy.exc import IntegrityError
-from backend.database.utils import get_db_session
+from backend.database.utils import get_db_session_cm
 from backend.database.db import Role, User, Admin
 from backend.config.crypto import hash_password
 
@@ -24,7 +24,7 @@ def seed_data():
         {"name": "trader", "description": "Trader role", "applies_to": "trader"},
     ]
 
-    with get_db_session() as session:
+    with get_db_session_cm() as session:
         # Seed roles
         for role_data in roles:
             existing = session.query(Role).filter_by(name=role_data["name"]).one_or_none()
