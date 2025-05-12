@@ -6,7 +6,7 @@ Usage:
 """
 
 import logging
-from backend.database.utils import get_db_session
+from backend.database.utils import get_db_session_cm
 from backend.database.db import ConfigurationSetting
 
 
@@ -21,7 +21,7 @@ def seed_config():
         # add other default keys here as needed
     }
 
-    with get_db_session() as session:
+    with get_db_session_cm() as session:
         for key, value in defaults.items():
             existing = session.get(ConfigurationSetting, key)
             if existing:

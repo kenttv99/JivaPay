@@ -154,7 +154,7 @@
 - [x] **Ограничение Частоты Запросов (`slowapi` + Redis)**: 
     - [x] Настроено в `middleware/rate_limiting.py` (Limiter, RedisStorage, Handler).
     - [x] Интегрировано в `main.py` (Middleware, Exception Handler).
-    - [x] TODO закрыт: Чтение лимитов из БД реализовано в `get_default_rate_limit()`; комментарии в коде актуализированы.
+    - [x] TODO закрыт: Чтение лимитов из БД реализовано в `get_default_rate_limit()` с использованием контекстного менеджера `get_db_session_cm()`; комментарии в коде актуализированы.
 - [x] Применить лимиты к роутерам/эндпоинтам.
     - Примечания: Глобальные лимиты применены через SlowAPIMiddleware в каждом server.py
 
