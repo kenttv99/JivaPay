@@ -33,10 +33,12 @@ JivaPay — платформа для обработки платежей, по�
    ```bash
    docker compose up -d
    ```
-4. Если база пуста, выполните сидирование данных:
+4. If database is empty, use the unified management script to initialize and seed:
    ```bash
-   docker compose exec merchant_api python -m backend.scripts.seed_config
-   docker compose exec merchant_api python -m backend.scripts.seed_data
+   # Initialize database schema and seed default data
+   docker compose exec merchant_api python -m backend.scripts.manage_db init
+   docker compose exec merchant_api python -m backend.scripts.manage_db seed_config
+   docker compose exec merchant_api python -m backend.scripts.manage_db seed_data
    ```
 
 ## Запуск в режиме разработки

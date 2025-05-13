@@ -2,14 +2,7 @@ from sqlalchemy.orm import Session
 from typing import Optional, Type, TypeVar
 import logging
 from cachetools import TTLCache, cached
-
-# Attempt to import the model, handle potential circular imports if structure changes
-try:
-    from backend.database.db import ConfigurationSetting
-except ImportError:
-    # This path might be needed if called from scripts outside the main app structure
-    # Or handle potential restructuring later
-    from ..database.db import ConfigurationSetting # Adjust relative path if needed
+from backend.database.db import ConfigurationSetting
 
 logger = logging.getLogger(__name__) # Use standard logging
 

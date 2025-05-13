@@ -647,20 +647,10 @@ class ConfigurationSetting(Base):
     def __repr__(self):
         return f"<ConfigurationSetting(key='{self.key}', value='{self.value[:20]}...')>"
 
-# Add indexes for foreign keys and common filter columns not covered by __table_args__
-# Index('ix_order_history_created_at', OrderHistory.created_at) # Already in __table_args__
-# Index('ix_req_trader_status', ReqTrader.status) # Already in __table_args__
+
 Index('ix_trader_address_status', TraderAddress.status)
 Index('ix_store_address_status', StoreAddress.status)
-# Index('ix_balance_trader_fiat_history_op_type', BalanceTraderFiatHistory.operation_type) # Already in __table_args__
-# Index('ix_balance_trader_crypto_history_op_type', BalanceTraderCryptoHistory.operation_type) # Already in __table_args__
 
-# Index('ix_users_role_id', User.role_id) # Already added previously
-
-# Example of a composite index if needed:
-# Index('ix_merchant_store_currency', MerchantStore.merchant_id, MerchantStore.crypto_currency_id)
-
-# Added model for storing uploaded documents (receipts, proofs)
 class UploadedDocument(Base):
     __tablename__ = "uploaded_documents"
     id: Mapped[int] = mapped_column(primary_key=True, index=True)

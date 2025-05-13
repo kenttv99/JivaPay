@@ -3,16 +3,20 @@
 В этом документе перечислены ключевые компоненты серверной части JivaPay, их назначение и расположение в проекте.
 
 ## 1. API-роутеры (`backend/api_routers`)
-- `admin` — эндпоинты администратора (логин, управление пользователями, регистрация, отладка Celery).
-- `merchant` — операции мерчанта (логин, создание/просмотр ордеров).
-- `trader` — операции трейдера (логин, подтверждение/отмена ордеров).
-- `support` — операции саппорта (логин, поиск и просмотр ордеров и пользователей).
-- `teamlead` — операции тимлида (логин, управление трафиком трейдеров, статистика).
-- `gateway` — публичный шлюз Pay-In/Pay-Out (инициация, статус, подтверждение).
-- `public_router.py` — справочные данные (валюты, методы оплаты, курсы).
+- `common/` — общие модули CRUD-операций и логики для разных ролей:
+  - `stores.py` — управление магазинами (`MerchantStore`)
+  - `merchant_orders.py` — операции мерчанта с ордерами
+  - `trader_orders.py` — операции трейдера с ордерами
+  - `teamlead_traders.py` — управление трейдерами (TeamLead)
+  - `users.py` — CRUD пользователей и профилей (Admin)
+  - `requisites.py` — управление реквизитами трейдеров
+  - `support_orders.py` — работа с тикетами и ордерами (Support)
+  - `settings.py` — CRUD конфигурационных настроек (Admin)
+  - `admin_permissions.py` — управление правами администратора
+- `role-based routers` — пустые роутеры в `backend/servers/*/server.py`, которые динамически включают модули из `common/` и защищаются декоратором `permission_required(role)`.
 
 ## 2. Модели и ORM (`backend/database`)
-- `db.py` — основные SQLAlchemy-модели (`User`, `MerchantStore`, `Trader`, `OrderHistory` и др.).
+- `db.py` — основные SQLAlchemy-модели (`User`, `MerchantStore`, `Trader`, `OrderHistory` и др.), включая новые модели `BalancePlatform`, `BalancePlatformHistory` и поле `platform_profit` в `IncomingOrder` и `OrderHistory`.
 - `utils.py` — утилиты работы с сессией (get_db_session, atomic_transaction, CRUD-функции).
 - `migrations/` — скрипты Alembic для регистраций и изменений схемы БД.
 
@@ -35,7 +39,6 @@
 - `utils/s3_client.py` — работа с S3 (MinIO).
 - `scripts/seed_config.py` — сидирование конфигураций.
 - `scripts/seed_data.py` — сидирование ролей и администратора.
-- `scripts/init_db.py` — инициализация схемы БД без миграций.
 
 ## 5. Фоновый воркер (`backend/worker`)
 - `app.py` — настройка Celery (broker, backend, очереди).

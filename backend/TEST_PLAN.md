@@ -1,6 +1,6 @@
 # План ручного тестирования JivaPay
 
-Версия: v2025.05.10
+Версия: v2025.05.13
 
 ## 0. Предусловия
 
@@ -11,10 +11,11 @@
    ```bash
    docker compose up -d
    ```
-5. Если база пуста, выполните сидирование:
+5. Если база пуста или требуется переинициализация, используйте новый CLI `manage_db` для создания и сидирования базы:
    ```bash
-   docker compose exec merchant_api python -m backend.scripts.seed_config
-   docker compose exec merchant_api python -m backend.scripts.seed_data
+   docker compose exec merchant_api python -m backend.scripts.manage_db init
+   docker compose exec merchant_api python -m backend.scripts.manage_db seed_config
+   docker compose exec merchant_api python -m backend.scripts.manage_db seed_data
    ```
 
 ## 1. Проверка состояния сервисов
@@ -119,16 +120,50 @@
         -d 'username=merchant1@example.com&password=merchant111' \
         -H 'Content-Type: application/x-www-form-urlencoded'
    ```
-   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtZXJjaGFudDFAZXhhbXBsZS5jb20iLCJleHAiOjE3NDcwODMyODN9.pgRHiBPgCwoZaIQ6tJxB0IK3PDQ9W41iEKwWH-pGQHU
    - Ожидается JSON с `access_token`.
-3. Создайте входящий ордер (Pay-In):
+3. Создайте трейдера (используйте `$ADMIN_TOKEN`):
    ```bash
-   curl -X POST http://127.0.0.1:18001/merchant/orders \
+   curl -X POST http://127.0.0.1:8004/admin/register/trader \
+        -H "Authorization: Bearer $ADMIN_TOKEN" \
+        -H 'Content-Type: application/json' \
+        -d '{"email":"trader1@example.com","password":"trader123","first_name":"John","last_name":"Doe"}'
+   ```
+   - Ожидается HTTP `201` и JSON с полями `id` и `email`.
+4. Управление магазинами мерчанта:
+   a) Создайте магазин:
+   ```bash
+   curl -X POST http://127.0.0.1:18001/merchant/stores \
         -H "Authorization: Bearer $MERCHANT_TOKEN" \
         -H 'Content-Type: application/json' \
-        -d '{"direction":"pay_in","amount":100.50,"currency_id":1,"payment_method_id":1,"customer_id":"CUST-42"}'
+        -d '{"store_name":"Shop A","crypto_currency_id":1,"fiat_currency_id":1,"lower_limit":0,"upper_limit":10000,"pay_in_enabled":true,"pay_out_enabled":true}'
    ```
-   - Ожидается HTTP `201` и JSON с данными `IncomingOrder` (статус `new`).
+   - Ожидается HTTP `201` и JSON с данными `MerchantStoreRead`, включая поле `public_api_key`.
+   b) Получите список магазинов:
+   ```bash
+   curl -X GET http://127.0.0.1:18001/merchant/stores \
+        -H "Authorization: Bearer $MERCHANT_TOKEN"
+   ```
+   - Ожидается HTTP `200` и массив магазинов.
+   c) Получите детали магазина по ID:
+   ```bash
+   curl -X GET http://127.0.0.1:18001/merchant/stores/{store_id} \
+        -H "Authorization: Bearer $MERCHANT_TOKEN"
+   ```
+   - Ожидается HTTP `200` и JSON с данными магазина.
+   d) Обновите настройки магазина:
+   ```bash
+   curl -X PATCH http://127.0.0.1:18001/merchant/stores/{store_id} \
+        -H "Authorization: Bearer $MERCHANT_TOKEN" \
+        -H 'Content-Type: application/json' \
+        -d '{"upper_limit":5000,"pay_out_enabled":false}'
+   ```
+   - Ожидается HTTP `200` и обновлённые данные магазина.
+   e) Удалите магазин:
+   ```bash
+   curl -X DELETE http://127.0.0.1:18001/merchant/stores/{store_id} \
+        -H "Authorization: Bearer $MERCHANT_TOKEN"
+   ```
+   - Ожидается HTTP `204`.
 
 ## 6. Поток Pay-In через Gateway
 
@@ -163,6 +198,26 @@
    ```
 2. Статус заказа должен стать `completed`.
 3. Проверьте таблицы `balance_store`, `balance_trader` и истории (`*_history`).
+4. Проверьте баланс платформы через API администратора:
+   ```bash
+   curl -s http://127.0.0.1:8004/admin/platform/balance \
+        -H "Authorization: Bearer $ADMIN_TOKEN"
+   ```
+   - Ожидается HTTP `200` и JSON-массив с объектами:
+       * `currency_code`: строка-код валюты.
+       * `balance`: числовое значение текущего баланса.
+5. Проверьте историю прибыли платформы через API администратора:
+   ```bash
+   curl -s http://127.0.0.1:8004/admin/platform/balance/history \
+        -H "Authorization: Bearer $ADMIN_TOKEN"
+   ```
+   - Ожидается HTTP `200` и JSON-массив с объектами:
+       * `id`: идентификатор записи.
+       * `order_id`: идентификатор заказа.
+       * `currency_code`: строка-код валюты.
+       * `balance_change`: изменение баланса по данной операции.
+       * `new_balance`: новое значение баланса после операции.
+       * `created_at`: метка времени создания записи.
 
 ## 9. Callback Service
 
@@ -210,4 +265,43 @@
 
 ## 12. Завершение
 * Удостоверьтесь, что в логах нет ошибок `ERROR`/`WARNING` кроме известных benign-messages.
-* Обновите `IMPLEMENTATION_TRACKER.md` — отметьте выполненные тесты в разделе 8 «Тестирование».  
+* Обновите `IMPLEMENTATION_TRACKER.md` — отметьте выполненные тесты в разделе 8 «Тестирование».
+
+## 13. Управление настройками (Settings) администратора
+
+1. Создайте новую настройку:
+   ```bash
+   curl -X POST http://127.0.0.1:8004/admin/settings \
+        -H "Authorization: Bearer $ADMIN_TOKEN" \
+        -H 'Content-Type: application/json' \
+        -d '{"key":"NEW_SETTING","value":"100","description":"Test setting"}'
+   ```
+   - Ожидается HTTP `201` и JSON с полями `key`, `value`, `description`, `created_at`, `updated_at`.
+
+2. Получите настройку:
+   ```bash
+   curl -X GET http://127.0.0.1:8004/admin/settings/NEW_SETTING \
+        -H "Authorization: Bearer $ADMIN_TOKEN"
+   ```
+   - Ожидается HTTP `200` и JSON с данными настройки.
+
+3. Обновите настройку:
+   ```bash
+   curl -X PATCH http://127.0.0.1:8004/admin/settings/NEW_SETTING \
+        -H "Authorization: Bearer $ADMIN_TOKEN" \
+        -H 'Content-Type: application/json' \
+        -d '{"value":"200"}'
+   ```
+   - Ожидается HTTP `200` и JSON с обновлённым полем `value`.
+
+4. Удалите настройку:
+   ```bash
+   curl -X DELETE http://127.0.0.1:8004/admin/settings/NEW_SETTING \
+        -H "Authorization: Bearer $ADMIN_TOKEN"
+   ```
+   - Ожидается HTTP `204`.
+
+## 14. Управление правами администратора
+
+1. Получите список прав админов:
+   ```bash

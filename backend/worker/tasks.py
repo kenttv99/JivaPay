@@ -5,17 +5,14 @@ from celery.exceptions import Reject
 from datetime import datetime, timedelta
 
 # Attempt to import Celery app, services, utils, exceptions
-try:
-    from backend.worker.app import celery_app
-    from backend.services import order_processor
-    from backend.database.utils import get_db_session, get_db_session_cm # Needed for config_loader
-    from backend.utils.exceptions import DatabaseError, CacheError, OrderProcessingError # Add specific retryable errors
-    from backend.utils.config_loader import get_typed_config_value
-    from backend.utils.notifications import report_critical_error
-    from backend.database.db import IncomingOrder
-    from backend.services.balance_manager import update_balances_for_completed_order
-except ImportError as e:
-    raise ImportError(f"Could not import required modules for Celery tasks: {e}")
+from backend.worker.app import celery_app
+from backend.services import order_processor
+from backend.database.utils import get_db_session, get_db_session_cm
+from backend.utils.exceptions import DatabaseError, CacheError, OrderProcessingError
+from backend.utils.config_loader import get_typed_config_value
+from backend.utils.notifications import report_critical_error
+from backend.database.db import IncomingOrder
+from backend.services.balance_manager import update_balances_for_completed_order
 
 logger = logging.getLogger(__name__)
 

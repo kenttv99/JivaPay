@@ -7,24 +7,14 @@ from typing import Generator, TypeVar, Type, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError, NoResultFound
 
-# Attempt to import SessionLocal and Base
-try:
-    from backend.database.engine import SessionLocal
-    from backend.database.db import Base # Base declared in db.py
-except ImportError:
-    # Adjust relative path if needed for different execution contexts
-    from .engine import SessionLocal
-    from .db import Base
+from backend.database.engine import SessionLocal
+from backend.database.db import Base  # Base declared in db.py
 
-# Attempt to import custom exceptions
-try:
-    from backend.utils.exceptions import DatabaseError, JivaPayException
-except ImportError:
-    from ..utils.exceptions import DatabaseError, JivaPayException # Adjust relative path
+from backend.utils.exceptions import DatabaseError, JivaPayException
 
 logger = logging.getLogger(__name__) # Use standard logging
 
-ModelType = TypeVar("ModelType", bound=Base) # Generic type for SQLAlchemy models
+ModelType = TypeVar("ModelType", bound=Base)  # type: ignore # Generic type for SQLAlchemy models
 
 # FastAPI dependency that yields a DB session and гарантирует закрытие
 def get_db_session() -> Generator[Session, None, None]:

@@ -6,8 +6,10 @@ from backend.middleware.rate_limiting import get_limiter, get_rate_limit_exceede
 from slowapi.middleware import SlowAPIMiddleware
 from backend.middleware.request_logging import RequestLoggingMiddleware
 from backend.utils.health import add_health_endpoint
+from backend.utils.exception_handlers import register_exception_handlers
 
 app = FastAPI(title="Trader API")
+register_exception_handlers(app)
 logger = get_logger("trader_server")
 
 app.include_router(auth_router, prefix="/trader", tags=["trader"])

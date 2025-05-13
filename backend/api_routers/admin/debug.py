@@ -4,8 +4,11 @@ from fastapi import APIRouter, Depends
 from celery.result import AsyncResult
 
 from backend.worker.app import celery_app
+from backend.common.permissions import permission_required
 
-router = APIRouter()
+router = APIRouter(
+    dependencies=[Depends(permission_required("admin"))]
+)
 
 @router.post("/debug/celery/ping", tags=["debug"], summary="Ping Celery worker and return pong")
 def celery_ping():

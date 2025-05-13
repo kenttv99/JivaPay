@@ -10,10 +10,7 @@ from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 # Attempt to import custom exceptions
-try:
-    from backend.utils.exceptions import JivaPayException
-except ImportError:
-    from ..utils.exceptions import JivaPayException # Adjust relative path
+from backend.utils.exceptions import JivaPayException
 
 logger = logging.getLogger(__name__)
 

@@ -3,16 +3,19 @@ from sqlalchemy.orm import Session
 from backend.database.db import Admin, Merchant, Support, User, Role
 from backend.config.crypto import hash_password
 from backend.config.logger import get_logger
-from backend.shemas_enums import admin_schemas
+from backend.schemas_enums.admin_schemas import MerchantRegister, SupportRegister
 from backend.database.utils import get_db_session
+from backend.common.permissions import permission_required
 
-router = APIRouter()
+router = APIRouter(
+    dependencies=[Depends(permission_required("admin"))]
+)
 logger = get_logger("admin_register")
 
 # Use standard DB session dependency
 
 @router.post("/register/merchant", status_code=201)
-def register_merchant(data: admin_schemas.MerchantRegister, db: Session = Depends(get_db_session)):
+def register_merchant(data: MerchantRegister, db: Session = Depends(get_db_session)):
     # Ensure email is unique across users
     if db.query(User).filter_by(email=data.email).first():
         logger.warning(f"Попытка регистрации мерчанта с существующим email: {data.email}")
@@ -34,7 +37,7 @@ def register_merchant(data: admin_schemas.MerchantRegister, db: Session = Depend
     return {"id": merchant.id, "email": data.email}
 
 @router.post("/register/support", status_code=201)
-def register_support(data: admin_schemas.SupportRegister, db: Session = Depends(get_db_session)):
+def register_support(data: SupportRegister, db: Session = Depends(get_db_session)):
     # Ensure email is unique across users
     if db.query(User).filter_by(email=data.email).first():
         logger.warning(f"Попытка регистрации саппорта с существующим email: {data.email}")

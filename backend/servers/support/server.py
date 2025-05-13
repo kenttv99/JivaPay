@@ -3,12 +3,18 @@ from backend.api_routers.support import auth
 from backend.config.logger import get_logger
 from backend.middleware.request_logging import RequestLoggingMiddleware
 from backend.utils.health import add_health_endpoint
+from backend.utils.exception_handlers import register_exception_handlers
+from backend.api_routers.common.support_orders import router as common_support_orders_router
 
 app = FastAPI(title="Support API")
+register_exception_handlers(app)
 logger = get_logger("support_server")
 
 app.add_middleware(RequestLoggingMiddleware)
 app.include_router(auth.router, prefix="/support", tags=["support"])
+
+# Mount support orders
+app.include_router(common_support_orders_router, prefix="/support", tags=["support"])
 
 # Standard /health endpoint
 add_health_endpoint(app) 

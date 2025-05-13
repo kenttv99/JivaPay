@@ -122,7 +122,8 @@
             *   Загрузить `OrderHistory`, `MerchantStore`, `Trader`.
             *   Загрузить и **заблокировать** (`with_for_update`) соответствующие строки `BalanceStore`, `BalanceTrader`.
             *   Выполнить дебетование/кредитование балансов.
-            *   Создать записи в `BalanceStoreHistory`, `BalanceTraderFiatHistory`, `BalanceTraderCryptoHistory`.
+            *   Обновить баланс платформы (`BalancePlatform`) и создать запись в `BalancePlatformHistory` для фиксации прибыли платформы (использовать поле `platform_profit`).
+            *   Создать записи в `BalanceStoreHistory`, `BalanceTraderFiatHistory`, `BalanceTraderCryptoHistory` и `BalancePlatformHistory`.
             *   Обработать возможные ошибки (например, пробросить `InsufficientBalance` из `backend.utils.exceptions`), логировать, пробрасывать исключения.
 
 *   **Файл:** `backend/services/order_processor.py`
@@ -190,70 +191,34 @@
         *   Добавить тесты для всех сценариев изменения статусов.
         *   Для TeamLead предусмотреть эндпоинты управления трейдерами (`/traders`, `/traders/{id}/traffic`, `/traders/{id}/stats`).
 
-### 3.6. API Роутеры (`api_routers/`)
+### 3.6. API-роутеры и динамическое подключение
+*   **Общие модули (`backend/api_routers/common`)** — реализуют CRUD и бизнес-логику для разных ролей:
+    - `stores.py` — управление магазинами (MerchantStore)
+    - `merchant_orders.py` — операции мерчанта с ордерами
+    - `trader_orders.py` — операции трейдера с ордерами
+    - `teamlead_traders.py` — управление командой трейдеров (TeamLead)
+    - `users.py` — CRUD пользователей и профилей (Admin)
+    - `requisites.py` — управление реквизитами трейдеров
+    - `support_orders.py` — работа саппорта с тикетами и ордерами
+    - `settings.py` — CRUD конфигурационных настроек (Admin)
+    - `admin_permissions.py` — управление флагами прав администратора
+*   **Динамические роутеры (`backend/servers/{role}/server.py`)** — подключают нужные общие модули и защищаются декоратором `permission_required(role)`:
+    - `servers/merchant/server.py` — монтирует `common/stores` и `common/merchant_orders`
+    - `servers/trader/server.py` — монтирует `common/trader_orders`
+    - `servers/teamlead/server.py` — монтирует `common/teamlead_traders`
+    - `servers/support/server.py` — монтирует `common/support_orders`
+    - `servers/admin/server.py` — монтирует `common/users`, `common/requisites`, `common/support_orders`, `common/settings`, `common/admin_permissions`
 
-*   **Задача:** Реализовать HTTP интерфейсы для взаимодействия с системой.
-*   **Файлы:** `backend/api_routers/merchant.py`, `trader.py`, `admin.py`, `support.py`, `teamlead/*`.
-*   **Шаги:**
-    *   Создать роутеры для каждой роли: 
-        - Support: ограниченный набор операций (вход, просмотр/search).  
-        - Admin: полный набор операций (все возможности support + регистрация пользователей, debug, управление системой).  
-        - Merchant, Trader, TeamLead: специфичный функционал по ролям.
-    *   Определить Pydantic схемы (`schemas/`) для запросов и ответов.
-    *   Реализовать эндпоинты для CRUD операций с основными сущностями (ордера, реквизиты, пользователи, магазины), используя соответствующие сервисы (`services/`).
-    *   Добавить эндпоинты для специфичных действий (подтверждение ордера, создание заявки мерчантом и т.д.), вызывая `services.order_status_manager` и другие.
-    *   **Защитить все эндпоинты (кроме, возможно, логина/регистрации) с помощью зависимостей аутентификации (`Depends(get_current_active_user)`).**
-    *   Реализовать обработку ошибок на уровне API, возвращая корректные HTTP статусы и сообщения об ошибках (возможно, с использованием `utils.exceptions` и middleware).
-    *   Настроить FastAPI для автоматической генерации OpenAPI документации.
+### 3.7. API и логика платежного шлюза
+*   **Публичный шлюз (`servers/gateway/server.py`)** — монтирует `backend/api_routers/gateway/router.py` без обязательной аутентификации или с короткоживущими токенами:
+    - `POST /payin/init`, `GET /payin/status/{order_id}`, `POST /payin/confirm/{order_id}`
+    - `POST /payout/init`, `GET /payout/status/{order_id}`
+*   **Логика** вынесена в `backend/services/gateway_service.py` и `backend/services/callback_service.py` (коллбэки, подпись, retry)
+*   **Pydantic-схемы** в `shemas_enums/gateway.py`
 
-### 3.7. API и Логика Платежного Шлюза
-
-*   **Задача:** Реализовать интерфейс для конечных клиентов магазинов.
-*   **Файлы:** `backend/api_routers/gateway.py` (новый), `backend/services/gateway_service.py` (новый, или логика в роутере), `backend/services/callback_service.py` (новый).
-*   **Шаги:**
-    *   **API Эндпоинты (`gateway.py`):**
-        *   Определить эндпоинты для Pay-In: `/init` (прием данных, создание `IncomingOrder`), `/status/{order_id}` (получение статуса/реквизитов), `/confirm/{order_id}` (прием чека, подтверждение клиентом).
-        *   Определить эндпоинты для Pay-Out: `/init` (прием данных, создание `IncomingOrder`), `/status/{order_id}` (получение статуса).
-        *   Использовать Pydantic схемы для валидации данных.
-        *   Продумать механизм идентификации мерчанта (например, через API ключ, передаваемый при инициации с сайта мерчанта, или по домену запроса).
-        *   Эндпоинты, вероятно, будут публичными или использовать кратковременные токены сессии.
-    *   **Логика Обработки (`gateway_service.py` или в `gateway.py`):**
-        *   Реализовать логику `Gateway Request Handler`:
-            *   Идентификация мерчанта (по API ключу из запроса или домену).
-            *   **Загрузка `MerchantStore` для данного мерчанта.**
-            *   **Валидация входных данных:** Проверить наличие `customer_id` и `amount` в параметрах запроса, если это требуется настройками `MerchantStore` (`gateway_require_..._param`). Вернуть ошибку 4xx, если обязательные параметры отсутствуют.
-            *   Валидация остальных данных (метод оплаты, валюта и т.д.).
-            *   Вызов `Order Service` для создания `IncomingOrder`.
-            *   Обработка загрузки чеков (вызов `utils.s3_client`) и подтверждения оплаты клиентом (вызов `Order Status Manager`).
-    *   **Сервис Коллбэков (`callback_service.py`):**
-        *   Реализовать `Merchant Callback Service`: формирование данных, подпись с использованием `MerchantStore.secret_key`, отправка POST запроса на `callback_url`, логика повторов (retry).
-        *   Интегрировать вызов этого сервиса после значимых изменений статуса ордера (например, в `Order Status Manager` или `Order Processor`).
-    *   **Интеграция:**
-        *   Убедиться, что `Order Service` принимает и сохраняет `customer_id`, `return_url`, `callback_url`.
-        *   Обеспечить вызов `callback_service` в нужных точках изменения статуса ордера.
-    *   **Тестирование:**
-        *   Написать тесты для всего флоу шлюза (Pay-In, Pay-Out), включая обработку ошибок, загрузку чеков и отправку коллбэков.
-
-### 3.8. Роутер Мерчанта (`api_routers/merchant/router.py`)
-
-*   **Задача:** Реализовать эндпоинты для мерчантов.
-*   **Файл:** `backend/api_routers/merchant/router.py`
-*   **Шаги:**
-    *   Реализовать POST `/orders` и GET `/orders` с бизнес-логикой через gateway_service.
-    *   [/] **TODO**: Добавить:
-        * GET `/orders/{order_id}` (детали ордера)
-        * GET `/balance` (текущий баланс магазина)
-        * При необходимости другие вспомогательные эндпоинты.
-    *   [/] **TODO**: Управление магазинами:
-        * POST `/stores` — создание магазина.
-        * GET `/stores` — список магазинов.
-        * GET `/stores/{store_id}` — детали магазина.
-        * PATCH `/stores/{store_id}` — обновление настроек магазина.
-        * DELETE `/stores/{store_id}` — удаление магазина.
-    *   [/] **TODO**: Добавить:
-        * GET `/orders/{order_id}` — детали ордера.
-        * GET `/balance` — текущий баланс магазина.
-        * При необходимости другие вспомогательные эндпоинты.
+### 3.8. Роутер мерчанта (`backend/servers/merchant/server.py`)
+*   **Реализация:** монтирует `common/stores` и `common/merchant_orders`
+*   **Защита:** зависимости `get_current_active_merchant`, декоратор `permission_required("merchant")`, `get_db_session`
 
 ---
 
@@ -385,6 +350,5 @@
 *   **Утилита работы с S3 (`utils/s3_client.py`):**
      - Реализовал загрузку файлов в S3 с помощью `boto3` и возвращение URL.
 *   **(Новый) Без миграций:**
-   - Создан скрипт `scripts/init_db.py` для инициализации всех таблиц без Alembic.
    - Добавлен скрипт `scripts/seed_config.py` для сидирования конфигурации.
    - Добавлен скрипт `scripts/seed_data.py` для сидирования ролей и дефолтного администратора. 

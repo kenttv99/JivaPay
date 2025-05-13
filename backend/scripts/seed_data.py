@@ -22,6 +22,7 @@ def seed_data():
         {"name": "support", "description": "Support role", "applies_to": "support"},
         {"name": "merchant", "description": "Merchant role", "applies_to": "merchant"},
         {"name": "trader", "description": "Trader role", "applies_to": "trader"},
+        {"name": "teamlead", "description": "TeamLead role", "applies_to": "teamlead"},
     ]
 
     with get_db_session_cm() as session:

@@ -35,6 +35,11 @@
 
 ### 4. Баланс и история
 - **balance_store_history**, **balance_trader_fiat_history**, **balance_trader_crypto_history** — история изменений балансов с полями `id`, `balance_id`, `delta`, `currency_id`, `created_at`
+- **balance_platform**: текущий баланс платформы по криптовалютам
+  - `id`, `currency_id`, `balance`, `updated_at`
+- **balance_platform_history**: история прибыли платформы
+  - `id`, `order_id`, `currency_id`, `balance_change`, `new_balance`, `created_at`
+- Поле `platform_profit` в таблицах `incoming_orders` и `order_history` для фиксации прибыли платформы
 
 ### 5. Конфигурация и логирование
 - **configuration_settings**: настраиваемые параметры приложения
