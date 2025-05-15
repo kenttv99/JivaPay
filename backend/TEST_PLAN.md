@@ -60,17 +60,17 @@
    curl -X POST http://127.0.0.1:8004/admin/auth/token \
         -d 'username=admin@example.com&password=adminpass' \
         -H 'Content-Type: application/x-www-form-urlencoded'
-        eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBleGFtcGxlLmNvbSIsImV4cCI6MTc0NzA4MzE1Mn0.19fWASh5gCCsguanstKJYfpo7aSXxKSSH_09tXqLOkg
+        eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBleGFtcGxlLmNvbSIsImV4cCI6MTc0NzM0MDQxOH0.Cu1D0UNv9X4A6tsZ6DfuiIIz9x_i96SGHIflGqoyxF8
    ```
    - Ожидается JSON: `{"access_token":"...","token_type":"bearer"}`.
 2. Попытка доступа без токена:
    ```bash
-   curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8004/admin/users
+   curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8004/admin/users/
    # → 401
    ```
 3. Доступ с токеном:
    ```bash
-   curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8004/admin/users \
+   curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8004/admin/users/ \
         -H "Authorization: Bearer <TOKEN>"
    # → 200
    ```
@@ -80,14 +80,14 @@
 1. Попытка входа с некорректными данными:
    ```bash
    curl -s -o /dev/null -w "%{http_code}" \
-     -X POST http://127.0.0.1:8005/support/auth/login \
+     -X POST http://127.0.0.1:8005/support/auth/login/ \
      -H 'Content-Type: application/json' \
      -d '{"email":"nonexistent@example.com","password":"wrong"}'
    # → 401
    ```
 2. Создайте саппорта через админа (если еще не создан):
    ```bash
-   curl -X POST http://127.0.0.1:8004/admin/register/support \
+   curl -X POST http://127.0.0.1:8004/admin/register/support/ \
         -H "Authorization: Bearer $ADMIN_TOKEN" \
         -H 'Content-Type: application/json' \
         -d '{"email":"support1@example.com","password":"string111","access_to":["orders","users"]}'
@@ -95,7 +95,7 @@
    ```
 3. Успешный вход саппорта:
    ```bash
-   curl -X POST http://127.0.0.1:8005/support/auth/login \
+   curl -X POST http://127.0.0.1:8005/support/auth/login/ \
         -H 'Content-Type: application/json' \
         -d '{"email":"support1@example.com","password":"string111"}'
    ```
@@ -126,6 +126,7 @@
    curl -X POST http://127.0.0.1:18001/merchant/auth/token \
         -d 'username=merchant1@example.com&password=merchant111' \
         -H 'Content-Type: application/x-www-form-urlencoded'
+        eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtZXJjaGFudDFAZXhhbXBsZS5jb20iLCJleHAiOjE3NDczNDE0OTd9.In6uZ_8hFIZ7dpGiJdtHbwaEqlrLNbiEMr5IAhWihdg
    ```
    - Ожидается JSON с `access_token`.
 3. Создайте трейдера (используйте `$ADMIN_TOKEN`):
@@ -133,7 +134,7 @@
    curl -X POST http://127.0.0.1:8004/admin/register/trader \
         -H "Authorization: Bearer $ADMIN_TOKEN" \
         -H 'Content-Type: application/json' \
-        -d '{"email":"trader1@example.com","password":"trader123","first_name":"John","last_name":"Doe"}'
+        -d '{"email":"trader1@example.com","password":"trader111","first_name":"John","last_name":"Doe"}'
    ```
    - Ожидается HTTP `201` и JSON с полями `id` и `email`.
 4. Управление магазинами мерчанта:
@@ -253,6 +254,17 @@
 3. Повтор теста Rate Limiter — см. Раздел 4.
 
 ## 11. Управление трейдерами Тимлидом
+
+# Регистрация тимлида через админа
+Перед получением токена тимлида зарегистрируйте его через админа:
+```bash
+curl -X POST http://127.0.0.1:8004/admin/register/teamlead/ \
+     -H "Authorization: Bearer $ADMIN_TOKEN" \
+     -H 'Content-Type: application/json' \
+     -d '{"email":"lead1@example.com","password":"lead123","username":"Lead One"}' \
+     -w "\n%{http_code}\n"
+# → 201 {"id":<ID>,"email":"lead1@example.com"}
+```
 
 1. Получите токен тимлида:
    ```bash

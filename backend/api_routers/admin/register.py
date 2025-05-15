@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from backend.database.db import Admin, Merchant, Support, User, Role
+from backend.database.db import Admin, Merchant, Support, User, Role, Trader, TeamLead
 from backend.config.crypto import hash_password
 from backend.config.logger import get_logger
-from backend.schemas_enums.admin_schemas import MerchantRegister, SupportRegister
+from backend.schemas_enums.admin_schemas import MerchantRegister, SupportRegister, TraderRegister, TeamLeadRegister
 from backend.database.utils import get_db_session
 from backend.common.permissions import permission_required
 
@@ -56,4 +56,48 @@ def register_support(data: SupportRegister, db: Session = Depends(get_db_session
     db.commit()
     db.refresh(support_profile)
     logger.info(f"Саппорт зарегистрирован: {data.email}")
-    return {"id": support_profile.id, "email": data.email} 
+    return {"id": support_profile.id, "email": data.email}
+
+@router.post("/register/trader", status_code=201)
+def register_trader(data: TraderRegister, db: Session = Depends(get_db_session)):
+    # Ensure email is unique across users
+    if db.query(User).filter_by(email=data.email).first():
+        logger.warning(f"Попытка регистрации трейдера с существующим email: {data.email}")
+        raise HTTPException(status_code=400, detail="Email уже зарегистрирован")
+    # Find trader role
+    role = db.query(Role).filter_by(name='trader').one_or_none()
+    if not role:
+        raise HTTPException(status_code=500, detail="Роль trader не найдена")
+    # Create User record
+    user = User(email=data.email, password_hash=hash_password(data.password), role_id=role.id)
+    db.add(user)
+    db.flush()  # to assign user.id
+    # Create Trader profile
+    trader = Trader(user_id=user.id, first_name=data.first_name, last_name=data.last_name)
+    db.add(trader)
+    db.commit()
+    db.refresh(trader)
+    logger.info(f"Трейдер зарегистрирован: {data.email}")
+    return {"id": trader.id, "email": data.email}
+
+@router.post("/register/teamlead", status_code=201)
+def register_teamlead(data: TeamLeadRegister, db: Session = Depends(get_db_session)):
+    # Ensure email is unique across users
+    if db.query(User).filter_by(email=data.email).first():
+        logger.warning(f"Попытка регистрации тимлида с существующим email: {data.email}")
+        raise HTTPException(status_code=400, detail="Email уже зарегистрирован")
+    # Find teamlead role
+    role = db.query(Role).filter_by(name='teamlead').one_or_none()
+    if not role:
+        raise HTTPException(status_code=500, detail="Роль teamlead не найдена")
+    # Create User record
+    user = User(email=data.email, password_hash=hash_password(data.password), role_id=role.id)
+    db.add(user)
+    db.flush()  # to assign user.id
+    # Create TeamLead profile
+    teamlead = TeamLead(user_id=user.id, username=data.username)
+    db.add(teamlead)
+    db.commit()
+    db.refresh(teamlead)
+    logger.info(f"Тимлид зарегистрирован: {data.email}")
+    return {"id": teamlead.id, "email": data.email} 
