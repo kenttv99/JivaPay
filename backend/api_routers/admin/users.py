@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, selectinload
 from backend.database.utils import get_db_session
 from backend.common.permissions import permission_required
 from backend.database.db import User
-from backend.shemas_enums.user import UserRead
+from backend.schemas_enums.user import UserRead
 
 router = APIRouter(
     dependencies=[Depends(permission_required("admin"))]

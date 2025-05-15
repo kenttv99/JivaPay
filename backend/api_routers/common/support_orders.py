@@ -5,7 +5,7 @@ import logging
 
 from backend.database.utils import get_db_session
 from backend.database.db import OrderHistory
-from backend.shemas_enums.order import OrderHistoryRead
+from backend.schemas_enums.order import OrderHistoryRead
 from backend.common.permissions import permission_required
 from pydantic import BaseModel
 

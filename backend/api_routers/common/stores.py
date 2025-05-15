@@ -4,7 +4,7 @@ from typing import List
 
 from backend.database.utils import get_db_session, create_object, update_object_db
 from backend.database.db import MerchantStore, Merchant
-from backend.shemas_enums.merchant import MerchantStoreCreate, MerchantStoreRead, MerchantStoreUpdate
+from backend.schemas_enums.merchant import MerchantStoreCreate, MerchantStoreRead, MerchantStoreUpdate
 from backend.common.permissions import permission_required
 from backend.security import get_current_active_user
 from backend.common.dependencies import get_current_active_merchant

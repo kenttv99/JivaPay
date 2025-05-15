@@ -5,7 +5,7 @@ from pydantic import BaseModel, EmailStr
 
 from backend.database.utils import get_db_session, create_object, update_object_db, get_object_or_none
 from backend.database.db import User
-from backend.shemas_enums.user import UserCreate, UserRead
+from backend.schemas_enums.user import UserCreate, UserRead
 from backend.common.permissions import permission_required
 from backend.security import get_current_active_user
 

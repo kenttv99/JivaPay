@@ -37,8 +37,15 @@
 4. Проверьте endpoint `/health` каждого API:
    ```bash
    curl -fsSL http://127.0.0.1:<PORT>/health
+
+   curl -fsSL http://127.0.0.1:18001/health
+   curl -fsSL http://127.0.0.1:8002/health
+   curl -fsSL http://127.0.0.1:8003/health
+   curl -fsSL http://127.0.0.1:8004/health
+   curl -fsSL http://127.0.0.1:8005/health
+   curl -fsSL http://127.0.0.1:8006/health
    ```
-   - PORT: 8001 (merchant), 8002 (trader), 8003 (gateway), 8004 (admin), 8005 (support), 8006 (teamlead).
+   - PORT: 18001 (merchant), 8002 (trader), 8003 (gateway), 8004 (admin), 8005 (support), 8006 (teamlead).
    - Ожидается `{"status":"ok"}`.
 5. Проверьте воркер:
    ```bash

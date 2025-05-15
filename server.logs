@@ -1,2 +1,44 @@
-root@mail:/home_dev/jp# curl -X POST http://127.0.0.1:8004/admin/auth/token         -d 'username=admin@example.com&password=admin123'         -H 'Content-Type: application/x-www-form-urlencoded'
-{"detail":"Incorrect email or password"}root@mail:/home_dev/jp#
+root@mail:/home_dev/jp#    curl -fsSL http://127.0.0.1:18001/health
+curl: (56) Recv failure: Connection reset by peer
+root@mail:/home_dev/jp# docker compose logs merchant_api
+merchant_api-1  | INFO:     Will watch for changes in these directories: ['/app']
+merchant_api-1  | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+merchant_api-1  | INFO:     Started reloader process [1] using WatchFiles
+merchant_api-1  | Process SpawnProcess-1:
+merchant_api-1  | Traceback (most recent call last):
+merchant_api-1  |   File "/usr/local/lib/python3.10/multiprocessing/process.py", line 314, in _bootstrap
+merchant_api-1  |     self.run()
+merchant_api-1  |   File "/usr/local/lib/python3.10/multiprocessing/process.py", line 108, in run
+merchant_api-1  |     self._target(*self._args, **self._kwargs)
+merchant_api-1  |   File "/usr/local/lib/python3.10/site-packages/uvicorn/_subprocess.py", line 78, in subprocess_started
+merchant_api-1  |     target(sockets=sockets)
+merchant_api-1  |   File "/usr/local/lib/python3.10/site-packages/uvicorn/server.py", line 65, in run
+merchant_api-1  |     return asyncio.run(self.serve(sockets=sockets))
+merchant_api-1  |   File "/usr/local/lib/python3.10/asyncio/runners.py", line 44, in run
+merchant_api-1  |     return loop.run_until_complete(main)
+merchant_api-1  |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+merchant_api-1  |   File "/usr/local/lib/python3.10/site-packages/uvicorn/server.py", line 69, in serve
+merchant_api-1  |     await self._serve(sockets)
+merchant_api-1  |   File "/usr/local/lib/python3.10/site-packages/uvicorn/server.py", line 76, in _serve
+merchant_api-1  |     config.load()
+merchant_api-1  |   File "/usr/local/lib/python3.10/site-packages/uvicorn/config.py", line 433, in load
+merchant_api-1  |     self.loaded_app = import_from_string(self.app)
+merchant_api-1  |   File "/usr/local/lib/python3.10/site-packages/uvicorn/importer.py", line 22, in import_from_string
+merchant_api-1  |     raise exc from None
+merchant_api-1  |   File "/usr/local/lib/python3.10/site-packages/uvicorn/importer.py", line 19, in import_from_string
+merchant_api-1  |     module = importlib.import_module(module_str)
+merchant_api-1  |   File "/usr/local/lib/python3.10/importlib/__init__.py", line 126, in import_module
+merchant_api-1  |     return _bootstrap._gcd_import(name[level:], package, level)
+merchant_api-1  |   File "<frozen importlib._bootstrap>", line 1050, in _gcd_import
+merchant_api-1  |   File "<frozen importlib._bootstrap>", line 1027, in _find_and_load
+merchant_api-1  |   File "<frozen importlib._bootstrap>", line 1006, in _find_and_load_unlocked
+merchant_api-1  |   File "<frozen importlib._bootstrap>", line 688, in _load_unlocked
+merchant_api-1  |   File "<frozen importlib._bootstrap_external>", line 883, in exec_module
+merchant_api-1  |   File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+merchant_api-1  |   File "/app/backend/servers/merchant/server.py", line 3, in <module>
+merchant_api-1  |     from backend.api_routers.merchant.router import router as merchant_router
+merchant_api-1  |   File "/app/backend/api_routers/merchant/router.py", line 5, in <module>
+merchant_api-1  |     from backend.api_routers.common.stores import router as common_stores_router
+merchant_api-1  |   File "/app/backend/api_routers/common/stores.py", line 7, in <module>
+merchant_api-1  |     from backend.shemas_enums.merchant import MerchantStoreCreate, MerchantStoreRead, MerchantStoreUpdate
+merchant_api-1  | ModuleNotFoundError: No module named 'backend.shemas_enums'
