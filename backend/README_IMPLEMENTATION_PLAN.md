@@ -214,7 +214,7 @@
     - `POST /payin/init`, `GET /payin/status/{order_id}`, `POST /payin/confirm/{order_id}`
     - `POST /payout/init`, `GET /payout/status/{order_id}`
 *   **Логика** вынесена в `backend/services/gateway_service.py` и `backend/services/callback_service.py` (коллбэки, подпись, retry)
-*   **Pydantic-схемы** в `shemas_enums/gateway.py`
+*   **Pydantic-схемы** в `sсhemas_enums/gateway.py`
 
 ### 3.8. Роутер мерчанта (`backend/servers/merchant/server.py`)
 *   **Реализация:** монтирует `common/stores` и `common/merchant_orders`

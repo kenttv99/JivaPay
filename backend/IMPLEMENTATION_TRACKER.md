@@ -31,9 +31,9 @@
     - Примечания: Начальная структура моделей. **Критическое исправление v2025.05.10**: Устранены конфликты `relationship` и `@hybrid_property` (удалены гибридные свойства `merchant` в `MerchantStore`, `BalanceStore`). **Исправление v2025.05.10**: Устранены `SAWarning` о конфликтующих `relationship` путем добавления `back_populates` в моделях `MerchantStore`, `FiatCurrency`, `CryptoCurrency`. Рекомендовано сгенерировать "проверочную" миграцию Alembic после этих изменений в `relationship`.
     - [x] Добавлена модель `TeamLead` и связь с `Trader`.
       Примечания: модель и связи реализованы v2025.05.11.
-- [x] **Базовые Схемы (`shemas_enums/`)**: Схемы Pydantic для передачи данных API.
-    - [x] Создан `shemas_enums/order.py` с базовыми схемами ордеров.
-    - [x] Создан `shemas_enums/reference.py` с Pydantic схемами для справочных данных (BankDetails, PaymentMethodDetails, ExchangeRateDetails).
+- [x] **Базовые Схемы (`sсhemas_enums/`)**: Схемы Pydantic для передачи данных API.
+    - [x] Создан `sсhemas_enums/order.py` с базовыми схемами ордеров.
+    - [x] Создан `sсhemas_enums/reference.py` с Pydantic схемами для справочных данных (BankDetails, PaymentMethodDetails, ExchangeRateDetails).
     - [x] Добавлены схемы для остальных ключевых сущностей:
         * `user.py` — базовые схемы пользователя.
         * `merchant.py` — Merchant, MerchantStore.

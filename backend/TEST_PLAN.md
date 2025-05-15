@@ -14,8 +14,8 @@
 5. Если база пуста или требуется переинициализация, используйте новый CLI `manage_db` для создания и сидирования базы:
    ```bash
    docker compose exec merchant_api python -m backend.scripts.manage_db init
-   docker compose exec merchant_api python -m backend.scripts.manage_db seed_config
-   docker compose exec merchant_api python -m backend.scripts.manage_db seed_data
+   docker compose exec merchant_api python -m backend.scripts.manage_db seed-config
+   docker compose exec merchant_api python -m backend.scripts.manage_db seed-data
    ```
 
 ## 1. Проверка состояния сервисов

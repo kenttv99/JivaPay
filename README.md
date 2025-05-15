@@ -37,8 +37,8 @@ JivaPay — платформа для обработки платежей, по�
    ```bash
    # Initialize database schema and seed default data
    docker compose exec merchant_api python -m backend.scripts.manage_db init
-   docker compose exec merchant_api python -m backend.scripts.manage_db seed_config
-   docker compose exec merchant_api python -m backend.scripts.manage_db seed_data
+   docker compose exec merchant_api python -m backend.scripts.manage_db seed-config
+   docker compose exec merchant_api python -m backend.scripts.manage_db seed-data
    ```
 
 ## Запуск в режиме разработки

@@ -12,8 +12,8 @@ try:
     from backend.database.db import MerchantStore, IncomingOrder
     from backend.database.utils import get_object_or_none, create_object
     # !! Need Schemas !!
-    # from backend.shemas_enums.gateway import GatewayInitRequest # Specific schemas?
-    from backend.shemas_enums.order import IncomingOrderCreate # Reusing for now
+    # from backend.sсhemas_enums.gateway import GatewayInitRequest # Specific schemas?
+    from backend.schemas_enums.order import IncomingOrderCreate # Reusing for now
     # !! Need Order Service (or create order directly here) !!
     # from backend.services import order_service
     # !! Need Order Status Manager !!
