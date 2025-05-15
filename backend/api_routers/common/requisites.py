@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from backend.database.utils import get_db_session, create_object, update_object_db, get_object_or_none
 from backend.database.db import ReqTrader
-from backend.shemas_enums.requisite import RequisiteBase, RequisiteRead, FullRequisiteSettingsRead
+from backend.schemas_enums.requisite import RequisiteBase, RequisiteRead, FullRequisiteSettingsRead
 from backend.common.permissions import permission_required
 from pydantic import BaseModel
 
