@@ -13,10 +13,9 @@ import secrets
 router = APIRouter()
 
 @router.post(
-    "/",
+    "",
     response_model=MerchantStoreRead,
-    status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(permission_required("stores:create"))]
+    status_code=status.HTTP_201_CREATED
 )
 def create_store(
     store_data: MerchantStoreCreate,
@@ -37,9 +36,8 @@ def create_store(
     return new_store
 
 @router.get(
-    "/",
-    response_model=List[MerchantStoreRead],
-    dependencies=[Depends(permission_required("stores:read"))]
+    "",
+    response_model=List[MerchantStoreRead]
 )
 def list_stores(
     db: Session = Depends(get_db_session),
@@ -51,8 +49,7 @@ def list_stores(
 
 @router.get(
     "/{store_id}",
-    response_model=MerchantStoreRead,
-    dependencies=[Depends(permission_required("stores:read"))]
+    response_model=MerchantStoreRead
 )
 def get_store(
     store_id: int,
@@ -67,8 +64,7 @@ def get_store(
 
 @router.patch(
     "/{store_id}",
-    response_model=MerchantStoreRead,
-    dependencies=[Depends(permission_required("stores:update"))]
+    response_model=MerchantStoreRead
 )
 def update_store(
     store_id: int,
@@ -87,8 +83,7 @@ def update_store(
 
 @router.delete(
     "/{store_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(permission_required("stores:delete"))]
+    status_code=status.HTTP_204_NO_CONTENT
 )
 def delete_store(
     store_id: int,
