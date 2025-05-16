@@ -6,6 +6,7 @@ from backend.database.db import Base
 # Import existing seed functions
 from backend.scripts.seed_config import seed_config as seed_config_main
 from backend.scripts.seed_data import seed_data as seed_data_main
+from backend.scripts.seed_reference_data import seed_reference_data as seed_reference_main
 
 @click.group()
 def cli():
@@ -32,6 +33,13 @@ def seed_data():
     click.echo("Seeding initial data (roles, admin user)...")
     seed_data_main()
     click.echo("Initial data seeding complete.")
+
+@cli.command()
+def seed_reference():
+    """Seed default reference data (currencies) into the database."""
+    click.echo("Seeding reference data (currencies)...")
+    seed_reference_main()
+    click.echo("Reference data seeding complete.")
 
 if __name__ == "__main__":
     cli() 

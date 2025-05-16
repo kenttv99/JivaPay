@@ -16,6 +16,7 @@
    docker compose exec merchant_api python -m backend.scripts.manage_db init
    docker compose exec merchant_api python -m backend.scripts.manage_db seed-config
    docker compose exec merchant_api python -m backend.scripts.manage_db seed-data
+   docker compose exec merchant_api python -m backend.scripts.manage_db seed-reference
    ```
 
 ## 1. Проверка состояния сервисов
@@ -60,7 +61,7 @@
    curl -X POST http://127.0.0.1:8004/admin/auth/token \
         -d 'username=admin@example.com&password=adminpass' \
         -H 'Content-Type: application/x-www-form-urlencoded'
-        eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBleGFtcGxlLmNvbSIsImV4cCI6MTc0NzM0MDQxOH0.Cu1D0UNv9X4A6tsZ6DfuiIIz9x_i96SGHIflGqoyxF8
+        eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBleGFtcGxlLmNvbSIsImV4cCI6MTc0NzQwMzIxOH0.c7JxlVauh4qqZ9arumTDekBD8nz5IpMZAoEBtaZvuEw
    ```
    - Ожидается JSON: `{"access_token":"...","token_type":"bearer"}`.
 2. Попытка доступа без токена:
@@ -126,7 +127,7 @@
    curl -X POST http://127.0.0.1:18001/merchant/auth/token \
         -d 'username=merchant1@example.com&password=merchant111' \
         -H 'Content-Type: application/x-www-form-urlencoded'
-        eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtZXJjaGFudDFAZXhhbXBsZS5jb20iLCJleHAiOjE3NDczNDE0OTd9.In6uZ_8hFIZ7dpGiJdtHbwaEqlrLNbiEMr5IAhWihdg
+        eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtZXJjaGFudDFAZXhhbXBsZS5jb20iLCJleHAiOjE3NDc0MDM4NjR9.GDhHKU3eqUCahS1Y1i29Q7wwOmfjr3m_7Pl1DrUB7_c
    ```
    - Ожидается JSON с `access_token`.
 3. Создайте трейдера (используйте `$ADMIN_TOKEN`):
