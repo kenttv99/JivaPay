@@ -17,6 +17,7 @@
    docker compose exec merchant_api python -m backend.scripts.manage_db seed-config
    docker compose exec merchant_api python -m backend.scripts.manage_db seed-data
    docker compose exec merchant_api python -m backend.scripts.manage_db seed-reference
+   docker compose exec merchant_api python -m backend.scripts.manage_db seed-payment-refs
    ```
 
 ## 1. Проверка состояния сервисов

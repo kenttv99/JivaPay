@@ -7,6 +7,7 @@ from backend.database.db import Base
 from backend.scripts.seed_config import seed_config as seed_config_main
 from backend.scripts.seed_data import seed_data as seed_data_main
 from backend.scripts.seed_reference_data import seed_reference_data as seed_reference_main
+from backend.scripts.seed_payment_references import seed_payment_methods_main
 
 @click.group()
 def cli():
@@ -40,6 +41,13 @@ def seed_reference():
     click.echo("Seeding reference data (currencies)...")
     seed_reference_main()
     click.echo("Reference data seeding complete.")
+
+@cli.command()
+def seed_payment_refs():
+    """Seed default payment methods, banks, and their availability."""
+    click.echo("Seeding payment references (methods, banks)..." )
+    seed_payment_methods_main()
+    click.echo("Payment references seeding complete.")
 
 if __name__ == "__main__":
     cli() 
