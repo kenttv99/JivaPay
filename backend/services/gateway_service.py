@@ -3,6 +3,7 @@
 import logging
 from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
+from decimal import Decimal
 
 from backend.database.db import OrderHistory
 
@@ -13,7 +14,7 @@ try:
     from backend.database.utils import get_object_or_none, create_object
     # !! Need Schemas !!
     # from backend.sсhemas_enums.gateway import GatewayInitRequest # Specific schemas?
-    from backend.schemas_enums.order import IncomingOrderCreate # Reusing for now
+    from backend.schemas_enums.order import IncomingOrderCreate, DirectionEnum
     # !! Need Order Service (or create order directly here) !!
     # from backend.services import order_service
     # !! Need Order Status Manager !!
@@ -79,15 +80,48 @@ def handle_init_request(
 
     # 3. Create IncomingOrder record
     try:
-        order_data = request_data.dict(exclude_unset=True)
-        order_data.update({
+        # request_data is an instance of IncomingOrderCreate with new field names
+        # and validated conditional fields (e.g., amount_fiat is present if order_type is PAY_IN)
+        order_data_db = {}
+
+        # Transfer validated and correctly named fields from Pydantic schema
+        order_data_db['order_type'] = request_data.order_type.value # Get string value from enum
+
+        if request_data.order_type == DirectionEnum.PAY_IN:
+            order_data_db['amount_fiat'] = request_data.amount_fiat
+            order_data_db['fiat_currency_id'] = request_data.fiat_currency_id
+            # Derive the other required currency ID from the store
+            order_data_db['crypto_currency_id'] = merchant_store.crypto_currency_id
+        elif request_data.order_type == DirectionEnum.PAY_OUT:
+            order_data_db['amount_crypto'] = request_data.amount_crypto
+            order_data_db['crypto_currency_id'] = request_data.crypto_currency_id
+            # Derive the other required currency ID from the store
+            order_data_db['fiat_currency_id'] = merchant_store.fiat_currency_id
+        
+        order_data_db['target_method_id'] = request_data.target_method_id
+
+        # Optional fields from Pydantic schema
+        if request_data.customer_id is not None:
+            order_data_db['customer_id'] = request_data.customer_id
+        if request_data.return_url is not None:
+            order_data_db['return_url'] = request_data.return_url
+        if request_data.callback_url is not None:
+            order_data_db['callback_url'] = request_data.callback_url
+        
+        # Add other necessary fields for IncomingOrder creation
+        order_data_db.update({
             'merchant_id': merchant_store.merchant_id,
             'store_id': merchant_store.id,
-            'gateway_id': merchant_store.id, # Use the store's configured gateway record if applicable
+            # 'gateway_id': merchant_store.id, # Placeholder, might need specific gateway logic
             'status': 'new',
-            'retry_count': 0
+            'retry_count': 0,
+            # CRITICAL: exchange_rate and store_commission must be properly calculated/fetched.
+            # These are required by the DB model but not part of IncomingOrderCreate schema.
+            'exchange_rate': Decimal('1.0'), # Placeholder
+            'store_commission': Decimal('0.0')  # Placeholder
         })
-        created_order = create_object(db, IncomingOrder, order_data)
+
+        created_order = create_object(db, IncomingOrder, order_data_db)
         logger.info(f"Created IncomingOrder ID {created_order.id} for Store ID {merchant_store.id}")
         # Immediately enqueue the order for processing to achieve real-time handling
         process_order_task.delay(created_order.id)

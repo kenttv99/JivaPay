@@ -1,6 +1,6 @@
 """Pydantic schemas related to orders."""
 
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, model_validator
 from decimal import Decimal
 from datetime import datetime
 from typing import Optional
@@ -8,13 +8,35 @@ from .common_enums import DirectionEnum, OrderStatusEnum
 
 # --- Base Schemas (if needed) --- #
 class OrderBase(BaseModel):
-    amount: Decimal = Field(..., gt=0, description="Order amount")
-    currency_id: int = Field(..., description="ID of the order currency")
-    payment_method_id: int = Field(..., description="ID of the payment method")
-    direction: DirectionEnum = Field(..., description="Order direction (PAY_IN or PAY_OUT)")
+    order_type: DirectionEnum = Field(..., description="Order type (pay_in or pay_out)")
+
+    amount_fiat: Optional[Decimal] = Field(None, gt=0, description="Order amount in fiat currency (for pay_in)")
+    fiat_currency_id: Optional[int] = Field(None, description="ID of the fiat currency (for pay_in)")
+
+    amount_crypto: Optional[Decimal] = Field(None, gt=0, description="Order amount in crypto currency (for pay_out)")
+    crypto_currency_id: Optional[int] = Field(None, description="ID of the crypto currency (for pay_out)")
+    
+    target_method_id: int = Field(..., description="ID of the payment method (maps to target_method_id in DB)")
+    
     customer_id: Optional[str] = Field(None, max_length=255, description="Customer identifier from merchant system")
     return_url: Optional[str] = Field(None, max_length=1024, description="URL to redirect user after completion (optional)")
     callback_url: Optional[str] = Field(None, max_length=1024, description="URL for server-to-server notification (optional)")
+
+    @model_validator(mode='after')
+    def check_conditional_fields(self) -> 'OrderBase':
+        if self.order_type == DirectionEnum.PAY_IN:
+            if self.amount_fiat is None or self.fiat_currency_id is None:
+                raise ValueError("For PAY_IN, amount_fiat and fiat_currency_id are required.")
+            # Ensure crypto fields are not set for PAY_IN if they were somehow provided
+            self.amount_crypto = None
+            self.crypto_currency_id = None
+        elif self.order_type == DirectionEnum.PAY_OUT:
+            if self.amount_crypto is None or self.crypto_currency_id is None:
+                raise ValueError("For PAY_OUT, amount_crypto and crypto_currency_id are required.")
+            # Ensure fiat fields are not set for PAY_OUT
+            self.amount_fiat = None
+            self.fiat_currency_id = None
+        return self
 
 # --- Incoming Order Schemas --- #
 class IncomingOrderCreate(OrderBase):

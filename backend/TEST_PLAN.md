@@ -182,7 +182,7 @@
    curl -X POST http://127.0.0.1:8003/gateway/payin/init \
         -H 'Content-Type: application/json' \
         -H "X-API-KEY: $API_KEY" \
-        -d '{"amount":100.50, "currency_id":1, "payment_method_id":1, "direction":"pay_in", "customer_id":"CUST-42"}'
+        -d '{"order_type":"pay_in", "amount_fiat":100.50, "fiat_currency_id":1, "target_method_id":1, "customer_id":"CUST-42"}'
    ```
    - Ожидается JSON с `invoice_id` и деталями платежа.
 3. Удостоверьтесь, что в `incoming_orders` появился заказ со статусом `new`.
