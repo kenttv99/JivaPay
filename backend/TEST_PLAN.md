@@ -127,7 +127,7 @@
    curl -X POST http://127.0.0.1:18001/merchant/auth/token \
         -d 'username=merchant1@example.com&password=merchant111' \
         -H 'Content-Type: application/x-www-form-urlencoded'
-        eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtZXJjaGFudDFAZXhhbXBsZS5jb20iLCJleHAiOjE3NDc0MDM4NjR9.GDhHKU3eqUCahS1Y1i29Q7wwOmfjr3m_7Pl1DrUB7_c
+        eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtZXJjaGFudDFAZXhhbXBsZS5jb20iLCJleHAiOjE3NDc0MDUxNjR9.o6UQFCaosnOGSdkR5q45P69zK1zwgq_nVE-pcM0r3fQ
    ```
    - Ожидается JSON с `access_token`.
 3. Создайте трейдера (используйте `$ADMIN_TOKEN`):
@@ -182,7 +182,7 @@
    curl -X POST http://127.0.0.1:8003/gateway/payin/init \
         -H 'Content-Type: application/json' \
         -H "X-API-KEY: $API_KEY" \
-        -d '{"amount":100.50,"customer_id":"CUST-42"}'
+        -d '{"amount":100.50, "currency_id":1, "payment_method_id":1, "direction":"pay_in", "customer_id":"CUST-42"}'
    ```
    - Ожидается JSON с `invoice_id` и деталями платежа.
 3. Удостоверьтесь, что в `incoming_orders` появился заказ со статусом `new`.

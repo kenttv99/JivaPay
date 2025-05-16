@@ -68,9 +68,9 @@ def handle_init_request(
     # - Check if request has required params based on store settings (gateway_require_customer_id, etc.)
     # - Check currency/payment method compatibility with store
     # - Raise ConfigurationError or OrderProcessingError (4xx) if validation fails
-    if direction == "PAYIN" and not merchant_store.payin_enabled: # Assuming flags exist
+    if direction == "PAYIN" and not merchant_store.pay_in_enabled:
          raise AuthorizationError(f"Pay-In is not enabled for store {merchant_store.id}")
-    if direction == "PAYOUT" and not merchant_store.payout_enabled:
+    if direction == "PAYOUT" and not merchant_store.pay_out_enabled:
          raise AuthorizationError(f"Pay-Out is not enabled for store {merchant_store.id}")
     # Example check for required param:
     # if merchant_store.gateway_require_customer_id and not request_data.customer_id:

@@ -1,44 +1,86 @@
-root@mail:/home_dev/jp#    curl -fsSL http://127.0.0.1:18001/health
-curl: (56) Recv failure: Connection reset by peer
-root@mail:/home_dev/jp# docker compose logs merchant_api
-merchant_api-1  | INFO:     Will watch for changes in these directories: ['/app']
-merchant_api-1  | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-merchant_api-1  | INFO:     Started reloader process [1] using WatchFiles
-merchant_api-1  | Process SpawnProcess-1:
-merchant_api-1  | Traceback (most recent call last):
-merchant_api-1  |   File "/usr/local/lib/python3.10/multiprocessing/process.py", line 314, in _bootstrap
-merchant_api-1  |     self.run()
-merchant_api-1  |   File "/usr/local/lib/python3.10/multiprocessing/process.py", line 108, in run
-merchant_api-1  |     self._target(*self._args, **self._kwargs)
-merchant_api-1  |   File "/usr/local/lib/python3.10/site-packages/uvicorn/_subprocess.py", line 78, in subprocess_started
-merchant_api-1  |     target(sockets=sockets)
-merchant_api-1  |   File "/usr/local/lib/python3.10/site-packages/uvicorn/server.py", line 65, in run
-merchant_api-1  |     return asyncio.run(self.serve(sockets=sockets))
-merchant_api-1  |   File "/usr/local/lib/python3.10/asyncio/runners.py", line 44, in run
-merchant_api-1  |     return loop.run_until_complete(main)
-merchant_api-1  |   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
-merchant_api-1  |   File "/usr/local/lib/python3.10/site-packages/uvicorn/server.py", line 69, in serve
-merchant_api-1  |     await self._serve(sockets)
-merchant_api-1  |   File "/usr/local/lib/python3.10/site-packages/uvicorn/server.py", line 76, in _serve
-merchant_api-1  |     config.load()
-merchant_api-1  |   File "/usr/local/lib/python3.10/site-packages/uvicorn/config.py", line 433, in load
-merchant_api-1  |     self.loaded_app = import_from_string(self.app)
-merchant_api-1  |   File "/usr/local/lib/python3.10/site-packages/uvicorn/importer.py", line 22, in import_from_string
-merchant_api-1  |     raise exc from None
-merchant_api-1  |   File "/usr/local/lib/python3.10/site-packages/uvicorn/importer.py", line 19, in import_from_string
-merchant_api-1  |     module = importlib.import_module(module_str)
-merchant_api-1  |   File "/usr/local/lib/python3.10/importlib/__init__.py", line 126, in import_module
-merchant_api-1  |     return _bootstrap._gcd_import(name[level:], package, level)
-merchant_api-1  |   File "<frozen importlib._bootstrap>", line 1050, in _gcd_import
-merchant_api-1  |   File "<frozen importlib._bootstrap>", line 1027, in _find_and_load
-merchant_api-1  |   File "<frozen importlib._bootstrap>", line 1006, in _find_and_load_unlocked
-merchant_api-1  |   File "<frozen importlib._bootstrap>", line 688, in _load_unlocked
-merchant_api-1  |   File "<frozen importlib._bootstrap_external>", line 883, in exec_module
-merchant_api-1  |   File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
-merchant_api-1  |   File "/app/backend/servers/merchant/server.py", line 3, in <module>
-merchant_api-1  |     from backend.api_routers.merchant.router import router as merchant_router
-merchant_api-1  |   File "/app/backend/api_routers/merchant/router.py", line 5, in <module>
-merchant_api-1  |     from backend.api_routers.common.stores import router as common_stores_router
-merchant_api-1  |   File "/app/backend/api_routers/common/stores.py", line 7, in <module>
-merchant_api-1  |     from backend.shemas_enums.merchant import MerchantStoreCreate, MerchantStoreRead, MerchantStoreUpdate
-merchant_api-1  | ModuleNotFoundError: No module named 'backend.shemas_enums'
+root@09f3def55e3b:/app# python -m backend.scripts.manage_db seed-reference
+Seeding reference data (currencies)...
+INFO:backend.scripts.seed_reference_data:Created fiat currency USD.
+INFO:backend.scripts.seed_reference_data:Created crypto currency BTC.
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/engine/base.py", line 1971, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/engine/default.py", line 919, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.ForeignKeyViolation: insert or update on table "fiat_currencies" violates foreign key constraint "fiat_currencies_country_id_fkey"
+DETAIL:  Key (country_id)=(1) is not present in table "countries".
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/app/backend/scripts/manage_db.py", line 45, in <module>
+    cli()
+  File "/usr/local/lib/python3.10/site-packages/click/core.py", line 1161, in __call__
+    return self.main(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/click/core.py", line 1082, in main
+    rv = self.invoke(ctx)
+  File "/usr/local/lib/python3.10/site-packages/click/core.py", line 1697, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+  File "/usr/local/lib/python3.10/site-packages/click/core.py", line 1443, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+  File "/usr/local/lib/python3.10/site-packages/click/core.py", line 788, in invoke
+    return __callback(*args, **kwargs)
+  File "/app/backend/scripts/manage_db.py", line 41, in seed_reference
+    seed_reference_main()
+  File "/app/backend/scripts/seed_reference_data.py", line 40, in seed_reference_data
+    session.commit()
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/orm/session.py", line 1972, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/orm/session.py", line 1257, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/orm/session.py", line 1232, in _prepare_impl
+    self.session.flush()
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/orm/session.py", line 4296, in flush
+    self._flush(objects)
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/orm/session.py", line 4431, in _flush
+    with util.safe_reraise():
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/orm/session.py", line 4392, in _flush
+    flush_context.execute()
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/orm/persistence.py", line 1233, in _emit_insert_statements
+    result = connection.execute(
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/engine/base.py", line 1422, in execute
+    return meth(
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/sql/elements.py", line 514, in _execute_on_connection
+    return connection._execute_clauseelement(
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/engine/base.py", line 1644, in _execute_clauseelement
+    ret = self._execute_context(
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/engine/base.py", line 1850, in _execute_context
+    return self._exec_single_context(
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/engine/base.py", line 1990, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/engine/base.py", line 2357, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/engine/base.py", line 1971, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/engine/default.py", line 919, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.IntegrityError: (psycopg2.errors.ForeignKeyViolation) insert or update on table "fiat_currencies" violates foreign key constraint "fiat_currencies_country_id_fkey"
+DETAIL:  Key (country_id)=(1) is not present in table "countries".
+
+[SQL: INSERT INTO fiat_currencies (country_id, currency_name, currency_code, public_name, description, access) VALUES (%(country_id)s, %(currency_name)s, %(currency_code)s, %(public_name)s, %(description)s, %(access)s) RETURNING fiat_currencies.id]
+[parameters: {'country_id': 1, 'currency_name': 'US Dollar', 'currency_code': 'USD', 'public_name': 'US Dollar', 'description': 'Default fiat currency', 'access': True}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
