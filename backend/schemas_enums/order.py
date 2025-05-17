@@ -3,7 +3,7 @@
 from pydantic import BaseModel, Field, EmailStr, model_validator
 from decimal import Decimal
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from .common_enums import DirectionEnum, OrderStatusEnum
 
 # --- Base Schemas (if needed) --- #
@@ -86,5 +86,42 @@ class OrderConfirmPayload(BaseModel):
 
 class OrderCancelPayload(BaseModel):
     reason: str = Field(..., min_length=5, max_length=500, description="Reason for cancellation")
+
+# --- Admin Specific Schemas for Order History and Count ---
+
+class OrderHistoryAdminItemSchema(OrderHistoryRead):
+    """Detailed order information for admin, could include more sensitive fields or related objects."""
+    # Example: Add trader and merchant email directly if needed for quick view
+    trader_email: Optional[EmailStr] = None 
+    merchant_email: Optional[EmailStr] = None
+    store_name: Optional[str] = None
+    requisite_number_partial: Optional[str] = None # e.g., last 4 digits for display
+
+    # TODO: Populate these fields in the service layer when constructing the response
+
+    class Config:
+        from_attributes = True
+
+class OrderHistoryAdminResponseSchema(BaseModel):
+    total_count: int
+    page: int
+    per_page: int
+    orders: List[OrderHistoryAdminItemSchema]
+
+class OrderCountResponseSchema(BaseModel):
+    total_orders_count: int
+
+# Potentially a Pydantic model for query parameters if using Depends(QuerySchema)
+# class OrdersHistoryQueryAdminSchema(BaseModel):
+#     start_time: Optional[datetime] = None
+#     end_time: Optional[datetime] = None
+#     status: Optional[str] = None
+#     amount: Optional[Decimal] = None
+#     trader_id: Optional[int] = None
+#     store_id: Optional[int] = None
+#     requisite_identifier: Optional[str] = None
+#     user_query: Optional[str] = None
+#     page: int = Query(1, ge=1)
+#     per_page: int = Query(20, ge=1, le=100)
 
 # Additional schemas for filters and list responses can be added here 

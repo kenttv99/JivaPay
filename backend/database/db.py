@@ -211,7 +211,8 @@ class Trader(Base):
     pay_in: Mapped[bool] = mapped_column(Boolean, default=False)
     pay_out: Mapped[bool] = mapped_column(Boolean, default=False)
     trafic_priority: Mapped[int] = mapped_column(Integer, default=5, index=True) # Priority for selection
-    in_work: Mapped[bool] = mapped_column(Boolean, default=True, index=True) # Is trader active?
+    in_work: Mapped[bool] = mapped_column(Boolean, default=True, index=True) # Is trader active for taking orders?
+    is_traffic_enabled_by_teamlead: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False) # TeamLead can disable traffic for this trader
     two_factor_auth_token: Mapped[Optional[str]] = mapped_column(String(32))
     time_zone_id: Mapped[Optional[int]] = mapped_column(ForeignKey('time_zones.id'))
     base_pay_in_limit: Mapped[Decimal] = mapped_column(DECIMAL(20, 2), nullable=False, default=0) # Base limit set before token creation
@@ -350,8 +351,8 @@ class FullRequisitesSettings(Base):
     __tablename__ = "full_requisites_settings"
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     requisite_id: Mapped[int] = mapped_column(ForeignKey('req_traders.id', ondelete='CASCADE'), unique=True, nullable=False) # Added unique=True
-    pay_in: Mapped[bool] = mapped_column(Boolean, default=False)
-    pay_out: Mapped[bool] = mapped_column(Boolean, default=False)
+    pay_in: Mapped[bool] = mapped_column(Boolean, default=False) # Enabled for PayIn operations
+    pay_out: Mapped[bool] = mapped_column(Boolean, default=False) # Enabled for PayOut operations
     lower_limit: Mapped[Decimal] = mapped_column(DECIMAL(20, 2), nullable=False, default=0)
     upper_limit: Mapped[Decimal] = mapped_column(DECIMAL(20, 2), nullable=False, default=10000)
     total_limit: Mapped[Decimal] = mapped_column(DECIMAL(20, 2), nullable=False, default=100000)
@@ -483,16 +484,7 @@ class Admin(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False)
     username: Mapped[str] = mapped_column(String(100), nullable=False) # Or first/last name
-    # Permission flags
-    can_manage_other_admins: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    can_manage_supports: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    can_manage_merchants: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    can_manage_traders: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    can_edit_system_settings: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    can_edit_limits: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    can_view_full_logs: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    can_handle_appeals: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    # Add other specific permissions as needed
+    granted_permissions: Mapped[Optional[list]] = mapped_column(JSON, nullable=True, comment="List of granular permission strings e.g. [\"users:view:all\", \"orders:edit:status\"]")
 
     user: Mapped["User"] = relationship(back_populates="admin_profile")
 
@@ -501,13 +493,8 @@ class Support(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False)
     username: Mapped[str] = mapped_column(String(100), nullable=False) # Or first/last name
-    # Permission flags
-    can_edit_trader_settings: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    can_manage_orders: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    can_view_orders: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    can_handle_appeals: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    can_view_sensitive_data: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    # Add other specific permissions as needed
+    role_description: Mapped[Optional[str]] = mapped_column(String(255), comment="Description of the support agent's role/specialization")
+    granted_permissions: Mapped[Optional[list]] = mapped_column(JSON, nullable=True, comment="List of granular permission strings, e.g. [\"orders:view:any\", \"users:view:trader_contact\"]")
 
     user: Mapped["User"] = relationship(back_populates="support_profile")
 
@@ -674,6 +661,7 @@ class TeamLead(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False)
     username: Mapped[str] = mapped_column(String(100), nullable=False)
+    granted_permissions: Mapped[Optional[list]] = mapped_column(JSON, nullable=True, comment="List of granular permission strings, e.g. [\"team:manage:trader_traffic\", \"team:view:requisite_stats\"]")
 
     user: Mapped["User"] = relationship(back_populates="teamlead_profile")
     traders: Mapped[List["Trader"]] = relationship(back_populates="team_lead")

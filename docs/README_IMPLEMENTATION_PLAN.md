@@ -43,11 +43,13 @@
 
 ### 3.1. Базовые Утилиты и Исключения
 
-*   **Файл:** `backend/utils/exceptions.py`
-    *   **Задача:** Определить иерархию кастомных исключений.
+*   **Файл:** `backend/utils/exceptions.py` (и `backend/utils/exception_handlers.py`)
+    *   **Задача:** Определить иерархию кастомных исключений и обеспечить их глобальную обработку.
     *   **Шаги:**
-        *   Создать базовый класс `JivaPayException(Exception)`.
-        *   Создать специфичные исключения, наследуемые от `JivaPayException` или стандартных исключений: `RequisiteNotFound`, `LimitExceeded`, `InsufficientBalance`, `ConfigurationError`, `OrderProcessingError`, `DatabaseError`, `NotificationError`, `CacheError` и т.д.
+        *   В `backend/utils/exceptions.py`: Создать базовый класс `JivaPayException(Exception)`.
+        *   Создать специфичные исключения, наследуемые от `JivaPayException` (например, `RequisiteNotFound`, `LimitExceeded`, `ConfigurationError`, etc.).
+        *   В `backend/utils/exception_handlers.py`: Реализовать функцию `register_exception_handlers(app)`, которая регистрирует глобальный обработчик для `JivaPayException`, возвращающий стандартизированный JSON-ответ с соответствующим HTTP-статусом.
+        *   Данная функция `register_exception_handlers` вызывается при инициализации FastAPI-приложений во всех файлах серверов (например, `backend/servers/merchant/server.py`, `backend/servers/admin/server.py` и т.д.), что устраняет необходимость в `try/except` блоках для `JivaPayException` в каждом эндпоинте.
 
 *   **Файл:** `backend/database/utils.py`
     *   **Задача:** Реализовать утилиты для безопасной работы с БД.
@@ -100,6 +102,8 @@
 
 *   **Файл:** `backend/services/requisite_selector.py`
     *   **Задача:** Реализовать логику подбора реквизита.
+    *   **Дополнение:** Учесть флаги `Trader.user.is_active`, `Trader.in_work`, `Trader.is_traffic_enabled_by_teamlead` и доступность реквизита по направлениям (`FullRequisitesSettings.pay_in`/`pay_out`) при выборе трейдеров/реквизитов. Статус самого реквизита (`ReqTrader.status`) также должен быть активным (например, 'approve').
+    *   **Статус:** Реализовано. Использует `backend/utils/query_filters.py` для применения фильтров активных трейдеров и реквизитов.
     *   **Шаги:**
         *   Реализовать основную функцию `find_suitable_requisite(incoming_order: IncomingOrder, db_session: Session) -> Tuple[Optional[int], Optional[int]] | None` (возвращает `(requisite_id, trader_id)` или `None`, или выбрасывает исключение).
         *   Сформировать и выполнить оптимизированный SQL-запрос SQLAlchemy с JOIN'ами (`req_traders`, `traders`, `full_requisites_settings`), фильтрами по параметрам заявки, статусам, статическим лимитам.
@@ -128,6 +132,8 @@
 
 *   **Файл:** `backend/services/order_processor.py`
     *   **Задача:** Реализовать оркестрацию обработки входящей заявки.
+    *   **Статус:** Реализовано.
+    *   **Дополнение (актуально):** Обеспечивает копирование полей `amount_fiat`, `amount_crypto`, `client_id`, `customer_id`, `customer_ip`, `payment_details_submitted` из `IncomingOrder` в `OrderHistory`. Поле `OrderHistory.total_fiat` использует соответствующее значение из `IncomingOrder`.
     *   **Шаги:**
         *   Реализовать основную функцию `process_incoming_order(incoming_order_id: int)`.
         *   **Добавить проверку идемпотентности** (проверить статус `IncomingOrder` или наличие `OrderHistory` для `incoming_order_id`) *перед* основной транзакцией.
@@ -157,6 +163,62 @@
                     *   Вызвать `utils.notifications.report_critical_error`, если ошибка критическая.
                     *   (Если использовался `try...except`, то после обработки исключения можно его пробросить дальше `raise`, если это необходимо для логики вызывающего кода, например, Worker'а).
 
+*   **Новый раздел: Расширенные сервисы для Админ-панели, Саппорта и Тимлидов**
+    *   **Задача:** Реализовать новые сервисы и расширить существующие для поддержки нового функционала, описанного в `docs/ADDITIONAL_FEATURES_AND_COMPONENTS.md`.
+    *   **Статус:** В значительной степени реализовано и рефакторено.
+    *   **Новые/доработанные сервисы и их задачи:**
+        *   `services.platform_service.py`:
+            *   Реализовать `get_platform_balances(db_session: Session)`. **Статус: Реализовано.**
+        *   `services.order_service.py`:
+            *   Реализовать `get_orders_history(...)` с фильтрацией (включая `amount_exact`, `amount_min`, `amount_max`), поиском, пагинацией и учетом гранулярных прав пользователя. **Статус: Реализовано. Использует `query_utils.py`.**
+            *   Реализовать `get_orders_count(...)`. **Статус: Реализовано. Использует `query_utils.py`.**
+        *   `services.requisite_service.py`:
+            *   Реализовать `get_online_requisites_stats(...)` с фильтрацией, сортировкой, учетом гранулярных прав и обновленной логикой "онлайн" реквизита. **Статус: Реализовано. Использует `query_utils.py` и `query_filters.py`. Добавлено аудит-логирование.**
+            *   Реализовать `get_requisite_details_for_moderation(...)` для админов. **Статус: Реализовано.**
+            *   Реализовать `set_requisite_status(...)` для админов с проверкой прав и аудит-логированием. **Статус: Реализовано.**
+        *   `services.user_service.py` (расширение):
+            *   Реализовать `get_administrators_statistics(...)`, `get_teamleads_statistics(...)`, `get_supports_statistics(...)`. **Статус: Реализовано. Используют `query_utils.py`.**
+            *   Реализовать `get_administrator_details(...)`. **Статус: Реализовано.**
+            *   Реализовать `update_administrator_profile(...)`. **Статус: Реализовано. Рефакторено с `_update_user_and_profile_generic`. Добавлены аудит и `ip_address`.**
+            *   Реализовать `get_support_details(...)`, `update_support_profile(...)`. **Статус: Реализовано. Рефакторено с `_update_user_and_profile_generic`. Добавлены аудит и `ip_address`.**
+            *   Реализовать `get_teamlead_details(...)`, `update_teamlead_profile(...)`. **Статус: Реализовано. Рефакторено с `_update_user_and_profile_generic`. Добавлены аудит и `ip_address`.**
+        *   `services.trader_service.py`:
+            *   Реализовать `get_traders_statistics(...)` (с учетом прав, фильтр по `payment_method_id`). **Статус: Реализовано. Использует `query_utils.py`.**
+            *   Реализовать `get_trader_full_details(...)` (с учетом прав). **Статус: Реализовано.**
+        *   `services.merchant_service.py`:
+            *   Реализовать `get_merchants_statistics(...)` (с учетом прав). **Статус: Реализовано. Использует `query_utils.py`.**
+            *   Реализовать `get_merchant_full_details(...)` (с учетом прав). **Статус: Реализовано.**
+        *   `services.permission_service.py`:
+            *   Реализовать `get_user_permissions(...)`. **Статус: Реализовано.**
+            *   Реализовать `update_user_permissions(...)` с проверкой прав текущего администратора и аудит-логированием. **Статус: Реализовано.**
+            *   Реализовать `check_permission(...)` и `_match_permission(...)` с поддержкой wildcards и плейсхолдера `{id}`. **Статус: Реализовано.**
+            *   Добавлена `check_specific_or_any_permission`. **Статус: Реализовано.**
+        *   `services.teamlead_service.py`:
+            *   Реализовать `get_managed_traders(...)`. **Статус: Реализовано.**
+            *   Реализовать `set_trader_traffic_status_by_teamlead(...)` (с проверкой прав и аудит-логированием). **Статус: Реализовано. Добавлено аудит-логирование.**
+            *   Реализовать `get_teamlead_full_details(...)`. **Статус: Реализовано.**
+            *   Реализовать `get_team_statistics(...)`. **Статус: Реализовано.**
+            *   Актуализировать логику расчета `active_reqs` для учета `User.is_active`, `Trader.in_work`, `Trader.is_traffic_enabled_by_teamlead`. **Статус: Реализовано. Использует `query_filters.py`.**
+        *   `services.audit_service.py` (или расширение `audit_logger.py`):
+            *   Реализовать `get_critical_system_errors(...)`. **Статус: Требует уточнения/реализации, если необходимо отдельно от `audit_logger.py`.**
+            *   Убедиться, что `log_event` используется для аудита ключевых действий. **Статус: `log_event` в `audit_logger.py` реализован и используется в нескольких сервисах для аудита.**
+    *   **Доработка моделей БД (`backend/database/db.py`):**
+        *   Добавить поле `is_traffic_enabled_by_teamlead: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)` в `Trader`. **Статус: Реализовано.**
+        *   Добавить поле `role_description: Mapped[Optional[str]]` в `Support`. **Статус: Реализовано.**
+        *   Добавить поле `granted_permissions: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, server_default='[]')` в `Admin`, `Support`, `TeamLead`. **Статус: Реализовано.**
+        *   **Удалить** поле `active_hours` из `FullRequisitesSettings`. **Статус: Реализовано.**
+        *   Провести ревизию и добавление необходимых индексов для новых полей и часто используемых фильтров. **Статус: Частично выполнено, добавлены основные индексы. Требует постоянного внимания.**
+    *   **Новые утилиты (`backend/utils`):**
+        *   `utils.query_builder.py` (если потребуется). **Статус: Не создавался, логика запросов реализуется через SQLAlchemy ORM и `query_utils.py`.**
+        *   `utils.permission_checker.py` (или логика внутри `services.permission_service`). **Статус: Логика реализована внутри `services.permission_service.py`.**
+        *   `utils.query_utils.py`. **Статус: Создан и активно используется (Phase 5).** Содержит `apply_pagination`, `apply_sorting`, `apply_user_status_filter`, `apply_date_range_filter`, `get_paginated_results_and_count`.
+        *   `utils.query_filters.py`. **Статус: Создан и активно используется (Phase 5).** Содержит `get_active_trader_filters`, `get_active_requisite_filters`.
+    *   **Шаги по реализации:**
+        *   Создать/доработать указанные сервисные модули и функции. **Статус: В основном выполнено.**
+        *   Реализовать соответствующую логику взаимодействия с БД, используя `database.utils`.
+        *   Обеспечить покрытие новых функций юнит-тестами.
+        *   Интегрировать вызовы новых сервисов в соответствующие API-роутеры (`admin/*`, `support/*`, `teamlead/*`).
+
 ### 3.4. Фоновый Обработчик (Worker)
 
 *   **Файлы:** `backend/worker/app.py` (настройка Celery/Dramatiq), `backend/worker/tasks.py` (определение задач), `backend/worker/scheduler.py` (или логика запуска/планирования задач, если не используется встроенный планировщик). Может потребоваться `requirements_worker.txt`.
@@ -179,6 +241,7 @@
 
 *   **Файлы:** `backend/services/order_status_manager.py`, `backend/api_routers/trader.py`, `backend/api_routers/merchant.py`, `backend/api_routers/admin.py`, `backend/api_routers/teamlead/*`.
     *   **Задача:** Реализовать логику подтверждения/отмены ордеров и соответствующие API эндпоинты.
+    *   **Дополнение:** API эндпоинты для админов/саппортов должны позволять управлять статусами ордеров в нештатных ситуациях. API для тимлидов может включать просмотр статистики по ордерам их трейдеров.
     *   **Шаги:**
         *   В `order_status_manager.py` реализовать функции: `confirm_payment_by_client`, `confirm_order_by_trader`, `cancel_order`, `dispute_order` и т.д., используя `atomic_transaction`.
         *   Реализовать логику проверки прав доступа и корректности статусов перед изменением.
@@ -189,25 +252,29 @@
         *   Настроить сохранение ссылок на загруженные документы (подумать об использовании S3-совместимого хранилища).
         *   (Опционально) Реализовать в Worker'е задачу для отслеживания и обработки таймаутов ордеров.
         *   Добавить тесты для всех сценариев изменения статусов.
-        *   Для TeamLead предусмотреть эндпоинты управления трейдерами (`/traders`, `/traders/{id}/traffic`, `/traders/{id}/stats`).
+        *   Для TeamLead предусмотреть эндпоинты управления трейдерами (`/traders`, `/traders/{id}/traffic`, `/traders/{id}/stats`) **и эндпоинты для получения статистики по ордерам его команды, а также статистики по онлайн-реквизитам его команды.**
 
 ### 3.6. API-роутеры и динамическое подключение
 *   **Общие модули (`backend/api_routers/common`)** — реализуют CRUD и бизнес-логику для разных ролей:
     - `stores.py` — управление магазинами (MerchantStore)
     - `merchant_orders.py` — операции мерчанта с ордерами
     - `trader_orders.py` — операции трейдера с ордерами
-    - `teamlead_traders.py` — управление командой трейдеров (TeamLead)
-    - `users.py` — CRUD пользователей и профилей (Admin)
-    - `requisites.py` — управление реквизитами трейдеров
+    - `teamlead_traders.py` — управление командой трейдеров (TeamLead). **Будет расширен для предоставления статистики и управления трафиком.**
+    - `users.py` — CRUD пользователей и профилей (Admin). **Будет расширен для детального управления администраторами, саппортами, тимлидами и их правами.**
+    - `requisites.py` — управление реквизитами трейдеров. **Может быть дополнен эндпоинтами для получения статистики онлайн-реквизитов для админов/саппортов/тимлидов.**
     - `support_orders.py` — работа саппорта с тикетами и ордерами
     - `settings.py` — CRUD конфигурационных настроек (Admin)
-    - `admin_permissions.py` — управление флагами прав администратора
+    - `admin_permissions.py` — управление флагами прав администратора. **Может быть расширено или заменено более гранулярной системой через `permission_service`.**
+*   **Новые общие модули (по необходимости):**
+    *   `platform_stats.py` (для `GET /api/admin/platform/balance`)
+    *   `detailed_orders.py` (для `GET /api/admin/orders`, `GET /api/support/orders`)
+    *   `critical_logs.py` (для `GET /api/admin/logs/critical-errors`)
 *   **Динамические роутеры (`backend/servers/{role}/server.py`)** — подключают нужные общие модули и защищаются декоратором `permission_required(role)`:
     - `servers/merchant/server.py` — монтирует `common/stores` и `common/merchant_orders`
     - `servers/trader/server.py` — монтирует `common/trader_orders`
-    - `servers/teamlead/server.py` — монтирует `common/teamlead_traders`
-    - `servers/support/server.py` — монтирует `common/support_orders`
-    - `servers/admin/server.py` — монтирует `common/users`, `common/requisites`, `common/support_orders`, `common/settings`, `common/admin_permissions`
+    - `servers/teamlead/server.py` — монтирует `common/teamlead_traders.py` (расширенный), `common/requisites.py` (расширенный для статистики реквизитов команды).
+    - `servers/support/server.py` — монтирует `common/support_orders.py` (или `detailed_orders.py`), `common/requisites.py` (для статистики реквизитов, если разрешено), `common/users.py` (для статистики трейдеров, если разрешено).
+    - `servers/admin/server.py` — монтирует `common/users.py` (расширенный), `common/requisites.py` (расширенный), `detailed_orders.py`, `platform_stats.py`, `critical_logs.py`, `common/settings.py`, `common/admin_permissions.py` (или новую систему прав).
 
 ### 3.7. API и логика платежного шлюза
 *   **Публичный шлюз (`servers/gateway/server.py`)** — монтирует `backend/api_routers/gateway/router.py` без обязательной аутентификации или с короткоживущими токенами:

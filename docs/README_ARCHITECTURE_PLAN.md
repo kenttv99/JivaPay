@@ -84,41 +84,74 @@
 *   **API/SSE/Типы:** Использование типизированных запросов к `/api/trader/*`, обработка SSE для новых ордеров.
 
 ### 3.3. Приложение Администратора (`frontend/admin_app/`)
-*   **Ключевая задача:** Предоставить полный контроль над системой: управление пользователями всех ролей, магазинами, реквизитами (включая модерацию), просмотр всех ордеров, настройка системных параметров и справочников.
-*   **Детализация страниц:**
-    *   `pages/Dashboard.tsx`: Агрегированная статистика по системе (объемы, количество пользователей, активные ордера и т.д.).
-    *   `pages/Users/Merchants.tsx`, `pages/Users/Traders.tsx`, `pages/Users/Supports.tsx`, `pages/Users/Admins.tsx`: Таблицы со списками пользователей соответствующей роли. Возможность создания, редактирования, блокировки, управления правами доступа (для саппортов/админов).
-    *   `pages/Stores.tsx`: Обзор **всех** магазинов (`MerchantStore[]`) с возможностью фильтрации, просмотра деталей, управления статусом (административного).
-    *   `pages/Requisites.tsx`: Обзор **всех** реквизитов (`ReqTrader[]`) с возможностью фильтрации, просмотра деталей и настроек (`FullRequisitesSettings`), **одобрения/отклонения** новых реквизитов (изменение `ReqTrader.status`).
-    *   `pages/Orders.tsx`: Обзор **всех** ордеров (`IncomingOrder[]`, `OrderHistory[]`) с мощными фильтрами (по пользователям, магазинам, трейдерам, реквизитам, статусам, датам).
-    *   `pages/SystemSettings/ReferenceData.tsx`: Интерфейс для управления системными справочниками (валюты, платежные системы, настройки комиссий и т.п. - согласно `db.py` и `ReferenceService`).
-    *   `pages/SystemSettings/SystemStatus.tsx`: (Возможно) Мониторинг состояния ключевых компонентов системы.
+*   **Ключевая задача:** Предоставить полный контроль над системой: управление пользователями всех ролей (с учетом гранулярных прав), магазинами, реквизитами (включая модерацию), просмотр всех ордеров, настройка системных параметров и справочников.
+*   **Детализация страниц (дополняется на основе требований из `docs/ADDITIONAL_FEATURES_AND_COMPONENTS.md` и новой системы прав):**
+    *   `pages/Dashboard.tsx`: Агрегированная статистика.
+        *   **Виджеты (доступ к каждому виджету определяется правом администратора, например `platform:view:balance`, `orders:view:count_total`, etc.):**
+            *   "Баланс площадки" (компонент `PlatformBalanceWidget`): Отображение общего баланса платформы по различным валютам. Запрос к `GET /api/admin/platform/balance` (Ответ: `PlatformBalanceResponseSchema`).
+            *   "История ордеров" (компонент `OrdersHistoryWidget` или ссылка на `pages/OrdersHistory.tsx`): Краткая статистика или последние ордера.
+            *   "Количество реквизитов онлайн" (компонент `OnlineRequisitesWidget`): Отображение количества активных реквизитов в реальном времени. Использует SSE с `GET /api/admin/requisites/online-stats/stream`. Таблица с реквизитами при клике или на отдельной странице. Опции сортировки и фильтрации. (Бэкенд использует `query_utils.py` и `query_filters.py` для этой логики).
+            *   "Количество трейдеров" (компонент `TradersStatsWidget`): Статистика по трейдерам. (Бэкенд использует `query_utils.py`).
+            *   "Количество мерчантов и их магазинов" (компонент `MerchantsStatsWidget`): Статистика по мерчантам. (Бэкенд использует `query_utils.py`).
+            *   "Общее количество ордеров" (компонент `TotalOrdersWidget`): Отображение общего количества ордеров. Фильтры по статусам, дате/времени. (Бэкенд использует `query_utils.py`).
+            *   "Количество администраторов" (компонент `AdminsStatsWidget`): Статистика по администраторам. (Бэкенд использует `query_utils.py`).
+            *   "Количество тимлидов" (компонент `TeamLeadsStatsWidget`): Статистика по тимлидам. (Бэкенд использует `query_utils.py`).
+            *   "Количество саппортов" (компонент `SupportsStatsWidget`): Статистика по саппортам. (Бэкенд использует `query_utils.py`).
+    *   `pages/OrdersHistory.tsx`: Таблица с историей всех ордеров.
+        *   **Компоненты:** Таблица (`SharedTableComponent`), фильтры (`DateRangePicker`, `StatusSelect`, `TextField` для ID, email, etc.), пагинация.
+        *   **Функционал:** Просмотр деталей ордера. Фильтрация по дате/времени, статусу, сумме, ID трейдера/магазина, части реквизита, email трейдера/мерчанта, названию магазина. Данные из `GET /api/admin/orders` (Ответ: `OrderHistoryAdminResponseSchema`). Полнота отображаемых данных/фильтров зависит от прав администратора (проверяется `PermissionService` на бэкенде). Бэкенд использует `query_utils.py` для стандартизации запроса и ответа.
+    *   `pages/RequisitesOnlineStats.tsx` (или как часть `pages/RequisitesManagement.tsx`): Статистика и список онлайн реквизитов.
+        *   **Компоненты:** Таблица, фильтры (по трейдеру, методу, банку, типу pay_in/pay_out), сортировка (по лимитам, направлению).
+        *   **Функционал:** Обновление данных через SSE (`GET /api/admin/requisites/online-stats/stream`). Отображение "онлайн" статуса (кабинет трейдера доступен, трафик включен, реквизит включен на pay_in/pay_out).
+    *   `pages/Users/TradersList.tsx`: Список трейдеров.
+        *   **Компоненты:** Таблица, фильтры (статус, онлайн/оффлайн, период оборота, валюта, метод, крипта), поиск (email, id, telegram, телефон), сортировка (оборот, кол-во реквизитов, дата регистрации, кол-во ордеров, статус кабинета), пагинация.
+        *   **Функционал:** Данные из `GET /api/admin/traders/stats`. Действия: переход к деталям, блокировка/разблокировка (`POST /api/admin/traders/{trader_id}/block` / `unblock`), редактирование профиля, лимитов, трафика (через `TraderDetailsFull.tsx`).
+    *   `pages/Users/TraderDetailsFull.tsx`: Полная информация о трейдере (профиль, реквизиты, балансы, ордера, история действий). Редактирование профиля (`PUT /api/admin/traders/{trader_id}`), лимитов (`PUT /api/admin/traders/{trader_id}/limits`), трафика (`PUT /api/admin/traders/{trader_id}/traffic`).
+    *   `pages/Users/MerchantsList.tsx`: Список мерчантов и их магазинов. Аналогично `TradersList.tsx`. Данные из `GET /api/admin/merchants/stats`.
+    *   `pages/Users/MerchantDetailsFull.tsx`: Полная информация о мерчанте и его магазинах.
+    *   `pages/SystemSettings/CriticalErrorsLog.tsx`: Просмотр логов критических ошибок системы. Данные из `GET /api/admin/logs/critical-errors`. Фильтрация, пагинация.
+    *   `pages/Users/AdminsList.tsx`: Список администраторов. Данные из `GET /api/admin/administrators/stats`. Фильтр "доступен/недоступен".
+    *   `pages/Users/AdminDetails.tsx`: Просмотр информации о другом администраторе (`GET /api/admin/administrators/{admin_id}`). UI для редактирования профиля (`PUT /api/admin/administrators/{admin_id}`), изменения гранулярных прав (`PUT /api/admin/administrators/{admin_id}/permissions` - мультиселект или чекбоксы для прав), блокировки/разблокировки (`POST /api/admin/administrators/{admin_id}/block` / `unblock`). Форма для создания нового администратора (`POST /api/admin/administrators`).
+    *   `pages/Users/TeamLeadsList.tsx`: Список тимлидов. Данные из `GET /api/admin/teamleads/stats`. Фильтр "активные/все".
+    *   `pages/Users/TeamLeadDetailsFull.tsx`: Информация о тимлиде (`GET /api/admin/teamleads/{teamlead_id}`). Управление профилем, правами (`PUT /api/admin/teamleads/{teamlead_id}`, `PUT /api/admin/teamleads/{teamlead_id}/permissions`), блокировка/разблокировка. Просмотр команды и статистики. Форма для создания нового тимлида (`POST /api/admin/teamleads`).
+    *   `pages/Users/SupportsList.tsx`: Список саппортов. Данные из `GET /api/admin/supports/stats`. Фильтры "активные/все", по роли (описанию).
+    *   `pages/Users/SupportDetails.tsx`: Информация о саппорте (`GET /api/admin/supports/{support_id}`). Управление профилем (включая `role_description`), правами (`PUT /api/admin/supports/{support_id}`, `PUT /api/admin/supports/{support_id}/permissions`), блокировка/разблокировка. Форма для создания нового саппорта (`POST /api/admin/supports`).
+    *   `pages/RequisitesManagement.tsx` (расширение `pages/Requisites.tsx`): Обзор **всех** реквизитов. Помимо просмотра (как в `RequisitesOnlineStats.tsx`), добавление функционала модерации: одобрение/отклонение новых реквизитов, изменение статуса существующих, редактирование настроек.
+    *   `pages/SystemSettings/ReferenceData.tsx`: Интерфейс для управления системными справочниками.
+    *   `pages/SystemSettings/SystemStatus.tsx`: Мониторинг состояния ключевых компонентов системы.
     *   `pages/ProfileSettings.tsx`: Настройки профиля администратора.
-*   **API/SSE/Типы:** Использование типизированных запросов к `/api/admin/*`. SSE может использоваться для уведомлений о событиях, требующих внимания (например, новые реквизиты на модерацию).
+*   **API/SSE/Типы:** Использование типизированных запросов к `/api/admin/*`. Бэкенд будет проверять гранулярные права по токену пользователя. SSE для "Количества реквизитов онлайн".
 
 ### 3.4. Приложение Саппорта (`frontend/support_app/`)
-*   **Ключевая задача:** Обеспечить быстрый поиск и просмотр информации по ордерам и пользователям для решения возникающих вопросов, с учетом разграничения прав доступа.
-*   **Детализация страниц:** Функционал зависит от прав доступа (`access_to` в `SupportUser`).
-    *   `pages/Dashboard.tsx` / `pages/Search.tsx`: Основной инструмент - универсальный поиск по ID ордера, ID пользователя, email, ID магазина и т.д.
-    *   `pages/OrderSearch.tsx`: Результаты поиска по ордерам.
-    *   `pages/OrderDetailViewer.tsx`: Детальный просмотр ордера (`IncomingOrder`/`OrderHistory`) со связанными данными (пользователь, магазин, трейдер, реквизиты) - **только чтение**.
-    *   `pages/UserSearch.tsx`: Результаты поиска по пользователям.
-    *   `pages/UserDetailViewer.tsx`: Детальный просмотр пользователя (Мерчант/Трейдер) с его данными (магазины/реквизиты) - **только чтение**.
+*   **Ключевая задача:** Обеспечить быстрый поиск и просмотр информации по ордерам и пользователям в соответствии с выданными гранулярными правами (`Support.granted_permissions`). UI должен динамически адаптироваться (скрывать/показывать элементы) на основе этих прав, проверяемых `PermissionService` на бэкенде.
+*   **Детализация страниц (функционал определяется списком прав из `Support.granted_permissions`):**
+    *   `pages/Dashboard.tsx` / `pages/Search.tsx`: Основной инструмент - универсальный поиск.
+        *   **Виджеты (отображаются если есть соответствующие права):**
+            *   "История ордеров" (компонент `OrdersHistoryWidgetSupport`): Запрос к `GET /api/support/orders` (Ответ: `OrderHistoryAdminResponseSchema`). Бэкенд использует `query_utils.py`.
+            *   "Количество реквизитов онлайн" (компонент `OnlineRequisitesWidgetSupport`): Запрос к `GET /api/support/requisites/online-stats` и SSE. Бэкенд использует `query_utils.py` и `query_filters.py`.
+            *   "Количество трейдеров" (компонент `TradersStatsWidgetSupport`): Запрос к `GET /api/support/traders/stats`. Бэкенд использует `query_utils.py`.
+    *   `pages/OrdersHistory.tsx`: Доступ к истории ордеров. Данные из `GET /api/support/orders`. Поля, фильтры и доступные ордера определяются правами. Бэкенд использует `query_utils.py`.
+    *   `pages/RequisitesOnlineStats.tsx`: Просмотр статистики по онлайн реквизитам. Данные из `GET /api/support/requisites/online-stats`. Объем данных и фильтры зависят от прав.
+    *   `pages/TradersStats.tsx`: Просмотр статистики по трейдерам. Данные из `GET /api/support/traders/stats`. Объем данных и фильтры зависят от прав.
+    *   `pages/OrderDetailViewer.tsx`: Детальный просмотр ордера (`GET /api/support/orders/{order_id}`). Только чтение. Отображаемые поля зависят от прав.
+    *   `pages/TraderDetailViewer.tsx`: Детальный просмотр трейдера (`GET /api/support/traders/{trader_id}`). Только чтение. Просмотр его реквизитов (`GET /api/support/traders/{trader_id}/requisites`), ордеров (`GET /api/support/traders/{trader_id}/orders`). Поиск трейдеров (`GET /api/support/traders/search?query={...}`).
+    *   `pages/MerchantDetailViewer.tsx`: Детальный просмотр мерчанта (`GET /api/support/merchants/{merchant_id}`) и его магазинов (`GET /api/support/stores/{store_id}`). Поиск мерчантов (`GET /api/support/merchants/search?query={...}`).
+    *   `pages/OrderActionModal.tsx`: Модальное окно для выполнения действий над ордерами (если есть права `orders:action:*`). Запрос к `POST /api/support/orders/{order_id}/action`.
     *   `pages/ProfileSettings.tsx`: Настройки профиля саппорта.
-*   **API/Типы:** Использование типизированных запросов к `/api/support/*`. Права доступа проверяются на бэкенде.
+*   **API/Типы:** Использование типизированных запросов к `/api/support/*`. Бэкенд проверяет гранулярные права из `Support.granted_permissions`. UI должен скрывать/показывать элементы управления на основе этих прав.
 
 ### 3.5. Приложение Тимлида (`frontend/teamlead_app/`)
-*   **Ключевая задача:** Тимлид отвечает за группу трейдеров: следит за их KPI, может оперативно включать/выключать для них трафик, анализировать эффективность.
-*   **Детализация страниц:**
-    *   `pages/Dashboard.tsx`: Карточки со сводной статистикой (кол-во трейдеров, распределение статусов `in_work`, суммарный оборот, KPI).
-    *   `pages/Traders.tsx`: Таблица трейдеров под управлением. Возможность открывать детали, переключать флаг "Трафик" (PATCH `/teamlead/traders/{id}/traffic`).
-    *   `pages/TraderDetails.tsx`: Отчёты по выбранному трейдеру (оборот, средняя комиссия, список недавних ордеров).
+*   **Ключевая задача:** Тимлид отвечает за группу трейдеров. Функционал определяется гранулярными правами из `TeamLead.granted_permissions`, проверяемыми `PermissionService` на бэкенде.
+*   **Детализация страниц (функционал определяется списком прав):**
+    *   `pages/Dashboard.tsx`: Сводная статистика по своей команде.
+        *   **Виджеты:**
+            *   "Количество реквизитов онлайн (моя команда)" (компонент `TeamOnlineRequisitesWidget`): Данные из `GET /api/teamlead/requisites/online-stats` и SSE (`GET /api/teamlead/requisites/online-stats/stream`), автоматически отфильтрованные по трейдерам команды. Бэкенд использует `query_utils.py` и `query_filters.py` (учитывая `Trader.is_traffic_enabled_by_teamlead`).
+            *   "Общая статистика команды" (компонент `TeamOverallStatsWidget`): Оборот, количество ордеров и т.д. из `GET /api/teamlead/my-team/stats`. Бэкенд может использовать `query_utils.py`.
+    *   `pages/ManagedTraders.tsx`: Таблица трейдеров своей команды. Данные из `GET /api/teamlead/my-traders` (Ответ: `List[TeamLeadTraderBasicInfoSchema]`). Бэкенд может использовать `query_utils.py`.
+    *   `pages/TraderDetails.tsx`: Отчёты по выбранному трейдеру из своей команды (`GET /api/teamlead/my-traders/{trader_id}`). Статистика по трейдеру (`GET /api/teamlead/my-traders/{trader_id}/statistics`).
+    *   `pages/TeamRequisites.tsx`: Просмотр реквизитов своей команды. Данные из `GET /api/teamlead/my-traders/requisites` с фильтрами.
     *   `pages/ProfileSettings.tsx`: Настройки профиля тимлида.
-*   **API/SSE/Типы:**
-    *   Взаимодействие с эндпоинтами `/teamlead/*` (см. backend). SSE можно использовать для мгновенных обновлений статусов трейдеров.
-*   **Особенности UI:**
-    *   Акцент на быстром доступе к управлению флагом трафика (toggle-switch в таблице).
-    *   Графики производительности трейдеров (объём в день/неделю, % успеха).
+*   **API/SSE/Типы:** Взаимодействие с `/api/teamlead/*`. Бэкенд проверяет права из `TeamLead.granted_permissions`. SSE для онлайн-реквизитов своей команды. UI должен адаптироваться к правам.
 
 --- 
 
