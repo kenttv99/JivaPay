@@ -10,7 +10,7 @@ from typing import List, Optional, Union, Any # Added Any for details in audit l
 from sqlalchemy.orm import Session
 from backend.database.db import User, Admin, Support, TeamLead # Assuming Profile models are correctly named
 # Import the log_event function directly
-from backend.services.audit_logger import log_event 
+from backend.services.audit_service import log_event 
 from backend.config.logger import get_logger
 # Добавляем импорт декоратора
 from backend.utils.decorators import handle_service_exceptions
@@ -191,7 +191,39 @@ class PermissionService:
         user_role_for_log: str, # For logging context
         user_id_for_log: Optional[int] # For logging context
     ) -> bool:
-        """Internal logic to match required permission against a list of granted ones."""
+        """Internal logic to match a required permission against a list of granted permissions.
+
+        Handles specific string matches, wildcard '*' matches, and {id} placeholders
+        in the required permission template.
+
+        Permission Format: 
+            Permissions are strings, typically colon-separated, e.g., "resource:action:scope".
+            Example: "orders:view:all", "users:edit:{id}", "reports:generate:financial".
+
+        Wildcard Behavior:
+            - "*": A single asterisk as a granted permission matches any required permission (superuser).
+            - "superuser": Same as "*", grants all permissions.
+            - Trailing Wildcard: "resource:action:*" matches "resource:action:any_scope", 
+              "resource:action:specific_scope", and also "resource:action:scope:sub_scope".
+            - Intermediate Wildcard: "resource:*:scope" matches "resource:any_action:scope".
+            - Wildcards match only one segment unless they are at the end of the granted permission string.
+              e.g., "a:*:c" matches "a:b:c" but NOT "a:b:x:c".
+              e.g., "a:*" matches "a:b" and "a:b:c".
+        
+        {id} Placeholder:
+            If `required_permission_template` contains "{id}", it will be replaced by 
+            `target_entity_id`. If `target_entity_id` is None in this case, the match fails.
+
+        Args:
+            granted_permissions: A list of permission strings the user possesses.
+            required_permission_template: The permission string being checked for, potentially with {id}.
+            target_entity_id: The ID of the entity involved, for {id} replacement.
+            user_role_for_log: User's role, for logging purposes.
+            user_id_for_log: User's ID, for logging purposes.
+
+        Returns:
+            True if a match is found, False otherwise.
+        """
         
         final_required_permission = required_permission_template
         if "{id}" in required_permission_template:
@@ -211,14 +243,13 @@ class PermissionService:
                 return True
             
             granted_parts = granted_perm_str.split(':')
-            if len(granted_parts) > len(required_parts): # e.g. granted 'a:b:c', required 'a:b' -> no match unless wildcard
-                if granted_parts[len(required_parts)-1] == "*" and all(granted_parts[i] == required_parts[i] for i in range(len(required_parts)-1)):
-                     # e.g. granted 'a:b:*' should match required 'a:b' if we interpret 'a:b' as a prefix for 'a:b:anything'
-                     # This interpretation is usually not how specific permissions work; typically 'a:b' is distinct from 'a:b:c'.
-                     # For now, if granted is more specific, it doesn't match a less specific requirement unless the last part of required matches a wildcard.
-                     pass # Let more specific checks handle it
-                else:
-                    continue
+            if len(granted_parts) > len(required_parts): # e.g. granted 'a:b:c', required 'a:b'
+                # If a granted permission is more specific than the required one,
+                # it generally does not imply the less specific permission.
+                # e.g., having "orders:view:one_specific_order" does not grant "orders:view".
+                # An exception could be if the more specific grant ends in a wildcard that could cover the difference,
+                # but that is handled by other checks. So, typically, this is a non-match.
+                continue # This granted permission is too specific.
             
             is_match = True
             # Check segment by segment

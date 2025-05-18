@@ -1,6 +1,5 @@
 """Celery tasks for the JivaPay worker."""
 
-import logging
 from celery.exceptions import Reject
 from datetime import datetime, timedelta
 
@@ -13,8 +12,9 @@ from backend.utils.config_loader import get_typed_config_value
 from backend.utils.notifications import report_critical_error
 from backend.database.db import IncomingOrder
 from backend.services.balance_manager import update_balances_for_completed_order
+from backend.config.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # --- Task Definitions --- #
 
@@ -58,7 +58,7 @@ def process_order_task(self, incoming_order_id: int):
     except Exception as config_err:
         # Log error but proceed with defaults, maybe report?
         logger.error(f"[Task ID: {self.request.id}] Failed to load retry config from DB: {config_err}. Using defaults.", exc_info=True)
-        # report_critical_error(config_err, context_message="Failed to load retry config in Celery task")
+        report_critical_error(config_err, context_message=f"Failed to load retry config in Celery task process_order_task for incoming_order_id: {incoming_order_id}")
 
     try:
         # Call the main order processing logic

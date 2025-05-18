@@ -1,10 +1,10 @@
 import time
-import logging
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
+from backend.config.logger import get_logger
 
-logger = logging.getLogger("request_logger")
+logger = get_logger("request_logger")
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """Middleware to log details of each HTTP request and its response time."""

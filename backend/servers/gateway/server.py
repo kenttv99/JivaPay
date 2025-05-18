@@ -24,6 +24,4 @@ app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(SlowAPIMiddleware)
 
 # Standard /health endpoint
-add_health_endpoint(app)
-
-logger.info("Gateway API server configured.") 
+add_health_endpoint(app) 

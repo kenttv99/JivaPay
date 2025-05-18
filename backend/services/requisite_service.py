@@ -14,7 +14,7 @@ from backend.database.db import (
 )
 from backend.services.permission_service import PermissionService
 from backend.utils.exceptions import AuthorizationError, DatabaseError, NotFoundError
-from backend.services.audit_logger import log_event
+from backend.services.audit_service import log_event
 from backend.utils.query_filters import get_active_trader_filters, get_active_requisite_filters # Added imports
 from backend.utils import query_utils # Added import
 from backend.config.logger import get_logger # Added import
@@ -63,14 +63,23 @@ def get_online_requisites_stats(
 
     # Base query for fetching items (ReqTrader and related data)
     # Select individual columns or full objects as needed for the response
-    items_query = session.query(ReqTrader, FullRequisitesSettings, Trader, TraderUser)
+    items_query = session.query(
+        ReqTrader, 
+        FullRequisitesSettings, 
+        Trader, 
+        TraderUser,
+        PaymentMethod, # Добавляем для доступа к имени
+        Bank           # Добавляем для доступа к имени
+    )
     # Base query for counting distinct ReqTrader.id
     count_query = session.query(func.count(ReqTrader.id))
 
     def _apply_common_joins(query_obj: query_utils.Query) -> query_utils.Query:
         query_obj = query_obj.join(FullRequisitesSettings, ReqTrader.id == FullRequisitesSettings.requisite_id)\
                              .join(Trader, ReqTrader.trader_id == Trader.id)\
-                             .join(TraderUser, Trader.user_id == TraderUser.id)
+                             .join(TraderUser, Trader.user_id == TraderUser.id)\
+                             .outerjoin(PaymentMethod, ReqTrader.method_id == PaymentMethod.id)\
+                             .outerjoin(Bank, ReqTrader.bank_id == Bank.id)
         return query_obj
 
     items_query = _apply_common_joins(items_query)
@@ -104,25 +113,14 @@ def get_online_requisites_stats(
                     # Add Trader.username if it exists and is searchable
                 ))
         
-        # Conditional joins for payment_method and bank only if filtered
-        # These joins are separate from _apply_common_joins to avoid joining if not needed by filters
-        pm_joined_for_items = False
-        bank_joined_for_items = False
+        # Условные join'ы для PaymentMethod и Bank больше не нужны здесь,
+        # так как они добавлены в _apply_common_joins с outerjoin.
+        # Фильтры будут применяться к уже присоединенным таблицам.
 
         if payment_method_id:
-            if not is_count_query or not pm_joined_for_items: # Avoid re-joining for count if already joined by items path
-                 # Check if PaymentMethod is already joined, this is a simplified check. 
-                 # A more robust check would inspect query_obj._legacy_setup_joins or similar internal state if possible.
-                if not any(str(target.__table__) == str(PaymentMethod.__table__) for target, _, _ in getattr(query_obj, '_legacy_setup_joins', [])):
-                    query_obj = query_obj.join(PaymentMethod, ReqTrader.method_id == PaymentMethod.id)
-                if not is_count_query: pm_joined_for_items = True
             query_obj = query_obj.filter(PaymentMethod.id == payment_method_id)
         
         if bank_id:
-            if not is_count_query or not bank_joined_for_items:
-                if not any(str(target.__table__) == str(Bank.__table__) for target, _, _ in getattr(query_obj, '_legacy_setup_joins', [])):
-                    query_obj = query_obj.join(Bank, ReqTrader.bank_id == Bank.id)
-                if not is_count_query: bank_joined_for_items = True
             query_obj = query_obj.filter(Bank.id == bank_id)
 
         # TeamLead specific filtering
@@ -145,8 +143,8 @@ def get_online_requisites_stats(
             
             if allowed_pm_ids_for_support:
                 if not payment_method_id: # If PM filter not already applied
-                    if not any(str(target.__table__) == str(PaymentMethod.__table__) for target, _, _ in getattr(query_obj, '_legacy_setup_joins', [])):
-                         query_obj = query_obj.join(PaymentMethod, ReqTrader.method_id == PaymentMethod.id, isouter=True if is_count_query else False)
+                    # PaymentMethod уже присоединен через outerjoin в _apply_common_joins
+                    pass # query_obj = query_obj.join(PaymentMethod, ReqTrader.method_id == PaymentMethod.id, isouter=True if is_count_query else False)
                 query_obj = query_obj.filter(ReqTrader.method_id.in_(allowed_pm_ids_for_support))
             elif not can_view_limited: # No specific PMs and no general limited view
                 return query_obj.filter(False)
@@ -182,8 +180,8 @@ def get_online_requisites_stats(
     )
 
     requisites_data = []
-    for row_items in results: # results is a list of Tuples (ReqTrader, FullRequisitesSettings, Trader, TraderUser)
-        req, frs, trader, t_user = row_items
+    for row_items in results: # results is a list of Tuples (ReqTrader, FullRequisitesSettings, Trader, TraderUser, PaymentMethod, Bank)
+        req, frs, trader, t_user, pm, bank = row_items # Обновляем распаковку
         requisites_data.append({
             "requisite_id": req.id,
             "req_number": req.req_number, 
@@ -198,7 +196,9 @@ def get_online_requisites_stats(
             "lower_limit": frs.lower_limit,
             "upper_limit": frs.upper_limit,
             "method_id": req.method_id,
-            "bank_id": req.bank_id
+            "payment_method_name": pm.public_name or pm.method_name if pm else None, # Добавляем имя метода
+            "bank_id": req.bank_id,
+            "bank_name": bank.public_name or bank.bank_name if bank else None, # Добавляем имя банка
         })
 
     return {

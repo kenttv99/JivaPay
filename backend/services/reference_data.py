@@ -5,7 +5,7 @@ import os
 import json
 from typing import Optional, Any, Dict
 from redis import Redis, RedisError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from backend.config.logger import get_logger
 from backend.utils.decorators import handle_service_exceptions
 
@@ -102,9 +102,25 @@ def _delete_from_cache(key: str):
         return
     try:
         client.delete(f"{CACHE_PREFIX}{key}")
-        logger.debug(f"Deleted cache key: {key}")
+        logger.info(f"Deleted cache key: {key}")
     except RedisError as e:
         logger.error(f"Redis DELETE error for key '{key}': {e}", exc_info=True)
+
+# --- Functions for explicit cache invalidation ---
+def invalidate_bank_cache(bank_id: int):
+    """Invalidates the cache for a specific bank."""
+    cache_key = f"bank:{bank_id}"
+    _delete_from_cache(cache_key)
+
+def invalidate_payment_method_cache(method_id: int):
+    """Invalidates the cache for a specific payment method."""
+    cache_key = f"payment_method:{method_id}"
+    _delete_from_cache(cache_key)
+
+def invalidate_exchange_rate_cache(crypto_id: int, fiat_id: int):
+    """Invalidates the cache for a specific exchange rate."""
+    cache_key = f"exchange_rate:{crypto_id}:{fiat_id}"
+    _delete_from_cache(cache_key)
 
 # --- Service Functions --- #
 # Note: These functions assume Pydantic schemas or dict representations for return values
@@ -118,7 +134,7 @@ def get_bank_details(bank_id: int, db: Session) -> Optional[Dict[str, Any]]:
     if cached_details is not None:
         return cached_details
 
-    bank = get_object_or_none(db, Bank, id=bank_id)
+    bank = db.query(Bank).options(joinedload(Bank.fiat)).filter(Bank.id == bank_id).one_or_none()
     if bank:
         bank_details = {
             "id": bank.id,

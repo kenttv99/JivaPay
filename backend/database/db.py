@@ -40,6 +40,7 @@ class AuditLog(Base):
     target_entity: Mapped[Optional[str]] = mapped_column(String(100))
     target_id: Mapped[Optional[int]] = mapped_column(Integer)
     details: Mapped[Optional[dict]] = mapped_column(JSON)
+    level: Mapped[str] = mapped_column(String(50), index=True, nullable=False, server_default="INFO") # Новый столбец для уровня лога
 
     user: Mapped[Optional["User"]] = relationship(back_populates="audit_logs") # Made Optional to match user_id
 
@@ -469,6 +470,9 @@ class IncomingOrder(Base):
     target_method: Mapped[Optional["PaymentMethod"]] = relationship(foreign_keys=[target_method_id])
     target_bank: Mapped[Optional["BanksTrader"]] = relationship(foreign_keys=[target_bank_id])
 
+    # --- Gateway v2: Payment Session Link ---
+    payment_session: Mapped[Optional["PaymentSession"]] = relationship(back_populates="incoming_order", cascade="all, delete-orphan")
+
     # --- Indexes (using __table_args__) ---
     __table_args__ = (
         Index('ix_incoming_orders_status_created', 'status', 'created_at'),
@@ -648,6 +652,7 @@ class UploadedDocument(Base):
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
 
     order: Mapped["OrderHistory"] = relationship(back_populates="uploaded_documents")
+    traders: Mapped[List["Trader"]] = relationship(back_populates="team_lead")
 
 # =====================
 # === ТИМЛИДЫ (TeamLeads)
@@ -665,5 +670,35 @@ class TeamLead(Base):
 
     user: Mapped["User"] = relationship(back_populates="teamlead_profile")
     traders: Mapped[List["Trader"]] = relationship(back_populates="team_lead")
+
+# =====================
+# === GATEWAY PAYMENT SESSION (Gateway v2)
+# =====================
+class PaymentSession(Base):
+    __tablename__ = "payment_sessions"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    incoming_order_id: Mapped[int] = mapped_column(ForeignKey('incoming_orders.id', ondelete='CASCADE'), unique=True, nullable=False)
+    
+    token: Mapped[str] = mapped_column(String(128), unique=True, index=True, nullable=False)
+    payment_page_url: Mapped[str] = mapped_column(String(512), nullable=False)
+    
+    status: Mapped[str] = mapped_column(String(50), default='active', nullable=False, index=True) # active, completed, expired, failed
+    
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, index=True)
+    
+    # Details captured at the moment of session creation, might be useful for the payment page
+    amount_fiat_snapshot: Mapped[Optional[Decimal]] = mapped_column(DECIMAL(20, 2))
+    fiat_currency_code_snapshot: Mapped[Optional[str]] = mapped_column(String(10)) # e.g., RUB, USD
+    # any other details to show on payment page without re-querying everything
+
+    incoming_order: Mapped["IncomingOrder"] = relationship(back_populates="payment_session")
+
+    # Relationship to track payment attempts or events on the payment page, if needed in future
+    # payment_events: Mapped[List["PaymentSessionEvent"]] = relationship(back_populates="payment_session", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<PaymentSession(id={self.id}, token='{self.token}', status='{self.status}')>"
 
     

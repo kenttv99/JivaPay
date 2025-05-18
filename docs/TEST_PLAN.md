@@ -18,7 +18,7 @@
    docker compose exec merchant_api python -m backend.scripts.manage_db seed-data
    docker compose exec merchant_api python -m backend.scripts.manage_db seed-reference
    docker compose exec merchant_api python -m backend.scripts.manage_db seed-payment-refs
-   # Добавьте seed-permissions если есть отдельный скрипт для базовых прав
+   # Права для основного администратора (admin@example.com) создаются в seed_data.py
    ```
 
 ## 1. Проверка состояния сервисов
@@ -252,43 +252,68 @@
     ```
     - Ожидается HTTP `200` и обновлённые данные магазина.
     
-## 5. Поток Pay-In через Gateway (с новыми полями)
+## 5. Поток Pay-In через Gateway (Редирект на страницу оплаты)
 
-1.  Убедитесь, что `$API_KEY` установлен из шага 4.1.
-2.  **Инициация платежа:**
+1.  Убедитесь, что `$API_KEY` (для аутентификации мерчанта в API шлюза) и `$STORE_ID` установлены из шага 4.1.
+2.  **Инициация сессии платежа (Мерчант вызывает API шлюза):**
     ```bash
-    EXTERNAL_ORDER_ID="MY-SHOP-ORD-$(date +%s)"
-    GATEWAY_RESPONSE=$(curl -s -X POST http://127.0.0.1:8003/gateway/payin/init \
+    EXTERNAL_ORDER_ID="MY-SHOP-ORD-$(date +%s)-REDIRECT"
+    INIT_RESPONSE=$(curl -s -X POST http://127.0.0.1:8003/gateway/payin/initiate_session \
         -H 'Content-Type: application/json' \
         -H "X-API-KEY: $API_KEY" \
-        -d '{
+        -d '{ 
               "order_type":"pay_in",
-              "amount_fiat":"100.50",
-              "fiat_currency_id":1,
+              "amount_fiat":"150.75",
+              "fiat_currency_id":1, 
               "target_method_id":1, 
-              "customer_id":"CUST-12345",
+              "customer_id":"CUST-67890",
               "external_order_id": "'"$EXTERNAL_ORDER_ID"'",
-              "return_url": "https://example.com/return",
-              "callback_url": "https://httpbin.org/post"
+              "return_url": "https://example.com/return_after_payment",
+              "callback_url_for_merchant": "https://httpbin.org/post" # Это колбэк для мерчанта о финальном статусе
             }')
-    echo $GATEWAY_RESPONSE
-    INCOMING_ORDER_ID=$(echo $GATEWAY_RESPONSE | jq -r .id) # Предполагая, что ответ содержит id созданного IncomingOrder
-    echo "Incoming Order ID (Gateway): $INCOMING_ORDER_ID"
+    echo $INIT_RESPONSE
+    PAYMENT_URL=$(echo $INIT_RESPONSE | jq -r .payment_url)
+    # Предполагается, что ответ также содержит ID созданного IncomingOrder или сессии, если нужен для дальнейшей сверки
+    INCOMING_ORDER_ID_FROM_INIT=$(echo $INIT_RESPONSE | jq -r .incoming_order_id) # Пример, если возвращается
+    echo "Payment URL: $PAYMENT_URL"
+    echo "Incoming Order ID (from init): $INCOMING_ORDER_ID_FROM_INIT"
     ```
-    - Ожидается JSON с `id` (это `IncomingOrder.id`), `status`, `external_order_id` и другими деталями.
-3.  **Проверка `IncomingOrder` в БД:**
-    Подключитесь к БД и проверьте, что запись в `incoming_orders` создана со статусом `new` (или `processing` если воркер сразу подхватил) и содержит `external_order_id`.
+    - Ожидается JSON с `payment_url` (например, `https://pay.yourdomain.com/{unique_token}`) и, возможно, `incoming_order_id`.
+    - `payment_url` должен быть уникальным и вести на страницу оплаты шлюза.
+3.  **Проверка `IncomingOrder` (или `PaymentSession`) в БД:**
+    Подключитесь к БД и проверьте, что для `external_order_id` создана запись в `incoming_orders` со статусом `new` (или `pending_payment_page`).
+    Если используется отдельная таблица `payment_sessions`, проверьте её.
+    Убедитесь, что уникальный токен, URL и время экспирации сохранены.
     ```sql
-    SELECT id, status, external_order_id FROM incoming_orders WHERE id = <INCOMING_ORDER_ID>;
+    -- Пример для incoming_orders, если поля добавлены туда:
+    SELECT id, status, external_order_id, payment_page_url, payment_token, payment_token_expires_at 
+    FROM incoming_orders WHERE external_order_id = '$EXTERNAL_ORDER_ID';
     ```
-4.  **Проверка логов воркера:** Должна быть запись о запуске `process_order_task`. После обработки, статус заказа в `incoming_orders` должен стать `assigned`.
-5.  **Проверка `OrderHistory` в БД:**
-    После успешной обработки воркером, должна появиться запись в `order_history`.
+4.  **(Ручной шаг) Переход клиента на страницу оплаты:**
+    Скопируйте `$PAYMENT_URL` и откройте его в браузере.
+    - **Ожидания на странице оплаты:**
+        - Отображается корректная сумма и валюта.
+        - Присутствуют поля для ввода платежных данных и/или загрузки чека.
+        - Указано время жизни сессии (если отображается).
+5.  **(Ручной шаг) Взаимодействие со страницей оплаты:**
+    Выполните действия на странице оплаты: введите данные, загрузите тестовый чек (например, `client_receipt_test.jpg` из Раздела 14 старого плана, переименуйте и используйте здесь), подтвердите платеж.
+    - **Ожидания:**
+        - Страница обрабатывает ввод и подтверждение.
+        - После подтверждения клиент может быть перенаправлен на `return_url` мерчанта.
+6.  **Проверка обработки подтверждения бэкендом:**
+    - Проверьте логи `gateway_api` на предмет вызова эндпоинта подтверждения со страницы оплаты (например, `POST /gateway/payment_session/{token}/confirm`).
+    - Проверьте логи `worker` на запуск `process_order_task` для этого `IncomingOrder` (если он еще не был обработан до статуса `assigned`). Статус `IncomingOrder` должен измениться на `assigned` или аналогичный, указывающий на подбор реквизита.
+    - В `order_history` должна появиться запись для этого `external_order_id` со статусом `pending_trader_confirmation` (или `pending`, если чек загружен клиентом и сразу ожидает трейдера).
     ```sql
-    SELECT id, incoming_order_id, external_order_id, final_fiat_amount_at_deal, status 
-    FROM order_history WHERE incoming_order_id = <INCOMING_ORDER_ID>;
+    SELECT id, incoming_order_id, external_order_id, status, receipt_file_s3_path 
+    FROM order_history WHERE external_order_id = '$EXTERNAL_ORDER_ID';
     ```
-    - Убедитесь, что `external_order_id` скопирован, и `final_fiat_amount_at_deal` рассчитан корректно. `status` должен быть `pending`. Запомните `id` из `order_history` как `{ORDER_HISTORY_ID}`.
+    - Запомните `id` из `order_history` как `{ORDER_HISTORY_ID_REDIRECT}`.
+7.  **Проверка таймаута страницы оплаты (Негативный сценарий, опционально):**
+    - Инициируйте новый платеж (шаг 5.2), получите `PAYMENT_URL`.
+    - Не взаимодействуйте со страницей, дождитесь истечения времени жизни токена/сессии.
+    - Попытайтесь открыть `PAYMENT_URL` или выполнить на ней действия.
+    - **Ожидание:** Страница должна показать ошибку о истекшей сессии, или быть недоступной. Соответствующий `IncomingOrder` может перейти в статус `expired` или `failed`.
 
 ## 6. Проверка Celery
 
@@ -301,27 +326,13 @@
 
 ## 7. Happy-path: Подтверждение заказа и Балансы
 
-1.  **Трейдер подтверждает заказ:** (Используйте `{ORDER_HISTORY_ID}` из шага 5.5)
+1.  **Трейдер подтверждает заказ:** (Используйте `{ORDER_HISTORY_ID_REDIRECT}` из шага 5.6)
     ```bash
-    # Создайте фейковый файл чека
-    echo "This is a fake receipt." > receipt.png 
-    curl -X PATCH http://127.0.0.1:8002/trader/orders/{ORDER_HISTORY_ID}/confirm \
-         -H "Authorization: Bearer $TRADER_TOKEN" \
-         -F "file=@receipt.png"
-    # → HTTP 200 и обновленный ордер
-    ```
-2.  **Проверка статуса заказа:** Статус в `order_history` должен стать `completed`.
-    ```sql
-    SELECT status, final_fiat_amount_at_deal FROM order_history WHERE id = {ORDER_HISTORY_ID};
-    ```
-3.  **Проверка балансов:**
-    Проверьте таблицы `balance_stores`, `balance_traders` и соответствующие `*_history` таблицы на корректное обновление.
-    ```sql
-    -- Пример:
+    # Создайте фейковый файл чека (если на шаге 5.5 чек загружал клиент, этот шаг может быть только подтверждением без файла)
     SELECT * FROM balance_stores WHERE store_id = $STORE_ID;
     SELECT * FROM balance_traders WHERE trader_id = {TRADER_ID}; -- TRADER_ID из логов или БД после назначения
-    SELECT * FROM balance_store_history WHERE order_id = {ORDER_HISTORY_ID};
-    SELECT * FROM balance_trader_fiat_history WHERE order_id = {ORDER_HISTORY_ID};
+    SELECT * FROM balance_store_history WHERE order_id = {ORDER_HISTORY_ID_REDIRECT};
+    SELECT * FROM balance_trader_fiat_history WHERE order_id = {ORDER_HISTORY_ID_REDIRECT};
     ```
 4.  **Проверка баланса платформы (Админ):**
     ```bash
@@ -339,8 +350,9 @@
 ## 8. Callback Service
 
 1.  Убедитесь, что `callback_url` в `merchant_stores` для вашего `$STORE_ID` указан (например, `https://httpbin.org/post`).
-2.  Повторите шаги из Раздела 7 (Подтверждение заказа).
-3.  Проверьте логи на `https://httpbin.org/post` (или указанный вами URL) – должен прийти POST запрос с данными заказа.
+2.  Повторите шаги из Раздела 7 (Подтверждение заказа трейдером для ордера, созданного через редирект).
+3.  Проверьте сервис коллбэков (например, `https://httpbin.org/post`) – должен прийти POST запрос с данными о финальном статусе заказа (`completed` или `failed`).
+4.  **Проверка payload колбэка:** Убедитесь, что payload колбэка на `httpbin.org` содержит ожидаемые поля, такие как `order_id`, `status`, `external_order_id`, `amount_fiat`, `currency_fiat`, `amount_crypto`, `currency_crypto`, `timestamp`, `signature`.
 
 ## 9. Негативные сценарии
 
@@ -443,7 +455,7 @@
     ```
 
 ### 10.4 Управление Реквизитами (Администратором)
-1.  **Добавление реквизита трейдеру (потребуется TRADER_ID, OWNER_ID, METHOD_ID, BANK_ID из БД или сидов):**
+1.  **Трейдер добавляет реквизит (для последующей модерации администратором):**
     ```bash
     # Пример: first get/create owner_of_requisites via admin API if not exists
     # curl -X POST http://127.0.0.1:8004/admin/requisites/owners ...
@@ -471,6 +483,7 @@
     ```bash
     curl -X GET "http://127.0.0.1:8004/admin/requisites/online-stats?page=1&per_page=10" -H "Authorization: Bearer $ADMIN_TOKEN"
     # Ожидается 200 и RequisiteOnlineStatsResponseSchema
+    # Убедитесь, что ответ содержит поля `payment_method_name` и `bank_name` для каждого реквизита.
     # Также протестировать SSE эндпоинт: GET /admin/requisites/online-stats/stream
     ```
 3.  **Модерация реквизита (Админ, используйте REQUISITE_ID):**
@@ -490,6 +503,7 @@
     ```bash
     curl -X GET "http://127.0.0.1:8004/admin/logs/critical-errors?page=1&per_page=10" -H "Authorization: Bearer $ADMIN_TOKEN"
     # Ожидается 200
+    # Дополнительно: если API позволяет, протестируйте фильтрацию критических ошибок по уровню (например, `?level=CRITICAL`).
     ```
 
 ## 11. Функционал Саппорта
@@ -598,6 +612,10 @@
    ```
    - Ожидается HTTP `204`.
 
-## 14. Завершение
+## 14. Клиентское подтверждение Pay-In через Gateway (чек от клиента)
+
+-- Старый раздел 14 удален, так как логика клиентского подтверждения теперь является частью Раздела 5 (Поток Pay-In через Gateway (Редирект на страницу оплаты)) --
+
+## 15. Завершение
 * Удостоверьтесь, что в логах нет непредвиденных ошибок `ERROR`/`CRITICAL`.
 * Обновите `IMPLEMENTATION_TRACKER.md` — отметьте выполненные тесты.

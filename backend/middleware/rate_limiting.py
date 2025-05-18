@@ -1,6 +1,5 @@
 """Rate Limiting middleware using slowapi and Redis."""
 
-import logging
 import os
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -12,8 +11,9 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from backend.database.utils import get_db_session_cm
 from backend.utils.config_loader import get_typed_config_value
+from backend.config.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # --- Limiter Configuration --- #
 
@@ -72,37 +72,24 @@ def get_rate_limit_exceeded_handler():
 # app.add_middleware(SlowAPIMiddleware)
 
 # Applying limits:
-# 1. Globally (in main.py or here if desired, requires app instance):
-#    app.state.limiter.limit("100/minute")(app) # Not recommended here
-# 2. On Routers (in api_router files):
-#    from fastapi import Depends
-#    from backend.middleware.rate_limiting import get_limiter
-#    limiter = get_limiter()
-#    router = APIRouter(dependencies=[Depends(limiter.limit("50/minute"))])
-# 3. On specific endpoints:
-#    @router.post("/resource", dependencies=[Depends(limiter.limit("10/second"))])
-#    async def create_resource(...):
-#        ...
+# The default rate limit is fetched from the database (via `get_default_rate_limit()`)
+# and applied globally when the Limiter is instantiated in `get_limiter()`.
+# Specific rate limits for routers or individual endpoints can be set using FastAPI's
+# dependency injection system with the limiter instance.
+# Example for a router:
+#   from fastapi import Depends
+#   from backend.middleware.rate_limiting import get_limiter
+#   limiter = get_limiter() # This limiter already has default_limits set
+#   router = APIRouter(dependencies=[Depends(limiter.limit("50/minute"))]) # Override for this router
+# Example for an endpoint:
+#   @router.post("/resource", dependencies=[Depends(limiter.limit("10/second"))])
+#   async def create_resource(...):
+#       ...
 
 # NOTE: Default and specific rate limits are now loaded dynamically via get_default_rate_limit().
 #       See backend.utils.config_loader and RATE_LIMIT_DEFAULT setting in DB.
 
-# Applying limits:
-# 1. Globally (in main.py or here if desired, requires app instance):
-#    app.state.limiter.limit("100/minute")(app) # Not recommended here
-# 2. On Routers (in api_router files):
-#    from fastapi import Depends
-#    from backend.middleware.rate_limiting import get_limiter
-#    limiter = get_limiter()
-#    router = APIRouter(dependencies=[Depends(limiter.limit("50/minute"))])
-# 3. On specific endpoints:
-#    @router.post("/resource", dependencies=[Depends(limiter.limit("10/second"))])
-#    async def create_resource(...):
-#        ...
-
-# NOTE: Default and specific rate limits are now loaded dynamically via get_default_rate_limit().
-#       See backend.utils.config_loader and RATE_LIMIT_DEFAULT setting in DB.
-
+# Redundant comments removed below this line
 # TODO: Integrate reading default/specific limits from the database using config_loader
 # NOTE: dynamic limits implemented via get_default_rate_limit()
 

@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     S3_BUCKET_NAME: str = Field(None, env='S3_BUCKET_NAME')
     S3_ENDPOINT_URL: str = Field(None, env='S3_ENDPOINT_URL')
 
+    # Gateway V2 Settings
+    PAYMENT_GATEWAY_BASE_URL: str = Field("https://pay.example.com", env='PAYMENT_GATEWAY_BASE_URL')
+    PAYMENT_SESSION_TIMEOUT_SECONDS: int = Field(900, env='PAYMENT_SESSION_TIMEOUT_SECONDS') # 15 minutes default
+
     # pydantic v2 -> model_config вместо класса Config
     model_config = {
         "env_file": ".env",

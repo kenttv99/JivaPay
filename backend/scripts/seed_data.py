@@ -10,11 +10,12 @@ from sqlalchemy.exc import IntegrityError
 from backend.database.utils import get_db_session_cm
 from backend.database.db import Role, User, Admin
 from backend.config.crypto import hash_password
+from backend.config.logger import get_logger
 
 
 def seed_data():
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger(__name__)
+    logger = get_logger(__name__)
+    logger.info("Starting initial data seeding...")
 
     # Initial roles to seed
     roles = [
@@ -65,14 +66,7 @@ def seed_data():
             admin_profile = Admin(
                 user_id=user.id,
                 username=admin_username,
-                can_manage_other_admins=True,
-                can_manage_supports=True,
-                can_manage_merchants=True,
-                can_manage_traders=True,
-                can_edit_system_settings=True,
-                can_edit_limits=True,
-                can_view_full_logs=True,
-                can_handle_appeals=True
+                granted_permissions=["*:*:*"]
             )
             session.add(admin_profile)
             session.commit()

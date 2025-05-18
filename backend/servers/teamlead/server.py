@@ -21,6 +21,4 @@ add_health_endpoint(app)
 # Mount the consolidated teamlead_api_router
 # The prefixes defined within teamlead_api_router and its included routers will apply
 # The prefix for teamlead_data_router itself is /teamlead
-app.include_router(teamlead_api_router, prefix="/api") # Main prefix /api, then /teamlead from router itself
-
-logger.info("TeamLead API server configured.") 
+app.include_router(teamlead_api_router, prefix="/api") # Main prefix /api, then /teamlead from router itself 

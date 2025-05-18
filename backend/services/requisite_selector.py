@@ -3,11 +3,13 @@
 import logging
 from typing import Optional, Tuple
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from backend.config.logger import get_logger
+from backend.utils.decorators import handle_service_exceptions # Already async-aware
 from backend.utils.query_filters import get_active_trader_filters, get_active_requisite_filters
 
 # Attempt to import models, DB utils, and exceptions
@@ -26,8 +28,122 @@ except ImportError as e:
     raise ImportError(f"Could not import required models or utils for RequisiteSelector: {e}. Ensure models (IncomingOrder, Trader, ReqTrader, FullRequisitesSettings, OrderHistory, User) are defined.")
 
 logger = get_logger(__name__)
+SERVICE_NAME = "requisite_selector_async"
+
+@handle_service_exceptions(logger, service_name=SERVICE_NAME) # Applied
+async def find_suitable_requisite_async(
+    incoming_order: IncomingOrder, db_session: AsyncSession
+) -> Tuple[Optional[int], Optional[int]]:
+    """Finds the most suitable trader's requisite for a given incoming order asynchronously."""
+    # Decorator handles initial logging if needed
+    # logger.info(f"Async attempting to find suitable requisite for IncomingOrder ID: {incoming_order.id}")
+
+    # The main try-except block for OrderProcessingError/DatabaseError is now handled by the decorator.
+    # Specific logic remains.
+    order_type = incoming_order.order_type
+    amount_to_check: Optional[Decimal] = None
+    requisite_direction_filter = None
+
+    if order_type == 'pay_in':
+        amount_to_check = incoming_order.amount_fiat
+        if amount_to_check is None:
+            raise OrderProcessingError(f"Amount_fiat is None for pay_in IncomingOrder ID: {incoming_order.id}")
+        requisite_direction_filter = (FullRequisitesSettings.pay_in == True)
+    elif order_type == 'pay_out':
+        amount_to_check = incoming_order.amount_crypto
+        if amount_to_check is None:
+            raise OrderProcessingError(f"Amount_crypto is None for pay_out IncomingOrder ID: {incoming_order.id}")
+        requisite_direction_filter = (FullRequisitesSettings.pay_out == True)
+    else:
+        raise OrderProcessingError(f"Unknown order_type: {order_type} for IncomingOrder ID: {incoming_order.id}")
+
+    stmt = (
+        select(ReqTrader, FullRequisitesSettings, Trader)
+        .join(Trader, ReqTrader.trader_id == Trader.id)
+        .join(User, Trader.user_id == User.id)
+        .join(FullRequisitesSettings, FullRequisitesSettings.requisite_id == ReqTrader.id)
+        .where(
+            User.is_active == True,
+            *get_active_trader_filters(),
+            *get_active_requisite_filters(),
+            requisite_direction_filter,
+            FullRequisitesSettings.lower_limit <= amount_to_check,
+            FullRequisitesSettings.upper_limit >= amount_to_check
+        )
+        .order_by(Trader.trafic_priority.asc(), ReqTrader.last_used_at.asc().nullsfirst())
+        .limit(5)
+    )
+    
+    stmt_for_update = stmt.with_for_update(of=[ReqTrader, FullRequisitesSettings, Trader, User], skip_locked=True)
+    result_candidates = await db_session.execute(stmt_for_update)
+    candidates = result_candidates.all()
+
+    if not candidates:
+        logger.warning(f"No suitable static candidate found (async) for IncomingOrder ID: {incoming_order.id}")
+        # This is not an exception, but a valid case where no requisite is found.
+        # The decorator will log successful execution, but the caller (OrderProcessor) handles this return.
+        return None, None
+
+    selected_requisite_model: Optional[ReqTrader] = None
+    selected_trader_model: Optional[Trader] = None
+
+    for row in candidates:
+        req_candidate: ReqTrader = row.ReqTrader
+        frs_candidate: FullRequisitesSettings = row.FullRequisitesSettings
+        trader_candidate: Trader = row.Trader
+
+        now_utc = datetime.now(timezone.utc)
+        period_start = now_utc - timedelta(minutes=frs_candidate.turnover_limit_minutes)
+        amount_field_to_sum = OrderHistory.total_fiat if order_type == 'pay_in' else OrderHistory.amount_currency
+
+        turnover_stmt = (
+            select(func.sum(amount_field_to_sum))
+            .where(
+                OrderHistory.requisite_id == req_candidate.id,
+                OrderHistory.status == 'completed',
+                OrderHistory.created_at >= period_start,
+                OrderHistory.created_at < now_utc
+            )
+        )
+        current_turnover_result = await db_session.execute(turnover_stmt)
+        current_turnover = current_turnover_result.scalar_one_or_none() or Decimal('0.00')
+
+        logger.debug(f"Async Checking dynamic limit for Requisite ID {req_candidate.id}: Turnover {current_turnover}, Amount {amount_to_check}, Limit {frs_candidate.total_limit}")
+        if (current_turnover + amount_to_check) <= frs_candidate.total_limit:
+            today_start = now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
+            daily_turnover_stmt = (
+                select(func.sum(amount_field_to_sum))
+                .where(
+                    OrderHistory.requisite_id == req_candidate.id,
+                    OrderHistory.status == 'completed',
+                    OrderHistory.created_at >= today_start,
+                    OrderHistory.created_at < now_utc
+                )
+            )
+            daily_turnover_result = await db_session.execute(daily_turnover_stmt)
+            daily_turnover = daily_turnover_result.scalar_one_or_none() or Decimal('0.00')
+
+            logger.debug(f"Async Checking daily limit for Requisite ID {req_candidate.id}: Daily turnover {daily_turnover}, Amount {amount_to_check}, Daily max {frs_candidate.turnover_day_max}")
+            if (daily_turnover + amount_to_check) <= frs_candidate.turnover_day_max:
+                selected_requisite_model = req_candidate
+                selected_trader_model = trader_candidate
+                break
+            else:
+                logger.info(f"Async Daily turnover limit exceeded for Requisite ID {req_candidate.id} for IO ID: {incoming_order.id}")    
+        else:
+            logger.info(f"Async Rolling turnover limit exceeded for Requisite ID {req_candidate.id} for IO ID: {incoming_order.id}")
+
+    if selected_requisite_model and selected_trader_model:
+        selected_requisite_model.last_used_at = datetime.now(timezone.utc)
+        db_session.add(selected_requisite_model)
+        logger.info(f"Async Selected Requisite ID {selected_requisite_model.id}, Trader ID {selected_trader_model.id} for IO ID: {incoming_order.id}")
+        return selected_requisite_model.id, selected_trader_model.id
+    else:
+        logger.warning(f"No suitable async candidate found after dynamic limits for IncomingOrder ID: {incoming_order.id}")
+        return None, None # Handled by OrderProcessor
 
 
+# Keep existing synchronous version if needed
 def find_suitable_requisite(
     incoming_order: IncomingOrder, db_session: Session
 ) -> Tuple[Optional[int], Optional[int]]:
@@ -75,7 +191,7 @@ def find_suitable_requisite(
             .filter(FullRequisitesSettings.lower_limit <= amount_to_check)
             .filter(FullRequisitesSettings.upper_limit >= amount_to_check)
             .order_by(Trader.trafic_priority.asc(), ReqTrader.last_used_at.asc().nullsfirst()) 
-            # .with_for_update(skip_locked=True) # Consider if FOR UPDATE is needed here or at higher level
+            .with_for_update(of=[ReqTrader, FullRequisitesSettings, Trader, User], skip_locked=True) # Блокируем строки для избежания гонок
         )
         
         # Iterate through candidates to check dynamic limits
@@ -94,9 +210,8 @@ def find_suitable_requisite(
 
         for req, frs, trader_profile in candidates:
             # Check dynamic limits (turnover)
-            # Ensure datetime.utcnow() is used if DB stores naive UTC, or use timezone-aware datetimes consistently.
-            # For this example, assuming naive UTC as per db.py utcnow() if it were used here.
-            now_utc = datetime.utcnow() # Naive UTC datetime
+            # Ensure datetime.now(timezone.utc) is used for timezone-aware datetimes.
+            now_utc = datetime.now(timezone.utc) # Aware UTC datetime
             period_start = now_utc - timedelta(minutes=frs.turnover_limit_minutes)
 
             # Determine which amount to sum based on order type
@@ -149,7 +264,7 @@ def find_suitable_requisite(
                 # Re-fetch with FOR UPDATE if not already locked by the initial query (if with_for_update was removed/conditional)
                 # db_session.query(ReqTrader).filter(ReqTrader.id == selected_requisite.id).with_for_update().one()
                 
-                selected_requisite.last_used_at = datetime.utcnow() # Naive UTC
+                selected_requisite.last_used_at = datetime.now(timezone.utc) # Aware UTC
                 db_session.add(selected_requisite)
                 # db_session.flush() # Flush is often part of commit or handled by session autoflush
                 logger.info(f"Selected Requisite ID {selected_requisite.id}, Trader ID {selected_trader.id} for IncomingOrder ID: {incoming_order.id}")

@@ -56,7 +56,7 @@ def upload_fileobj(file_obj: IO, bucket: str, key: str, content_type: str = "app
 # ------------------------------------------------------------
 
 
-async def upload_file_async(file_obj: IO, bucket: str, key: str, content_type: str = "application/octet-stream") -> str:
+async def upload_fileobj_async(file_obj: IO, bucket: str, key: str, content_type: str = "application/octet-stream") -> str:
     """Асинхронная загрузка объекта (использует aioboto3)."""
 
     session = aioboto3.Session()

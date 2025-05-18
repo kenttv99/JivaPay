@@ -32,6 +32,8 @@
     - [x] Добавлена модель `TeamLead` и связь с `Trader`.
       Примечания: модель и связи реализованы v2025.05.11.
     - [x] **Актуализация моделей (v.Дата_сессии_обновления):** Добавлены поля `Trader.is_traffic_enabled_by_teamlead`, `Support.role_description`, `Admin/Support/TeamLead.granted_permissions` (JSON). Удалено поле `FullRequisitesSettings.active_hours` в соответствии с `docs/ADDITIONAL_FEATURES_AND_COMPONENTS.md`.
+    - [x] **(Новое - Gateway v2)** Добавить поля в `IncomingOrder` (или создать новую модель `PaymentSession`) для хранения уникального токена страницы оплаты, URL страницы оплаты, времени создания и экспирации токена.
+      Примечания: Создана модель `PaymentSession` со связью один-к-одному с `IncomingOrder`.
 - [x] **Базовые Схемы (`schemas_enums/`)**: Схемы Pydantic для передачи данных API.
     - [x] Создан `schemas_enums/order.py` с базовыми схемами ордеров.
     - [x] Создан `schemas_enums/reference.py` с Pydantic схемами для справочных данных (BankDetails, PaymentMethodDetails, ExchangeRateDetails).
@@ -56,7 +58,7 @@
 - [x] **Управление Зависимостями (`requirements.txt`)**: Создан и заполнен начальными зависимостями.
     - Примечания:
 - [x] **Утилиты Работы с S3 (`utils/s3_client.py`)**: Загрузка/управление файлами в S3.
-    - Примечания: Реализован S3 клиент в `backend/utils/s3_client.py` с функцией `upload_fileobj`.
+    - Примечания: Реализован S3 клиент в `backend/utils/s3_client.py` с функцией `upload_fileobj`. Асинхронная версия `upload_fileobj_async` также доступна.
 
 ## 2. Аутентификация и Авторизация
 
@@ -78,6 +80,8 @@
 
 - [x] **Утилиты работы с БД (`backend/database/utils.py`)**: Функции для безопасного доступа и транзакций с базой данных (CRUD, atomic_transaction, get_db_session).
     - Примечания: Реализованы get_db_session, atomic_transaction, create_object, get_object_or_none, update_object_db.
+- [x] **(Новое) Асинхронные утилиты работы с БД (`backend/database/utils_async.py`)**: Асинхронные аналоги для работы с `AsyncSession`.
+    - Примечания: Реализованы `get_async_db_session_cm`, `atomic_transaction_async`, `create_object_async`, `get_entity_by_id_async`, `get_object_or_none_async`, `update_object_db_async`.
 - [x] **Сервис Пользователей (`services/user_service.py`)**: Логика управления пользователями и ролями (CRUD, авторизация).
     - Примечания: Реализованы функции `get_user_by_email`, `create_user`, `authenticate_user`.
     - [x] **Актуализация (v.Дата_сессии_обновления):** Расширен для поддержки ролей Support и TeamLead (`get_support_details`, `update_support_profile`, `get_teamlead_details`, `update_teamlead_profile`). Реализованы функции для получения статистики по различным ролям и управления деталями профилей администраторов (включая `granted_permissions`), как описано в `docs/ADDITIONAL_FEATURES_AND_COMPONENTS.md`.
@@ -86,12 +90,15 @@
     - Примечания: Реализована функция `find_suitable_requisite` с поддержкой статических и динамических лимитов.
     - [x] **Актуализация (v.Дата_сессии_обновления):** Логика выбора реквизита обновлена для учета всех условий активности: `Trader.user.is_active`, `Trader.in_work`, `Trader.is_traffic_enabled_by_teamlead`, `ReqTrader.status`, направления `FullRequisitesSettings.pay_in/pay_out`.
     - [x] **Рефакторинг (Phase 5):** Использование `backend/utils/query_filters.py` для получения фильтров активных трейдеров и реквизитов.
+    - [x] **Асинхронная версия (`find_suitable_requisite_async`):** Реализована для работы с `AsyncSession`, применяет `@handle_service_exceptions`.
 - [x] **Сервис Обработки Заявок (`services/order_processor.py`)**: Оркестрация обработки входящих заявок, подбор реквизитов, создание OrderHistory.
     - Примечания: Реализованы idempotency, fraud detection, requisite selection, commission calculation, создание OrderHistory и обновление статуса. Обеспечено корректное копирование полей `amount_fiat`, `amount_crypto`, `client_id`, `customer_id`, `customer_ip`, `payment_details_submitted` из `IncomingOrder` в `OrderHistory`. Поле `OrderHistory.total_fiat` теперь использует рассчитанное `final_fiat_value`.
+    - [x] **Асинхронная функция `finalize_order_after_client_confirmation_async`:** Реализована. Выполняет основную логику после подтверждения клиентом на странице шлюза: фрод-чек (async), подбор реквизита (async), расчет комиссий (async), создание `OrderHistory`, обработка чека (S3, `UploadedDocument`), обновление статусов `IncomingOrder` и `PaymentSession`, логирование аудита. Использует `get_typed_config_value_async` и `atomic_transaction_async`.
     - [x] **Актуализация (v.Дата_сессии_обновления) / Сервис Ордеров (`services/order_service.py`):** Значительно расширен для предоставления истории ордеров с комплексной фильтрацией (включая `amount_exact`, `amount_min`, `amount_max`), поиском, пагинацией и строгим учетом гранулярных прав пользователя (через `PermissionService`). Реализована функция подсчета количества ордеров с фильтрами (`get_orders_count`).
     - [x] **Рефакторинг (Phase 5):** Функции `get_orders_history` и `get_orders_count` рефакторены для использования `backend/utils/query_utils.py`.
 - [x] **Сервис Обновления Балансов (`services/balance_manager.py`)**: Надежное обновление балансов и запись истории.
     - Примечания: Реализованы `calculate_commissions` и `update_balances_for_completed_order`, включая блокировку балансов и запись истории.
+    - [x] **Асинхронные аналоги (`calculate_commissions_async`, `update_balances_for_completed_order_async`):** Реализованы. `update_balances_for_completed_order_async` автоматически создает записи `BalanceStore`/`BalanceTrader`, если они отсутствуют.
     - [x] **Актуализация (v.Дата_сессии_обновления):** Добавлен `PermissionService` (`services/permission_service.py`) для управления и проверки гранулярных прав (из JSON-полей `granted_permissions`). Включает `get_user_permissions`, `update_user_permissions` (с аудит-логированием), `check_permission`, `_match_permission` (с поддержкой wildcards, `{id}`).
     - [x] **Рефакторинг (Phase 5):** В `PermissionService` добавлена функция `check_specific_or_any_permission`.
     - [x] **Актуализация (v.Дата_сессии_обновления):** Добавлен/расширен `TeamLeadService` (`services/teamlead_service.py`) для управления трейдерами команды (`set_trader_traffic_status_by_teamlead` с аудитом), получения статистики по команде, обновления логики `active_reqs`.
@@ -107,13 +114,20 @@
     - Примечания: Реализована инициализация Redis, cache helpers, примеры get_bank_details, get_payment_method_details, get_exchange_rate.
 - [x] **Менеджер Статусов Ордера (`services/order_status_manager.py`)**: Управление переходами статусов ордеров.
     - Примечания: Реализованы методы `confirm_payment_by_client`, `confirm_order_by_trader`, `cancel_order` с загрузкой чеков в S3, audit-логированием и обновлением балансов.
+    - [x] **Рефакторинг и асинхронность:** Сервис переведен на `AsyncSession`. `confirm_payment_by_client` переименован в `confirm_payment_from_gateway_page` и его логика адаптирована: он теперь обновляет статус `IncomingOrder` на `client_payment_confirmed`, а основная обработка (`OrderHistory`, чек) делегируется `order_processor.finalize_order_after_client_confirmation_async`. Остальные методы также асинхронны.
 - [x] **Логгер Аудита (`services/audit_logger.py`)**: Сервис для записи событий аудита в AuditLog.
-    - Примечания: Реализован метод `log_event` для записи аудита в таблицу `audit_logs`.
+    - Примечания: Реализован метод `log_event` для записи аудита в таблицу `audit_logs`. Файл переименован в `audit_service.py`.
+    - [x] **Асинхронная версия (`log_event_async`):** Реализована.
 - [x] **Детектор Мошенничества (`services/fraud_detector.py`)**: Правила и проверки для обнаружения мошеннических операций.
     - Примечания: Реализована логика пороговой проверки из конфигурации (deny/manual review).
+    - [x] **Асинхронная версия (`check_incoming_order_async`):** Реализована, пороги фрода передаются как аргументы.
 - [x] **Сервис Шлюза (`services/gateway_service.py`)**: Логика обработки запросов API шлюза.
     - Примечания: Реализован secure API-key lookup, создание IncomingOrder, получение статуса и подтверждение клиентом.
-    - [/] **TODO**: Реализовать глубокую валидацию входящих запросов (проверка разрешённых валют, обязательных полей, лимитов магазина).
+    - [x] **(Gateway v2)** Реализовать `initiate_payment_session` (ранее `initialize_payin_session`) для генерации уникального URL/токена для страницы оплаты Pay-In и сохранения сессии.
+    - [x] **(Gateway v2)** Реализовать `get_payment_session_details` (ранее `get_payment_session_details_by_token`) для получения данных сессии по токену (используется страницей оплаты).
+    - [x] **(Gateway v2)** Реализовать `handle_payment_page_confirmation` для обработки подтверждения со страницы оплаты (включая чек) и вызова `order_status_manager.confirm_payment_from_gateway_page`, а затем `order_processor.finalize_order_after_client_confirmation_async`.
+    - [x] **(Gateway v2)** Адаптировать `get_incoming_order_status` (ранее `get_payin_status`) для работы с новой логикой сессий (поиск по `payment_token`, возврат `payment_url`).
+    - [/] **TODO**: Реализовать глубокую валидацию входящих запросов (проверка разрешённых валют, обязательных полей, лимитов магазина) - *остается актуальным*. 
         - Добавить unit-тесты на валидацию.
 - [x] **Сервис Коллбэков (`services/callback_service.py`)**: Отправка коллбэков мерчантам.
     - Примечания: Реализована генерация HMAC-SHA256 подписи, асинхронная отправка POST через httpx, обработка ошибок.
@@ -123,6 +137,7 @@
 
 - [x] **Утилита Загрузки Конфигурации (`utils/config_loader.py`)**: Чтение настроек из БД.
     - Примечания:
+    - [x] **Асинхронные версии и кэширование:** Добавлены `get_config_value_async`, `get_typed_config_value_async` с использованием `asyncache`.
 - [x] **Утилиты Исключений (`utils/exceptions.py`, `utils.exception_handlers.py`)**: Определить иерархию кастомных исключений и их глобальную обработку.
     - Примечания: Создан базовый класс JivaPayException и специфичные исключения в utils/exceptions.py. Глобальные обработчики для этих исключений (для FastAPI) реализованы в utils/exception_handlers.py и регистрируются в server.py файлах. Также создан `utils/decorators.py` с `@handle_service_exceptions` для обработки на уровне сервисов.
 - [x] **Утилиты Оповещений (`utils/notifications.py`)**: Настроить отправку оповещений о критических ошибках (Sentry).
@@ -131,7 +146,7 @@
 - [x] **(Новое) Утилиты для фильтров запросов (`utils/query_filters.py`) (Phase 5)**: Создан файл `backend/utils/query_filters.py`. 
     - Примечания: Фильтры реализованы и активно используются в сервисах для централизации логики фильтрации.
 - [x] **(Новое) Утилиты для декораторов (`utils/decorators.py`) (Phase 5)**: Создан файл `backend/utils/decorators.py`.
-    - Примечания: Реализован декоратор `@handle_service_exceptions` для унифицированной обработки исключений и логирования в сервисах. Интегрирован с `backend.config.logger` и `utils.notifications`. Активно применяется в большинстве сервисов.
+    - Примечания: Реализован декоратор `@handle_service_exceptions` для унифицированной обработки исключений и логирования в сервисах. Интегрирован с `backend.config.logger` и `utils.notifications`. Активно применяется в большинстве сервисов. Поддерживает асинхронные функции.
 
 ## 5. API Роутеры (`api_routers/`)
 
@@ -153,6 +168,10 @@
     - Примечания: Реализованы GET `/reference/banks/{bank_id}`, `/reference/payment-methods/{method_id}`, `/reference/exchange-rates/{crypto_id}/{fiat_id}`.
 - [x] **Роутер Шлюза (`api_routers/gateway/router.py`)**: Эндпоинты для PayIn/PayOut шлюза.
     - Примечания: Реализованы `POST /payin/init`, `GET /payin/status/{id}`, `POST /payin/confirm/{id}`, `POST /payout/init`, `GET /payout/status/{id}` с вызовом gateway_service.
+    - [x] **(Gateway v2)** Изменить эндпоинт инициации Pay-In (например, `POST /gateway/v2/payin/initiate_session`): должен вызывать асинхронный `gateway_service.initiate_payment_session` и возвращать мерчанту уникальный `payment_url`.
+    - [x] **(Gateway v2)** Создать эндпоинт для получения данных сессии оплаты страницей (например, `GET /gateway/v2/payment/session/{payment_token}`), вызывающий `gateway_service.get_payment_session_details`.
+    - [x] **(Gateway v2)** Создать эндпоинт для приема подтверждения и чека со страницы оплаты (например, `POST /gateway/v2/payment/confirm/{payment_token}`), вызывающий `gateway_service.handle_payment_page_confirmation`.
+    - [x] **(Gateway v2)** Пересмотреть/удалить старый эндпоинт `POST /payin/confirm/{id}` (прямое подтверждение клиентом), так как он заменяется новым потоком. Эндпоинт помечен `deprecated=True` и адаптирован для работы с async GatewayService. GET `/v2/payin/status` также обновлен.
 - [x] **Роутер Тимлида (`api_routers/teamlead/*`)**: login + управление трейдерами.  
   Примечания: реализация готова (`auth.py`, `router.py`); планируется покрыть тестами и при необходимости добавить SSE.
   - [x] **Актуализация (v.Дата_сессии_обновления):** Роутер `api_routers/teamlead/router.py` обновлен: `response_model` для эндпоинтов `/managed-traders/{trader_id}/traffic`, `/requisites/online-stats`, `/team/statistics`, `/managed-traders` заменены на `TraderTrafficStatusResponse`, `RequisiteOnlineStatsResponseSchema`, `TeamStatisticsSchema`, `List[TeamLeadTraderBasicInfoSchema]`.
@@ -166,9 +185,9 @@
 - [x] **Задача Обработчика Ордеров (`worker/tasks.py:process_order_task`)**: Задача для обработки `IncomingOrder`.
     - [ ] Проверка идемпотентности.
     - [ ] Вызов подбора реквизита.
-    - [ ] Создание `MatchedOrder`.
+    - [ ] Создание `MatchedOrder` (или актуализация `IncomingOrder` деталями подобранного реквизита, если `OrderHistory` создается позже).
     - [ ] Надежные обновления статуса (`retrying`/`failed`) при ошибках (отдельная транзакция).
-    - Примечания:
+    - Примечания: Задача должна корректно обрабатывать `IncomingOrder`, для которого уже могла быть создана сессия оплаты шлюза (с токеном и URL).
 - [x] **Задача Обновления Баланса (Опционально - `worker/tasks.py:update_balance_task`)**: Если используются асинхронные обновления через очередь задач/транзакционный outbox.
     - Примечания:
 - [ ] **Настройка Очереди Недоставленных Сообщений (DLQ)**: Настроить DLQ для неудавшихся задач.
@@ -222,3 +241,9 @@
 
 - [x] Добавить `teamlead/server.py` и сервис `teamlead_api` в docker-compose.  
   Примечания: `server.py` создан ранее, сервис `teamlead_api` добавлен в docker-compose v2025.05.11.
+
+## 12. Модели Данных (`backend/database/db.py`) - Дополнительные изменения
+
+- [x] **Обновить модели для поддержки сессий оплаты шлюза**:
+    - [x] Добавить поля в `IncomingOrder` (или создать новую модель `PaymentSession`) для хранения уникального токена страницы оплаты, URL страницы оплаты, времени создания и экспирации токена.
+    - Примечания: Создана модель `PaymentSession` с необходимыми полями и связью `payment_session` в `IncomingOrder`.
