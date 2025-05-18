@@ -21,7 +21,7 @@
 Бэкенд JivaPay построен на Python с использованием фреймворка FastAPI. Ключевые директории и их назначение:
 
 *   `backend/`
-    *   `api_routers/`: Содержит API-роутеры, разделенные по ролям и функциональным областям. Обрабатывают HTTP-запросы, валидируют данные и вызывают сервисы.
+    *   `api_routers/`: Содержит API-роутеры, разделенные по ролям и функциональным областям. Обрабатывают HTTP-запросы, валидируют данные и **в основном делегируют выполнение бизнес-логики соответствующим сервисам.**
         *   `common/`: Общие модули CRUD-операций и логики для разных ролей.
         *   `role-based routers`: (в `backend/servers/*/server.py`) Динамически подключают модули из `common/` и защищаются правами.
     *   `config/`: Конфигурационные файлы, включая настройку логгера (`logger.py`), криптографию (`crypto.py`) и загрузку настроек приложения (`settings.py`).
@@ -115,6 +115,7 @@
     *   Получение статистики по ролям (`get_administrators_statistics`, `get_teamleads_statistics`, `get_supports_statistics`). Эти функции рефакторены с использованием `utils.query_utils.py` для пагинации, сортировки и фильтрации.
     *   Получение детальной информации о профилях, включая `granted_permissions`.
     *   Обновление профилей и статуса пользователя (`_update_user_and_profile_generic`) с проверкой прав через `permission_service` и аудитом.
+    *   Получение базового списка всех пользователей (`get_all_users_basic`) с проверкой прав.
     *   Блокировка/разблокировка пользователей.
 
 #### 4.5.2. `permission_service.py` (Сервис Управления Правами)
@@ -126,6 +127,10 @@
     *   `check_permission()`: Проверяет наличие права у пользователя, используя `_match_permission`.
     *   `_match_permission()`: Сопоставляет право с учетом wildcards (`*`) и плейсхолдера `{id}` (например, `users:edit:trader:{id}`).
     *   `check_specific_or_any_permission()`: Проверяет наличие одного из нескольких прав или специфического права.
+    *   `get_orders_history()`: Выборка ордеров с комплексной фильтрацией (сумма, диапазон дат, статус, ID, email, поиск по полям), сортировкой, пагинацией. Использует `utils.query_utils.py` и `permission_service` для проверки прав.
+    *   `get_orders_count()`: Подсчет количества ордеров с фильтрами и учетом прав.
+    *   `get_orders_for_trader()`: Получение списка ордеров для конкретного трейдера.
+    *   `get_orders_for_merchant()`: Получение списка ордеров для конкретного мерчанта.
 
 #### 4.5.3. `requisite_selector.py` (Подбор Реквизитов)
 
@@ -202,6 +207,14 @@
     *   `get_online_requisites_stats()`: Статистика активных реквизитов с фильтрацией, сортировкой. Использует `utils.query_utils.py`, `utils.query_filters.py` и `permission_service`. Логика "онлайн" соответствует `requisite_selector`.
     *   `get_requisite_details_for_moderation()`: Детали реквизита для админов.
     *   `set_requisite_status()`: Установка статуса реквизита админом с аудитом.
+    *   `get_merchants_statistics()`: Статистика с фильтрацией, сортировкой. Использует `utils.query_utils.py` и `permission_service`.
+    *   `get_merchant_full_details()`: Полная информация о мерчанте.
+    *   CRUD-операции для магазинов мерчанта (`MerchantStore`):
+        *   `create_merchant_store()`: Создание нового магазина с генерацией API-ключей.
+        *   `get_stores_for_merchant()`: Получение списка магазинов мерчанта.
+        *   `get_merchant_store_details()`: Получение деталей конкретного магазина.
+        *   `update_merchant_store()`: Обновление настроек магазина.
+        *   `delete_merchant_store()`: Удаление магазина.
 
 #### 4.5.9. `platform_service.py` (Сервис Платформы)
 
@@ -227,8 +240,10 @@
 
 *   **Назначение:** Функционал для роли Тимлида.
 *   **Функционал:**
-    *   `get_managed_traders()`: Список трейдеров команды.
+    *   `get_managed_traders()`: Список трейдеров команды (возвращает базовую информацию).
+    *   `list_traders_for_teamlead()`: Возвращает полные объекты `Trader` для команды.
     *   `set_trader_traffic_status_by_teamlead()`: Установка флага `Trader.is_traffic_enabled_by_teamlead` с аудитом.
+    *   `set_trader_in_work_status_by_teamlead()`: Установка флага `Trader.in_work` с аудитом.
     *   `get_team_statistics()`: Агрегированная статистика по команде.
     *   `get_teamlead_full_details()`: Полная информация о тимлиде (для админов).
     *   Логика расчета активных реквизитов использует `utils.query_filters.py`.
@@ -263,7 +278,7 @@
     *   `_get_merchant_store_by_api_key()`: Безопасный поиск магазина по API-ключу.
     *   `handle_init_request()`: Создание `IncomingOrder` для запросов `/payin/init`, `/payout/init`.
     *   `get_order_status()`: Получение статуса для `/payin/status/{id}`, `/payout/status/{id}`.
-    *   `handle_client_confirmation()`: Обработка подтверждения оплаты клиентом для `/payin/confirm/{id}` (вызов `order_status_manager.confirm_payment_by_client`).
+    *   `handle_client_confirmation()`: Обработка подтверждения платежа клиентом. Сервис принимает байты файла чека и его имя; логика загрузки файла на S3 инкапсулирована в `order_status_manager.confirm_payment_by_client`.
 
 #### 4.5.17. `callback_service.py` (Сервис Коллбэков)
 

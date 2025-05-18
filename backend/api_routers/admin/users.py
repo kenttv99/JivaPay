@@ -63,10 +63,9 @@ async def list_all_users_basic(
     current_admin: User = Depends(get_current_active_admin)
 ):
     """Retrieve a basic list of all users; primarily for admins.
-       Consider using more specific statistics endpoints for detailed role-based lists.
+       The user_service.get_all_users_basic function handles permission checks.
     """
-    users = db.query(User).options(selectinload(User.admin_profile), selectinload(User.support_profile), selectinload(User.teamlead_profile)).all()
-    return users
+    return user_service.get_all_users_basic(db_session=db, current_admin_user=current_admin)
 
 # --- Profile Update Endpoints ---
 @router.put("/admin/{admin_user_id}/profile", response_model=Any)
@@ -90,6 +89,30 @@ async def get_user_permissions_admin_panel(
         raise HTTPException(status_code=400, detail="Invalid target role specified.")
     
     perm_service = PermissionService(db)
+
+    # Check if the current_admin has permission to view permissions for the target_role
+    can_view_specific_role_perms = perm_service.check_permission(
+        user_id=current_admin.id,
+        user_role="admin", # current_admin is always an admin here
+        required_permission_template=f"permissions:view:{target_role}"
+    )
+    can_view_any_role_perms = perm_service.check_permission(
+        user_id=current_admin.id,
+        user_role="admin",
+        required_permission_template="permissions:view:*"
+    )
+    is_superuser = perm_service.check_permission(
+        user_id=current_admin.id,
+        user_role="admin",
+        required_permission_template="superuser"
+    )
+
+    if not (can_view_specific_role_perms or can_view_any_role_perms or is_superuser):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Not authorized to view permissions for role '{target_role}'"
+        )
+    
     return perm_service.get_user_permissions(user_id=target_user_id, user_role=target_role)
 
 @router.put("/permissions/{target_user_id}/{target_role}", status_code=status.HTTP_200_OK)
@@ -105,8 +128,8 @@ async def update_user_permissions_admin_panel(
 
     perm_service = PermissionService(db)
     success = perm_service.update_user_permissions(
-        user_id=target_user_id, 
-        user_role=target_role, 
+        target_user_id=target_user_id, # Changed from user_id to target_user_id to match service
+        target_user_role=target_role, # Changed from user_role to target_user_role to match service
         permissions_to_set=permissions_to_set, 
         current_admin_user=current_admin
     )

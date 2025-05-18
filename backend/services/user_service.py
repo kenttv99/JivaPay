@@ -167,6 +167,47 @@ def authenticate_user(db_session: Session, email: str, password: str) -> Optiona
     logger.info(f"User {email} authenticated successfully.")
     return user
 
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
+def get_all_users_basic(db_session: Session, current_admin_user: User) -> List[User]:
+    """
+    Retrieves a basic list of all users with their core profiles.
+    Requires 'users:view:all_basic' permission or superuser.
+    """
+    permission_service = PermissionService(db_session)
+    # Check if current_admin_user has an admin profile before checking permissions
+    # This assumes that current_admin_user is indeed an admin, 
+    # which should be guaranteed by get_current_active_admin dependency in the router.
+    # However, a direct check here can be an additional safeguard if the service is called from elsewhere.
+    admin_profile = db_session.query(Admin).filter(Admin.user_id == current_admin_user.id).first()
+    if not admin_profile:
+        # This case should ideally not be reached if called from an admin-protected endpoint.
+        logger.error(f"User {current_admin_user.id} attempting to call get_all_users_basic does not have an admin profile.")
+        raise AuthorizationError("Action requires an admin profile.")
+
+    can_view_all_basic = permission_service.check_permission(
+        current_admin_user.id, "admin", "users:view:all_basic"
+    )
+    is_superuser = permission_service.check_permission(
+        current_admin_user.id, "admin", "superuser"
+    )
+
+    if not (can_view_all_basic or is_superuser):
+        logger.warning(f"Admin {current_admin_user.email} (ID: {current_admin_user.id}) failed to fetch basic list of all users due to insufficient permissions.")
+        raise AuthorizationError("Not authorized to view a basic list of all users.")
+
+    logger.info(f"Admin {current_admin_user.email} (ID: {current_admin_user.id}) fetching basic list of all users.")
+    users = (
+        db_session.query(User)
+        .options(
+            selectinload(User.admin_profile),
+            selectinload(User.support_profile),
+            selectinload(User.teamlead_profile),
+            joinedload(User.role) # Eager load the role
+        )
+        .all()
+    )
+    return users
+
 def get_administrators_statistics(
     session: Session, 
     current_admin_user: User, 

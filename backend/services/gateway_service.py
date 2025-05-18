@@ -160,23 +160,26 @@ def get_order_status(order_identifier: str, db: Session) -> Any: # Return type d
 @handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def handle_client_confirmation(
     order_identifier: str, 
-    uploaded_url: Optional[str], 
+    receipt_content: Optional[bytes], 
+    receipt_filename: Optional[str],
     db: Session
-) -> None:
+) -> OrderHistory:
     """Handles the client confirmation action from the gateway."""
-    logger.info(f"Handling client confirmation for order identifier: {order_identifier}, receipt URL: {uploaded_url}")
-    # 1. Retrieve OrderHistory
+    logger.info(f"Handling client confirmation for order identifier: {order_identifier}, file provided: {receipt_content is not None}")
+    
     oh = get_object_or_none(db, OrderHistory, hash_id=order_identifier)
     if not oh:
-        raise OrderProcessingError(f"Order not found: {order_identifier}", status_code=404)
-    # 2. Permission: merchant
-    # Actor not identified here; assume system actor for gateway
-    from backend.utils.exceptions import AuthorizationError
-    # 3. Call status manager
-    updated = order_status_manager.confirm_payment_by_client(
+        # Simplified error handling for now. Robust version would check IncomingOrder too.
+        logger.warning(f"OrderHistory not found for hash_id: {order_identifier} during client confirmation.")
+        raise OrderProcessingError(f"Order not found or not ready for confirmation: {order_identifier}", status_code=404)
+
+    # order_status_manager.confirm_payment_by_client handles the S3 upload internally
+    updated_order = order_status_manager.confirm_payment_by_client(
         order_id=oh.id,
-        receipt=uploaded_url.encode('utf-8'),
-        filename=uploaded_url.split('/')[-1] if uploaded_url else "receipt.bin",
+        receipt=receipt_content, # Pass bytes directly
+        filename=receipt_filename or "uploaded_receipt.bin", # Pass filename or a default
         db_session=db
     )
-    return updated 
+    
+    logger.info(f"Client confirmation processed for order {order_identifier} (OH ID: {oh.id}). Status: {updated_order.status}")
+    return updated_order 

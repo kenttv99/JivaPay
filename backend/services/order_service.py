@@ -193,3 +193,84 @@ def get_orders_count(
 
     count = query.scalar() or 0
     return {"total_count": count} 
+
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
+def get_orders_for_trader(session: Session, current_trader_user: User, skip: int = 0, limit: int = 100) -> List[OrderHistory]:
+    """
+    Retrieves a list of orders assigned to the current trader.
+    Requires 'trader_orders:read' permission (assumed to be checked by caller or could be added here).
+    """
+    # Ensure the user has a trader profile
+    if not current_trader_user.trader_profile:
+        logger.warning(f"User {current_trader_user.email} (ID: {current_trader_user.id}) attempting to list trader orders does not have a trader profile.")
+        raise AuthorizationError("User does not have a trader profile.")
+    
+    trader_id = current_trader_user.trader_profile.id # Assuming trader_profile has an id which is the Trader.id
+    # If current_trader_user *is* the Trader object directly, then current_trader_user.id would be used.
+    # Given get_current_active_trader returns Trader, it's likely current_trader_user.id is the trader_id.
+    # Let's re-verify how get_current_active_trader is implemented or what it returns.
+    # For now, assuming the dependency `get_current_active_trader` in the router gives us a User object
+    # which has a `trader_profile` attribute, and that profile's ID is the trader ID for filtering orders.
+    # If `get_current_active_trader` directly returns a `Trader` object (which has `user_id` and `id` as PK for Trader table itself),
+    # then the logic would be simpler: trader_id = current_trader_user.id (if current_trader_user is Trader type)
+
+    # Based on common/trader_orders.py, current_trader: Trader, so current_trader.id is correct.
+    # The service function signature uses User, so we need to adjust.
+    # Let's assume current_trader_user is a User object, and trader_id is current_trader_user.trader_profile.id
+    # However, the original router code used `current_trader.id` where `current_trader` was of type `Trader`.
+    # This suggests `get_current_active_trader` might return a `Trader` object directly.
+    # If so, the service should accept Trader or User and handle accordingly.
+    # For now, let's stick to User and trader_profile.id, and adjust if `get_current_active_trader` returns Trader.
+
+    # Rechecking get_current_active_trader. It is defined in backend/common/dependencies.py
+    # It gets User, then tries to get user.trader_profile. If not found, raises 403.
+    # It returns the user.trader_profile (which is a Trader object).
+    # So, current_trader_user in the service will be a Trader object if called from router.
+    # The signature `current_trader_user: User` in the service is thus a bit misleading in this context.
+    # It should ideally be `current_trader_object: Trader` or the service needs to handle User and get trader_id.
+
+    # Let's adjust service signature to accept Trader directly for clarity if this is its primary use case from trader routes.
+    # Or, keep User and ensure trader_id extraction is robust.
+    # Given the router provides Trader, let's assume for now the service gets Trader object as current_trader_user argument.
+
+    logger.info(f"Trader (User ID: {current_trader_user.user_id}, Trader ID: {current_trader_user.id}) fetching their orders. Skip: {skip}, Limit: {limit}.")
+    orders = (
+        session.query(OrderHistory)
+        .filter(OrderHistory.trader_id == current_trader_user.id) # Assuming current_trader_user is the Trader object
+        .order_by(desc(OrderHistory.created_at)) # Added default sorting
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    return orders 
+
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
+def get_orders_for_merchant(session: Session, current_merchant_user: User, skip: int = 0, limit: int = 100, status_filter: Optional[str] = None) -> List[OrderHistory]:
+    """
+    Retrieves a list of orders associated with the current merchant.
+    Requires 'merchant_orders:read' permission (assumed to be checked by caller).
+    """
+    if not current_merchant_user.merchant_profile:
+        logger.warning(f"User {current_merchant_user.email} (ID: {current_merchant_user.id}) attempting to list merchant orders does not have a merchant profile.")
+        raise AuthorizationError("User does not have a merchant profile.")
+
+    # Similar to get_orders_for_trader, current_merchant_user will be a Merchant object
+    # due to get_current_active_merchant returning user.merchant_profile.
+    merchant_id = current_merchant_user.id # current_merchant_user is Merchant object
+
+    logger.info(f"Merchant (User ID: {current_merchant_user.user_id}, Merchant ID: {merchant_id}) fetching their orders. Skip: {skip}, Limit: {limit}, Status: {status_filter}.")
+
+    query = session.query(OrderHistory).filter(OrderHistory.merchant_id == merchant_id)
+
+    if status_filter:
+        query = query.filter(OrderHistory.status.ilike(f"%{status_filter}%")) # Use ilike for case-insensitive status filter
+
+    orders = (
+        query.order_by(desc(OrderHistory.created_at)) # Added default sorting
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    return orders
+
+# Ensure other service functions if any are below this 

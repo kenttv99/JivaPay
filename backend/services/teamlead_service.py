@@ -14,8 +14,11 @@ from backend.database.db import (
 )
 from backend.services.permission_service import PermissionService
 from backend.utils.exceptions import AuthorizationError, DatabaseError, NotFoundError, OperationForbiddenError
-# from backend.schemas_enums.teamlead import TeamLeadFullDetailsSchema, TeamStatsSchema # For response formatting
-# from backend.schemas_enums.trader import TraderBasicInfoSchema # For managed traders list
+from backend.schemas_enums.teamlead_schemas import (
+    TeamLeadTraderBasicInfoSchema, 
+    TraderTrafficStatusResponse,
+    TeamOverallStatsSchema
+)
 from backend.services.audit_logger import log_event
 from backend.utils.query_filters import get_active_trader_and_requisite_filters # Added import
 from backend.config.logger import get_logger
@@ -28,7 +31,7 @@ SERVICE_NAME = "teamlead_service" # Для использования в дек�
 def get_managed_traders(
     session: Session, 
     current_teamlead_user: User
-) -> List[Dict[str, Any]]: # Consider returning List[TraderBasicInfoSchema]
+) -> List[TeamLeadTraderBasicInfoSchema]:
     """
     Retrieves a list of traders managed by the current teamlead.
     Requires teamlead role and appropriate permission.
@@ -62,6 +65,31 @@ def get_managed_traders(
             # Add other relevant fields from Trader as specified by TraderBasicInfoSchema
         })
     return managed_traders
+
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
+def list_traders_for_teamlead(session: Session, current_teamlead_user: User) -> List[Trader]:
+    """
+    Lists all traders directly managed by the current teamlead.
+    Requires 'team:view:members_list' or a more specific 'teamlead_traders:read' type permission.
+    The permission 'teamlead_traders:read' is assumed to be checked by the caller (router) for this specific function.
+    Alternatively, it can be checked here if this function is intended to be more self-contained.
+    """
+    # Permission check example (can be adapted or made more specific)
+    # perm_service = PermissionService(session)
+    # if not perm_service.check_permission(current_teamlead_user.id, "teamlead", "team:view:members_list") and \\
+    #    not perm_service.check_permission(current_teamlead_user.id, "teamlead", "teamlead_traders:read"):
+    #     raise AuthorizationError("Not authorized to list managed traders.")
+
+    teamlead_profile = session.query(TeamLead).filter(TeamLead.user_id == current_teamlead_user.id).first()
+    if not teamlead_profile:
+        logger.warning(f"User {current_teamlead_user.id} is not a teamlead. Cannot list managed traders.")
+        # This should ideally not happen if current_teamlead_user is validated by a dependency
+        raise AuthorizationError("Current user is not a valid teamlead.")
+
+    logger.info(f"TeamLead {current_teamlead_user.email} (ID: {current_teamlead_user.id}, TeamLeadProfileID: {teamlead_profile.id}) fetching list of their traders.")
+    
+    traders = session.query(Trader).filter(Trader.team_lead_id == teamlead_profile.id).all()
+    return traders
 
 @handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def set_trader_traffic_status_by_teamlead(
@@ -239,3 +267,71 @@ def get_team_statistics(
         team_stats_data["active_requisites"] = active_reqs_query_team_stats
 
     return team_stats_data 
+
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
+def set_trader_in_work_status_by_teamlead(
+    session: Session, 
+    trader_id_to_manage: int, 
+    in_work_status: bool, 
+    current_teamlead_user: User
+) -> TraderModel:
+    """
+    Sets the 'in_work' status for a trader if managed by the current teamlead.
+    Requires 'team:manage:trader_status' or similar permission (e.g. 'teamlead_traders:update').
+    """
+    perm_service = PermissionService(session)
+    # Example specific permission check, can be adapted
+    can_manage_status = perm_service.check_permission(current_teamlead_user.id, "teamlead", "team:manage:trader_status")
+    can_update_common = perm_service.check_permission(current_teamlead_user.id, "teamlead", "teamlead_traders:update")
+
+    if not (can_manage_status or can_update_common):
+        log_event(
+            user_id=current_teamlead_user.id,
+            action="SET_TRADER_IN_WORK_DENIED",
+            target_entity="TRADER",
+            target_id=trader_id_to_manage,
+            details={"reason": "Insufficient permissions", "attempted_status": in_work_status},
+            level="WARNING"
+        )
+        raise AuthorizationError("Not authorized to set trader in_work status.")
+
+    teamlead_profile = session.query(TeamLead).filter(TeamLead.user_id == current_teamlead_user.id).first()
+    if not teamlead_profile:
+        raise OperationForbiddenError("Action can only be performed by a teamlead with a valid profile.")
+
+    trader_to_update = session.query(TraderModel).filter(
+        TraderModel.id == trader_id_to_manage,
+        TraderModel.team_lead_id == teamlead_profile.id
+    ).first()
+
+    if not trader_to_update:
+        log_event(
+            user_id=current_teamlead_user.id,
+            action="SET_TRADER_IN_WORK_NOT_FOUND",
+            target_entity="TRADER",
+            target_id=trader_id_to_manage,
+            details={"reason": "Trader not found or not in team", "attempted_status": in_work_status},
+            level="WARNING"
+        )
+        raise NotFoundError(f"Trader with ID {trader_id_to_manage} not found in your team or does not exist.")
+
+    # Check if status is actually changing to avoid unnecessary audit logs/commits
+    if trader_to_update.in_work == in_work_status:
+        logger.info(f"Trader {trader_id_to_manage} in_work status is already {in_work_status}. No change made by TeamLead {current_teamlead_user.id}.")
+        return trader_to_update # Return the trader object as is
+
+    old_status = trader_to_update.in_work
+    trader_to_update.in_work = in_work_status
+    session.commit()
+    session.refresh(trader_to_update)
+
+    log_event(
+        user_id=current_teamlead_user.id,
+        action="TRADER_IN_WORK_STATUS_UPDATED",
+        target_entity="TRADER",
+        target_id=trader_to_update.id,
+        details={"old_status": old_status, "new_status": in_work_status, "teamlead_id": teamlead_profile.id},
+        level="INFO"
+    )
+    logger.info(f"TeamLead {current_teamlead_user.email} (ID: {current_teamlead_user.id}) updated trader {trader_to_update.id} in_work status to {in_work_status}.")
+    return trader_to_update 

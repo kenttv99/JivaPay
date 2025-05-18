@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional, Any
 import logging
@@ -10,6 +10,8 @@ from backend.services.order_status_manager import confirm_payment_by_client as c
 from backend.schemas_enums.order import IncomingOrderCreate, IncomingOrderRead, OrderHistoryRead
 from backend.common.permissions import permission_required
 from backend.common.dependencies import get_current_active_merchant
+from backend.services import order_service
+from backend.utils.exceptions import AuthorizationError
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -47,12 +49,22 @@ def list_merchant_orders(
     status_filter: Optional[str] = None,
     db: Session = Depends(get_db_session),
     current_merchant: Merchant = Depends(get_current_active_merchant)
-):
-    """List orders associated with the current merchant."""
-    query = db.query(OrderHistory).filter_by(merchant_id=current_merchant.id)
-    if status_filter:
-        query = query.filter(OrderHistory.status == status_filter)
-    return query.offset(skip).limit(limit).all()
+) -> List[OrderHistoryRead]:
+    """List orders associated with the current merchant by calling the service layer."""
+    try:
+        orders = order_service.get_orders_for_merchant(
+            session=db,
+            current_merchant_user=current_merchant,
+            skip=skip,
+            limit=limit,
+            status_filter=status_filter
+        )
+        return [OrderHistoryRead.from_orm(order) for order in orders]
+    except AuthorizationError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error in common list_merchant_orders: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error listing merchant orders.")
 
 @router.post(
     "/{order_id}/confirm_payment",

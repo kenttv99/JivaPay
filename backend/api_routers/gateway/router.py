@@ -2,7 +2,7 @@
 
 import logging
 from typing import Optional, Dict, Any
-from fastapi import APIRouter, Depends, Path, Body, Request, UploadFile, File, status
+from fastapi import APIRouter, Depends, Path, Body, Request, UploadFile, File, status, HTTPException
 from sqlalchemy.orm import Session
 import io
 
@@ -11,6 +11,8 @@ from backend.schemas_enums.order import IncomingOrderCreate, IncomingOrderRead
 from backend.services.gateway_service import handle_init_request, get_order_status, handle_client_confirmation
 from backend.utils.s3_client import upload_file_async
 from backend.config.settings import settings
+from backend.services import gateway_service
+from backend.utils.exceptions import OrderProcessingError
 
 logger = logging.getLogger(__name__)
 
@@ -66,22 +68,37 @@ def get_payin_status(
 )
 async def confirm_payin_payment(
     order_identifier: str = Path(..., description="Unique identifier for the order (e.g., ID)"),
-    # Define payload: GatewayConfirmPayload? Or handle form data?
-    # payload: GatewayConfirmPayload = Body(None), # Example with JSON body
     receipt_file: Optional[UploadFile] = File(None, description="Optional payment receipt upload"),
     db: Session = Depends(get_db_session)
 ):
     """Endpoint for the end-client to confirm they have made the payment (e.g., uploaded receipt)."""
     logger.info(f"Gateway: Received payment confirmation for Pay-In order: {order_identifier}. File provided: {receipt_file is not None}")
-    uploaded_url = None
+    
+    receipt_content_bytes: Optional[bytes] = None
+    original_filename: Optional[str] = None
+
     if receipt_file:
-        content = await receipt_file.read()
-        buffer = io.BytesIO(content)
-        buffer.seek(0)
-        key = f"receipts/{order_identifier}/{receipt_file.filename}"
-        uploaded_url = await upload_file_async(buffer, settings.S3_BUCKET_NAME, key)
-    updated = handle_client_confirmation(order_identifier, uploaded_url, db)
-    return updated
+        receipt_content_bytes = await receipt_file.read()
+        original_filename = receipt_file.filename
+        # No S3 upload logic here anymore, it's in order_status_manager via gateway_service
+
+    try:
+        updated_order = gateway_service.handle_client_confirmation(
+            order_identifier=order_identifier, 
+            receipt_content=receipt_content_bytes, 
+            receipt_filename=original_filename, 
+            db=db
+        )
+        # Depending on what handle_client_confirmation returns (e.g. OrderHistory),
+        # a response_model might be useful here if not just 202 Accepted.
+        # For now, let's assume it might return the updated order for consistency with other endpoints.
+        return updated_order # Or a specific response schema
+    except OrderProcessingError as e:
+        logger.error(f"Error during client confirmation for order {order_identifier}: {e.detail}", exc_info=True)
+        raise HTTPException(status_code=e.status_code if hasattr(e, 'status_code') else 400, detail=e.detail)
+    except Exception as e:
+        logger.error(f"Unexpected error during client confirmation for order {order_identifier}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="An unexpected error occurred during payment confirmation.")
 
 # --- Pay-Out Endpoints --- #
 

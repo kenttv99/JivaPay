@@ -4,11 +4,13 @@ from typing import List
 import logging
 
 from backend.database.utils import get_db_session
-from backend.database.db import Trader, OrderHistory
+from backend.database.db import Trader, OrderHistory, User
 from backend.services.order_status_manager import confirm_order_by_trader, cancel_order
 from backend.schemas_enums.order import OrderHistoryRead, OrderCancelPayload
 from backend.common.permissions import permission_required
 from backend.common.dependencies import get_current_active_trader
+from backend.services import order_service
+from backend.utils.exceptions import AuthorizationError
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -23,9 +25,21 @@ def list_trader_orders(
     limit: int = 100,
     db: Session = Depends(get_db_session),
     current_trader: Trader = Depends(get_current_active_trader)
-) -> List[OrderHistory]:
-    """List orders assigned to the current trader."""
-    return db.query(OrderHistory).filter_by(trader_id=current_trader.id).offset(skip).limit(limit).all()
+) -> List[OrderHistoryRead]:
+    """List orders assigned to the current trader by calling the service layer."""
+    try:
+        orders = order_service.get_orders_for_trader(
+            session=db, 
+            current_trader_user=current_trader,
+            skip=skip, 
+            limit=limit
+        )
+        return [OrderHistoryRead.from_orm(order) for order in orders]
+    except AuthorizationError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error in common list_trader_orders: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error listing trader orders.")
 
 @router.post(
     "/{order_id}/confirm",

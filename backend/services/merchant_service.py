@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload, aliased
 from sqlalchemy import func, or_, and_, desc, asc, String, cast
 from datetime import datetime
 from decimal import Decimal
+import secrets
 
 from backend.database.db import (
     Merchant, User, MerchantStore, OrderHistory, BalanceStoreHistory
@@ -232,4 +233,119 @@ def get_merchant_full_details(
         # Note: order_history_for_merchant contains orders where merchant_id = merchant.id
         # If you need orders related to specific stores, you'd query OrderHistory.store_id.in_([...])
     }
-    return response_data 
+    return response_data
+
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
+def create_merchant_store(session: Session, current_merchant_user: User, store_data: Any) -> MerchantStore:
+    """Creates a new store for the current merchant."""
+    # current_merchant_user is actually a Merchant object from get_current_active_merchant
+    merchant_id = current_merchant_user.id
+
+    public_key = secrets.token_urlsafe(32)
+    private_key = secrets.token_urlsafe(64) # Should this be hashed or stored as is? Assuming as is for now.
+    
+    # Ensure all required fields by MerchantStore model are present directly or in store_data
+    # store_data is MerchantStoreCreate Pydantic model
+    db_store_data = store_data.dict()
+    db_store_data.update({
+        "merchant_id": merchant_id,
+        "public_api_key": public_key,
+        "private_api_key": private_key
+    })
+
+    # Using a direct model creation approach here instead of create_object generic util for clarity
+    new_store = MerchantStore(**db_store_data)
+    session.add(new_store)
+    try:
+        session.commit()
+        session.refresh(new_store)
+        logger.info(f"Merchant ID {merchant_id} created new store ID {new_store.id} with name '{new_store.store_name}'.")
+        return new_store
+    except Exception as e: # Catch specific SQLAlchemy errors if possible
+        session.rollback()
+        logger.error(f"Error creating store for merchant {merchant_id}: {e}", exc_info=True)
+        raise DatabaseError(f"Could not create store: {e}") from e
+
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
+def get_stores_for_merchant(session: Session, current_merchant_user: User) -> List[MerchantStore]:
+    """Lists all stores for the current merchant."""
+    merchant_id = current_merchant_user.id # current_merchant_user is Merchant object
+    logger.info(f"Merchant ID {merchant_id} fetching their stores.")
+    stores = session.query(MerchantStore).filter(MerchantStore.merchant_id == merchant_id).all()
+    return stores
+
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
+def get_merchant_store_details(session: Session, current_merchant_user: User, store_id: int) -> MerchantStore:
+    """Gets details of a specific store if it belongs to the current merchant."""
+    merchant_id = current_merchant_user.id # current_merchant_user is Merchant object
+    store = session.query(MerchantStore).filter(
+        MerchantStore.id == store_id, 
+        MerchantStore.merchant_id == merchant_id
+    ).first() # Changed to .first() as .one_or_none() is fine, but .first() is common too.
+    
+    if not store:
+        logger.warning(f"Store ID {store_id} not found or not owned by Merchant ID {merchant_id}.")
+        raise NotFoundError("Store not found or not owned by you.")
+    logger.info(f"Merchant ID {merchant_id} fetched details for store ID {store_id}.")
+    return store
+
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
+def update_merchant_store(session: Session, current_merchant_user: User, store_id: int, store_update_data: Any) -> MerchantStore:
+    """Updates an existing store for the current merchant."""
+    # store_update_data is MerchantStoreUpdate Pydantic model
+    merchant_id = current_merchant_user.id # current_merchant_user is Merchant object
+
+    store = session.query(MerchantStore).filter(
+        MerchantStore.id == store_id, 
+        MerchantStore.merchant_id == merchant_id
+    ).first()
+
+    if not store:
+        logger.warning(f"Attempt to update store ID {store_id} failed: Not found or not owned by Merchant ID {merchant_id}.")
+        raise NotFoundError("Store not found or not owned by you to update.")
+
+    update_data_dict = store_update_data.dict(exclude_unset=True)
+    if not update_data_dict: # No actual data sent for update
+        logger.info(f"No update data provided for store ID {store_id} by Merchant ID {merchant_id}. Returning current state.")
+        return store
+
+    for key, value in update_data_dict.items():
+        if hasattr(store, key):
+            setattr(store, key, value)
+        else:
+            logger.warning(f"Attempted to update non-existent attribute '{key}' on MerchantStore for store ID {store_id}.")
+            # Optionally raise an error here if strict schema adherence is required for updates
+            # raise ValueError(f"Invalid field '{key}' for MerchantStore update.")
+
+    try:
+        session.commit()
+        session.refresh(store)
+        logger.info(f"Merchant ID {merchant_id} updated store ID {store_id}. Update data: {update_data_dict}")
+        return store
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Error updating store ID {store_id} for merchant {merchant_id}: {e}", exc_info=True)
+        raise DatabaseError(f"Could not update store: {e}") from e
+
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
+def delete_merchant_store(session: Session, current_merchant_user: User, store_id: int) -> None:
+    """Deletes a store if it belongs to the current merchant."""
+    merchant_id = current_merchant_user.id # current_merchant_user is Merchant object
+
+    store = session.query(MerchantStore).filter(
+        MerchantStore.id == store_id, 
+        MerchantStore.merchant_id == merchant_id
+    ).first()
+
+    if not store:
+        logger.warning(f"Attempt to delete store ID {store_id} failed: Not found or not owned by Merchant ID {merchant_id}.")
+        raise NotFoundError("Store not found or not owned by you to delete.")
+
+    try:
+        session.delete(store)
+        session.commit()
+        logger.info(f"Merchant ID {merchant_id} deleted store ID {store_id} ('{store.store_name}').")
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Error deleting store ID {store_id} for merchant {merchant_id}: {e}", exc_info=True)
+        raise DatabaseError(f"Could not delete store: {e}") from e 
