@@ -7,6 +7,9 @@ from sqlalchemy import select, func, and_
 from datetime import datetime, timedelta
 from decimal import Decimal
 
+from backend.config.logger import get_logger
+from backend.utils.query_filters import get_active_trader_filters, get_active_requisite_filters
+
 # Attempt to import models, DB utils, and exceptions
 try:
     # !! These models need to be defined in backend/database/models.py !!
@@ -22,7 +25,7 @@ except ImportError as e:
     # This service heavily depends on models, raise clearly if they are missing
     raise ImportError(f"Could not import required models or utils for RequisiteSelector: {e}. Ensure models (IncomingOrder, Trader, ReqTrader, FullRequisitesSettings, OrderHistory, User) are defined.")
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def find_suitable_requisite(
@@ -66,9 +69,8 @@ def find_suitable_requisite(
             .join(User, Trader.user_id == User.id) # Join with User to check User.is_active
             .join(FullRequisitesSettings, FullRequisitesSettings.requisite_id == ReqTrader.id)
             .filter(User.is_active == True)  # Trader's main account must be active
-            .filter(Trader.in_work == True)  # Trader must have self-enabled work
-            .filter(Trader.is_traffic_enabled_by_teamlead == True) # TeamLead must have enabled traffic for trader
-            .filter(ReqTrader.status == 'approve') # Requisite itself must be approved/active
+            .filter(*get_active_trader_filters()) # Use filters for active trader
+            .filter(*get_active_requisite_filters()) # Use filters for active requisite
             .filter(requisite_direction_filter) # Requisite enabled for pay_in or pay_out
             .filter(FullRequisitesSettings.lower_limit <= amount_to_check)
             .filter(FullRequisitesSettings.upper_limit >= amount_to_check)

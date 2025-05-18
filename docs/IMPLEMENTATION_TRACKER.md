@@ -48,7 +48,7 @@
     - [x] **Актуализация (v.Дата_сессии_обновления):** Расширен для поддержки ролей Support и TeamLead (`get_support_details`, `update_support_profile`, `get_teamlead_details`, `update_teamlead_profile`). Реализованы функции для получения статистики по различным ролям и управления деталями профилей администраторов (включая `granted_permissions`), как описано в `docs/ADDITIONAL_FEATURES_AND_COMPONENTS.md`.
     - [x] **Рефакторинг (Phase 5):** Функции получения статистики (`get_administrators_statistics`, `get_supports_statistics`, `get_teamleads_statistics`) и обновления профилей (`update_administrator_profile`, `update_support_profile`, `update_teamlead_profile`) рефакторены для использования `backend/utils/query_utils.py` и общей вспомогательной функции `_update_user_and_profile_generic` соответственно. Добавлены недостающее аудит-логирование и параметр `ip_address`.
 - [x] **Настройка Логирования (`logger.py`)**: Базовая конфигурация структурированного логирования.
-    - Примечания:
+    - Примечания: Логгер настроен на JSON-вывод в `backend/config/logger.py`. Большинство сервисов используют декоратор `@handle_service_exceptions` из `backend/utils/decorators.py` для унифицированного логирования.
 - [x] **Движок БД и Сессия (`engine.py`)**: Настройка `SessionLocal`.
     - Примечания:
 - [x] **Базовое Приложение FastAPI (`main.py`)**: Начальная настройка (FastAPI app, logging, Sentry init, health check, exception handlers).
@@ -124,11 +124,14 @@
 - [x] **Утилита Загрузки Конфигурации (`utils/config_loader.py`)**: Чтение настроек из БД.
     - Примечания:
 - [x] **Утилиты Исключений (`utils/exceptions.py`, `utils.exception_handlers.py`)**: Определить иерархию кастомных исключений и их глобальную обработку.
-    - Примечания: Создан базовый класс JivaPayException и специфичные исключения в utils/exceptions.py. Глобальные обработчики для этих исключений (для FastAPI) реализованы в utils/exception_handlers.py и регистрируются в server.py файлах.
+    - Примечания: Создан базовый класс JivaPayException и специфичные исключения в utils/exceptions.py. Глобальные обработчики для этих исключений (для FastAPI) реализованы в utils/exception_handlers.py и регистрируются в server.py файлах. Также создан `utils/decorators.py` с `@handle_service_exceptions` для обработки на уровне сервисов.
 - [x] **Утилиты Оповещений (`utils/notifications.py`)**: Настроить отправку оповещений о критических ошибках (Sentry).
     - Примечания: Реализована инициализация Sentry и функция report_critical_error.
 - [x] **(Новое) Утилиты для запросов (`utils/query_utils.py`) (Phase 5)**: Создан и наполнен функциями `apply_pagination`, `apply_sorting`, `apply_user_status_filter`, `apply_date_range_filter`, `get_paginated_results_and_count`. Используется многими сервисами для стандартизации обработки списков.
-- [x] **(Новое) Утилиты для фильтров запросов (`utils/query_filters.py`) (Phase 5)**: Создан с функциями `get_active_trader_filters` и `get_active_requisite_filters`. Используется в `requisite_selector.py`, `teamlead_service.py`, `requisite_service.py`.
+- [x] **(Новое) Утилиты для фильтров запросов (`utils/query_filters.py`) (Phase 5)**: Создан файл `backend/utils/query_filters.py`. 
+    - Примечания: Фильтры реализованы и активно используются в сервисах для централизации логики фильтрации.
+- [x] **(Новое) Утилиты для декораторов (`utils/decorators.py`) (Phase 5)**: Создан файл `backend/utils/decorators.py`.
+    - Примечания: Реализован декоратор `@handle_service_exceptions` для унифицированной обработки исключений и логирования в сервисах. Интегрирован с `backend.config.logger` и `utils.notifications`. Активно применяется в большинстве сервисов.
 
 ## 5. API Роутеры (`api_routers/`)
 

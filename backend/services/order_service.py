@@ -15,9 +15,13 @@ from backend.database.db import (
 from backend.services.permission_service import PermissionService
 from backend.utils.exceptions import AuthorizationError, DatabaseError
 from backend.utils import query_utils
+from backend.config.logger import get_logger
+from backend.utils.decorators import handle_service_exceptions
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+SERVICE_NAME = "order_service"
 
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def get_orders_history(
     session: Session, 
     current_user: User, 
@@ -136,16 +140,12 @@ def get_orders_history(
     }
     items_query = query_utils.apply_sorting(items_query, sort_by, sort_direction, sort_field_map, default_sort_column=OrderHistory.created_at)
 
-    try:
-        orders, total_count = query_utils.get_paginated_results_and_count(
-            base_query=items_query,
-            count_query=count_query,
-            page=page,
-            per_page=per_page
-        )
-    except DatabaseError as e:
-        logger.error(f"Database error in get_orders_history: {e}", exc_info=True)
-        raise
+    orders, total_count = query_utils.get_paginated_results_and_count(
+        base_query=items_query,
+        count_query=count_query,
+        page=page,
+        per_page=per_page
+    )
 
     return {
         "total_count": total_count,
@@ -154,6 +154,7 @@ def get_orders_history(
         "data": orders 
     }
 
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def get_orders_count(
     session: Session, 
     current_user: User,
@@ -190,12 +191,5 @@ def get_orders_count(
                 for r_status in restricted_statuses_for_count:
                     query = query.filter(OrderHistory.status.notilike(f"%{r_status}%"))
 
-    try:
-        count = query.scalar() or 0
-        return {"total_count": count} 
-    except DatabaseError as e:
-        logger.error(f"Error counting orders: {e}", exc_info=True)
-        raise
-    except Exception as e:
-        logger.error(f"Unexpected error counting orders: {e}", exc_info=True)
-        raise DatabaseError("Failed to count orders due to an unexpected error.") from e 
+    count = query.scalar() or 0
+    return {"total_count": count} 

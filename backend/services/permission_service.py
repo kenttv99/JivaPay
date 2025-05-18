@@ -11,8 +11,12 @@ from sqlalchemy.orm import Session
 from backend.database.db import User, Admin, Support, TeamLead # Assuming Profile models are correctly named
 # Import the log_event function directly
 from backend.services.audit_logger import log_event 
+from backend.config.logger import get_logger
+# Добавляем импорт декоратора
+from backend.utils.decorators import handle_service_exceptions
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+SERVICE_NAME = "permission_service" # Для использования в декораторе
 
 # Placeholder for actual Pydantic schemas if/when defined for permission updates
 # from backend.schemas_enums.user import AdminPermissionsUpdate, SupportPermissionsUpdate, TeamLeadPermissionsUpdate
@@ -58,6 +62,7 @@ class PermissionService:
                 return []
         return []
 
+    @handle_service_exceptions(logger, service_name=SERVICE_NAME) # Применяем к методу
     def update_user_permissions(
         self,
         target_user_id: int,

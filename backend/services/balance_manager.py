@@ -7,6 +7,9 @@ from typing import Tuple, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 
+from backend.config.logger import get_logger
+from backend.utils.decorators import handle_service_exceptions
+
 # Attempt to import models, DB utils, and exceptions
 try:
     # !! These models need to be defined in backend/database/models.py !!
@@ -25,8 +28,11 @@ except ImportError as e:
     # This service heavily depends on models, raise clearly if they are missing
     raise ImportError(f"Could not import required models or utils for BalanceManager: {e}. Ensure all required models are defined.")
 
-logger = logging.getLogger(__name__)
+# Добавляем импорт декоратора и определяем SERVICE_NAME
+logger = get_logger(__name__)
+SERVICE_NAME = "balance_manager"
 
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def calculate_commissions(
     order_like,
     db_session: Session,
@@ -46,68 +52,62 @@ def calculate_commissions(
         ConfigurationError: If commission settings are missing or invalid.
         DatabaseError: For underlying database issues.
     """
-    logger.debug(f"Calculating commissions for order-like object: {order_like}")
+    # logger.debug(f"Calculating commissions for order-like object: {order_like}")
+    # 1. Определяем store_id и trader_id в зависимости от типа объекта
+    if hasattr(order_like, "store_id") and hasattr(order_like, "trader_id"):
+        # Это OrderHistory – у него уже есть trader_id
+        store_id_val = order_like.store_id
+        trader_id_val = order_like.trader_id
+        order_type = order_like.order_type
+        base_amount_fiat = getattr(order_like, "total_fiat", None)
+        base_amount_crypto = getattr(order_like, "amount_crypto", None)
+    else:
+        # Предполагаем IncomingOrder; у него trader_id ещё нет
+        if trader_id is None:
+            raise ConfigurationError("trader_id must be provided when calculating commissions for IncomingOrder before OrderHistory exists.")
+        store_id_val = order_like.store_id
+        trader_id_val = trader_id
+        order_type = order_like.order_type
+        base_amount_fiat = getattr(order_like, "amount_fiat", None)
+        base_amount_crypto = getattr(order_like, "amount_crypto", None)
 
-    try:
-        # 1. Определяем store_id и trader_id в зависимости от типа объекта
-        if hasattr(order_like, "store_id") and hasattr(order_like, "trader_id"):
-            # Это OrderHistory – у него уже есть trader_id
-            store_id_val = order_like.store_id
-            trader_id_val = order_like.trader_id
-            order_type = order_like.order_type
-            base_amount_fiat = getattr(order_like, "total_fiat", None)
-            base_amount_crypto = getattr(order_like, "amount_crypto", None)
-        else:
-            # Предполагаем IncomingOrder; у него trader_id ещё нет
-            if trader_id is None:
-                raise ConfigurationError("trader_id must be provided when calculating commissions for IncomingOrder before OrderHistory exists.")
-            store_id_val = order_like.store_id
-            trader_id_val = trader_id
-            order_type = order_like.order_type
-            base_amount_fiat = getattr(order_like, "amount_fiat", None)
-            base_amount_crypto = getattr(order_like, "amount_crypto", None)
+    # 2. Загружаем актуальные настройки комиссий
+    store_setting = (
+        db_session.query(StoreCommission)
+        .filter_by(store_id=store_id_val)
+        .order_by(StoreCommission.updated_at.desc())
+        .first()
+    )
+    trader_setting = (
+        db_session.query(TraderCommission)
+        .filter_by(trader_id=trader_id_val)
+        .order_by(TraderCommission.updated_at.desc())
+        .first()
+    )
+    if not store_setting or not trader_setting:
+        logger.error("Commission settings missing for store %s or trader %s", store_id_val, trader_id_val)
+        raise ConfigurationError("Commission settings not found for store or trader.")
+    # 3. Вычисляем базовую сумму и ставки
+    if order_type == 'pay_in':
+        base_amount = base_amount_fiat or Decimal('0')
+        store_rate = store_setting.commission_payin
+        trader_rate = trader_setting.commission_payin
+    else:
+        base_amount = base_amount_crypto or Decimal('0')
+        store_rate = store_setting.commission_payout
+        trader_rate = trader_setting.commission_payout
+    # Calculate commissions (percentage of base amount)
+    store_commission = (base_amount * store_rate) / Decimal('100')
+    trader_commission = (base_amount * trader_rate) / Decimal('100')
+    logger.debug(
+        "Calculated commissions: store_comm=%s, trader_comm=%s for order_type=%s",
+        store_commission,
+        trader_commission,
+        order_type,
+    )
+    return store_commission, trader_commission
 
-        # 2. Загружаем актуальные настройки комиссий
-        store_setting = (
-            db_session.query(StoreCommission)
-            .filter_by(store_id=store_id_val)
-            .order_by(StoreCommission.updated_at.desc())
-            .first()
-        )
-        trader_setting = (
-            db_session.query(TraderCommission)
-            .filter_by(trader_id=trader_id_val)
-            .order_by(TraderCommission.updated_at.desc())
-            .first()
-        )
-        if not store_setting or not trader_setting:
-            logger.error("Commission settings missing for store %s or trader %s", store_id_val, trader_id_val)
-            raise ConfigurationError("Commission settings not found for store or trader.")
-        # 3. Вычисляем базовую сумму и ставки
-        if order_type == 'pay_in':
-            base_amount = base_amount_fiat or Decimal('0')
-            store_rate = store_setting.commission_payin
-            trader_rate = trader_setting.commission_payin
-        else:
-            base_amount = base_amount_crypto or Decimal('0')
-            store_rate = store_setting.commission_payout
-            trader_rate = trader_setting.commission_payout
-        # Calculate commissions (percentage of base amount)
-        store_commission = (base_amount * store_rate) / Decimal('100')
-        trader_commission = (base_amount * trader_rate) / Decimal('100')
-        logger.debug(
-            "Calculated commissions: store_comm=%s, trader_comm=%s for order_type=%s",
-            store_commission,
-            trader_commission,
-            order_type,
-        )
-        return store_commission, trader_commission
-    except (ConfigurationError, DatabaseError):
-        raise
-    except Exception as e:
-        logger.error(f"Error calculating commissions for order-like object: {e}", exc_info=True)
-        raise DatabaseError(f"Error calculating commissions: {e}") from e
-
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def update_balances_for_completed_order(order_id: int, db_session: Session):
     """Updates store and trader balances and records history for a completed order.
 

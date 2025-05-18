@@ -17,10 +17,14 @@ from backend.utils.exceptions import AuthorizationError, DatabaseError, NotFound
 from backend.services.audit_logger import log_event
 from backend.utils.query_filters import get_active_trader_filters, get_active_requisite_filters # Added imports
 from backend.utils import query_utils # Added import
+from backend.config.logger import get_logger # Added import
+from backend.utils.decorators import handle_service_exceptions
 # from backend.schemas_enums.requisite import RequisiteOnlineStatsSchema # For response formatting
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+SERVICE_NAME = "requisite_service" # Для использования в декораторе
 
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def get_online_requisites_stats(
     session: Session,
     current_user: User, # User performing the action
@@ -73,14 +77,12 @@ def get_online_requisites_stats(
     count_query = _apply_common_joins(count_query)
 
     # Apply core "online" filters
-    core_online_filters = [
-        *get_active_trader_filters(TraderUser_alias=TraderUser),
-        *get_active_requisite_filters()
-    ]
-    for q_filter in core_online_filters:
-        items_query = items_query.filter(q_filter)
-        count_query = count_query.filter(q_filter)
-    
+    items_query = items_query.filter(*get_active_trader_filters(user_alias=TraderUser))
+    count_query = count_query.filter(*get_active_trader_filters(user_alias=TraderUser))
+
+    items_query = items_query.filter(*get_active_requisite_filters())
+    count_query = count_query.filter(*get_active_requisite_filters())
+
     # --- Helper to apply other filters ---
     def _apply_additional_filters(query_obj: query_utils.Query, is_count_query: bool = False) -> query_utils.Query:
         if requisite_type == "pay_in":
@@ -172,16 +174,12 @@ def get_online_requisites_stats(
     default_sort = [asc(Trader.trafic_priority), asc(ReqTrader.last_used_at).nullsfirst()]
     items_query = query_utils.apply_sorting(items_query, sort_by, sort_direction, sort_field_map, default_sort_column=default_sort)
 
-    try:
-        results, total_count = query_utils.get_paginated_results_and_count(
-            base_query=items_query,
-            count_query=count_query,
-            page=page,
-            per_page=per_page
-        )
-    except DatabaseError as e:
-        logger.error(f"Database error in get_online_requisites_stats: {e}", exc_info=True)
-        raise
+    results, total_count = query_utils.get_paginated_results_and_count(
+        base_query=items_query,
+        count_query=count_query,
+        page=page,
+        per_page=per_page
+    )
 
     requisites_data = []
     for row_items in results: # results is a list of Tuples (ReqTrader, FullRequisitesSettings, Trader, TraderUser)
@@ -210,6 +208,7 @@ def get_online_requisites_stats(
         "data": requisites_data 
     }
 
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def get_requisite_details_for_moderation(
     session: Session,
     requisite_id: int,
@@ -228,18 +227,14 @@ def get_requisite_details_for_moderation(
         logger.warning(f"Admin user {admin_user.id} lacks permission to view requisite {requisite_id} details for moderation.")
         raise AuthorizationError("Not authorized to view requisite details for moderation.")
 
-    try:
-        requisite = session.query(ReqTrader)\
-            .filter(ReqTrader.id == requisite_id)\
-            .options(
-                joinedload(ReqTrader.trader).joinedload(Trader.user), # Trader and their User details
-                joinedload(ReqTrader.payment_method),
-                joinedload(ReqTrader.bank),
-                joinedload(ReqTrader.full_settings) # Assuming FullRequisitesSettings is related as 'full_settings'
-            ).one_or_none()
-    except Exception as e:
-        logger.error(f"Database error when querying requisite {requisite_id} for moderation: {e}", exc_info=True)
-        raise DatabaseError(f"Error retrieving requisite {requisite_id} for moderation.") from e
+    requisite = session.query(ReqTrader)\
+        .filter(ReqTrader.id == requisite_id)\
+        .options(
+            joinedload(ReqTrader.trader).joinedload(Trader.user), # Trader and their User details
+            joinedload(ReqTrader.payment_method),
+            joinedload(ReqTrader.bank),
+            joinedload(ReqTrader.full_settings) # Assuming FullRequisitesSettings is related as 'full_settings'
+        ).one_or_none()
 
     if not requisite:
         raise NotFoundError(f"Requisite with ID {requisite_id} not found.")
@@ -247,6 +242,7 @@ def get_requisite_details_for_moderation(
     logger.info(f"Admin user {admin_user.id} accessed requisite {requisite_id} details for moderation.")
     return requisite
 
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def set_requisite_status(
     session: Session,
     requisite_id: int,
@@ -313,34 +309,19 @@ def set_requisite_status(
         return requisite # No change, no audit for actual change needed
 
     requisite.status = new_status.lower()
-    try:
-        session.commit()
-        session.refresh(requisite)
-        logger.info(f"Admin user {admin_user.id} successfully set status of requisite {requisite_id} from '{old_status}' to '{new_status}'. Reason: {reason or 'N/A'}")
-        # Log successful status change to audit log
-        log_event(
-            user_id=admin_user.id,
-            action="REQUISITE_STATUS_CHANGED_SUCCESS",
-            target_entity="ReqTrader",
-            target_id=requisite_id,
-            details={"old_status": old_status, "new_status": new_status, "reason": reason},
-            level="INFO",
-            ip_address=ip_address
-        )
-        return requisite
-    except Exception as e:
-        session.rollback()
-        logger.error(f"Database error when setting status for requisite {requisite_id} by admin {admin_user.id}: {e}", exc_info=True)
-        # Log failed status change to audit log
-        log_event(
-            user_id=admin_user.id,
-            action="SET_REQUISITE_STATUS_FAILED_DB",
-            target_entity="ReqTrader",
-            target_id=requisite_id,
-            details={"new_status": new_status, "old_status": old_status, "error": str(e)},
-            level="ERROR",
-            ip_address=ip_address
-        )
-        raise DatabaseError(f"Failed to set status for requisite {requisite_id}.") from e
+    session.commit()
+    session.refresh(requisite)
+    logger.info(f"Admin user {admin_user.id} successfully set status of requisite {requisite_id} from '{old_status}' to '{new_status}'. Reason: {reason or 'N/A'}")
+    # Log successful status change to audit log
+    log_event(
+        user_id=admin_user.id,
+        action="REQUISITE_STATUS_CHANGED_SUCCESS",
+        target_entity="ReqTrader",
+        target_id=requisite_id,
+        details={"old_status": old_status, "new_status": new_status, "reason": reason},
+        level="INFO",
+        ip_address=ip_address
+    )
+    return requisite
 
 # Next: trader_service.py and merchant_service.py 

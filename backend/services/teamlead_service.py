@@ -18,9 +18,13 @@ from backend.utils.exceptions import AuthorizationError, DatabaseError, NotFound
 # from backend.schemas_enums.trader import TraderBasicInfoSchema # For managed traders list
 from backend.services.audit_logger import log_event
 from backend.utils.query_filters import get_active_trader_and_requisite_filters # Added import
+from backend.config.logger import get_logger
+from backend.utils.decorators import handle_service_exceptions
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+SERVICE_NAME = "teamlead_service" # Для использования в декораторе
 
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def get_managed_traders(
     session: Session, 
     current_teamlead_user: User
@@ -59,6 +63,7 @@ def get_managed_traders(
         })
     return managed_traders
 
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def set_trader_traffic_status_by_teamlead(
     session: Session, 
     trader_id_to_manage: int, 
@@ -126,6 +131,7 @@ def set_trader_traffic_status_by_teamlead(
         )
         raise DatabaseError("Failed to set trader traffic status.") from e
 
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def get_teamlead_full_details(
     session: Session, 
     teamlead_id_to_view: int, 
@@ -190,6 +196,7 @@ def get_teamlead_full_details(
     }
     return response_data
 
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def get_team_statistics(
     session: Session, 
     current_teamlead_user: User

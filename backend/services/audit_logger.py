@@ -10,12 +10,13 @@ from typing import Optional, Dict, Any, List
 from sqlalchemy.orm import Session
 from sqlalchemy import desc # Added for ordering
 
+from backend.config.logger import get_logger
 from backend.database.db import AuditLog, User # Added User for type hint
 from backend.database.utils import create_object, get_db_session_cm
 from backend.utils.exceptions import DatabaseError, AuthorizationError
 from backend.services.permission_service import PermissionService # For checking permissions
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 def log_event(
     user_id: Optional[int],

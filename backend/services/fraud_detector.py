@@ -9,11 +9,14 @@ from enum import Enum
 from sqlalchemy.orm import Session
 from decimal import Decimal
 from backend.utils.config_loader import get_typed_config_value
+from backend.config.logger import get_logger
+from backend.utils.decorators import handle_service_exceptions
 
 from backend.database.db import IncomingOrder
 from backend.utils.exceptions import FraudDetectedError
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+SERVICE_NAME = "fraud_detector"
 
 class FraudStatus(Enum):
     ALLOW = "allow"
@@ -21,6 +24,7 @@ class FraudStatus(Enum):
     REQUIRE_MANUAL_REVIEW = "manual_review"
 
 
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def check_incoming_order(
     incoming_order: IncomingOrder,
     db_session: Session
@@ -51,10 +55,10 @@ def check_incoming_order(
     # Deny if above deny threshold
     if deny_threshold is not None and amount is not None and amount > deny_threshold:
         logger.warning(f"IncomingOrder {incoming_order.id} denied by fraud (>{deny_threshold}).")
-        return FraudStatus.DENY
+        raise FraudDetectedError(f"Order {incoming_order.id} denied by fraud amount > {deny_threshold}.", limit_type=FraudStatus.DENY)
     # Manual review if above manual threshold
     if manual_threshold is not None and amount is not None and amount > manual_threshold:
         logger.info(f"IncomingOrder {incoming_order.id} requires manual review (>{manual_threshold}).")
-        return FraudStatus.REQUIRE_MANUAL_REVIEW
+        raise FraudDetectedError(f"Order {incoming_order.id} requires manual review amount > {manual_threshold}.", limit_type=FraudStatus.REQUIRE_MANUAL_REVIEW)
     # Default allow
     return FraudStatus.ALLOW 

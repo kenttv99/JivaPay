@@ -15,9 +15,13 @@ from backend.database.db import (
 from backend.services.permission_service import PermissionService
 from backend.utils.exceptions import AuthorizationError, DatabaseError, NotFoundError
 from backend.utils import query_utils
+from backend.config.logger import get_logger
+from backend.utils.decorators import handle_service_exceptions
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+SERVICE_NAME = "merchant_service"
 
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def get_merchants_statistics(
     session: Session,
     current_user: User, 
@@ -136,16 +140,12 @@ def get_merchants_statistics(
     }
     items_query = query_utils.apply_sorting(items_query, sort_by, sort_direction, sort_field_map, default_sort_column=MerchantUser.created_at)
 
-    try:
-        results, total_count = query_utils.get_paginated_results_and_count(
-            base_query=items_query,
-            count_query=count_query,
-            page=page,
-            per_page=per_page
-        )
-    except DatabaseError as e:
-        logger.error(f"Database error in get_merchants_statistics: {e}", exc_info=True)
-        raise
+    results, total_count = query_utils.get_paginated_results_and_count(
+        base_query=items_query,
+        count_query=count_query,
+        page=page,
+        per_page=per_page
+    )
 
     data = []
     for row in results:
@@ -171,6 +171,7 @@ def get_merchants_statistics(
         "statistics_columns": statistics_columns_def
     }
 
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def get_merchant_full_details(
     session: Session, 
     merchant_id_to_view: int, 
@@ -203,8 +204,6 @@ def get_merchant_full_details(
             selectinload(Merchant.stores).selectinload(MerchantStore.store_commissions),
             selectinload(Merchant.stores).selectinload(MerchantStore.store_gateways),
             selectinload(Merchant.stores).selectinload(MerchantStore.balance_stores),
-            # To get balance history per store, this might need to be a separate query or careful structuring
-            # selectinload(Merchant.stores).selectinload(MerchantStore.balance_store_history).limit(10), # Example limit
             selectinload(Merchant.order_histories).order_by(desc(OrderHistory.created_at)).limit(50) # Limit history
         ).one_or_none()
 

@@ -8,7 +8,10 @@ from sqlalchemy.orm import Session, Query
 from sqlalchemy import func, desc, asc, Column
 from datetime import datetime
 
-logger = logging.getLogger(__name__)
+from backend.config.logger import get_logger
+from backend.utils.exceptions import DatabaseError
+
+logger = get_logger(__name__)
 
 def apply_pagination(query: Query, page: int, per_page: int) -> Query:
     """Applies pagination to a SQLAlchemy query."""

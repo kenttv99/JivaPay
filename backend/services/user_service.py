@@ -12,13 +12,16 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func, or_
 
 from backend.config.crypto import hash_password, verify_password
+from backend.config.logger import get_logger
 from backend.database.db import User, Role, Admin, Support, TeamLead, Trader, Merchant
 from backend.utils.exceptions import AuthenticationError, AuthorizationError, DatabaseError, NotFoundError
 from backend.services.permission_service import PermissionService
 from backend.services.audit_logger import log_event
 from backend.utils import query_utils
+from backend.utils.decorators import handle_service_exceptions
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+SERVICE_NAME = "user_service" # Для использования в декораторе
 
 def get_user_by_email(session: Session, email: str) -> User | None:
     """Retrieve a user by email or return None if not found."""
@@ -36,75 +39,132 @@ def get_user_by_id(session: Session, user_id: int) -> User | None:
         logger.error(f"Error retrieving user by ID {user_id}: {e}", exc_info=True)
         raise DatabaseError(f"Error retrieving user by ID {user_id}: {e}") from e
 
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def create_user(
-    session: Session, 
-    email: str, 
-    password: str, 
-    role_name: str, 
+    db_session: Session,
+    email: str,
+    password: str,
+    role_name: str,
+    first_name: Optional[str] = None,
+    last_name: Optional[str] = None,
+    middle_name: Optional[str] = None,
+    phone_number: Optional[str] = None,
+    permissions: Optional[List[str]] = None,
+    is_active: bool = True,
     profile_data: Optional[Dict[str, Any]] = None
 ) -> User:
-    """Create a new user with the given email, password, role, and optional profile data."""
-    try:
-        if get_user_by_email(session, email):
-            raise AuthorizationError(f"User with email '{email}' already exists.")
-        
-        role = session.query(Role).filter_by(name=role_name).one_or_none()
-        if not role:
-            raise DatabaseError(f"Role '{role_name}' not found.")
-        
-        hashed_password = hash_password(password)
-        user = User(email=email, password_hash=hashed_password, role_id=role.id, is_active=True)
-        session.add(user)
-        session.flush() # Flush to get user.id for profile creation
+    """Creates a new user with a specified role and profile.
 
-        # Create profile based on role
-        if profile_data is None: profile_data = {}
+    Handles password hashing and profile creation based on role.
+    Raises DatabaseError on failure.
+    """
+    logger.info(f"Attempting to create user with email: {email}, role: {role_name}")
+    # Check if user already exists
+    existing_user = db_session.query(User).filter(User.email == email).first()
+    if existing_user:
+        raise DatabaseError(f"User with email {email} already exists.")
 
-        if role_name == "admin":
-            admin_profile = Admin(user_id=user.id, username=profile_data.get("username", email), granted_permissions=profile_data.get("granted_permissions", []))
-            session.add(admin_profile)
-        elif role_name == "support":
-            support_profile = Support(
-                user_id=user.id, 
-                username=profile_data.get("username", email), 
-                role_description=profile_data.get("role_description"),
-                granted_permissions=profile_data.get("granted_permissions", [])
-            )
-            session.add(support_profile)
-        elif role_name == "teamlead":
-            teamlead_profile = TeamLead(user_id=user.id, username=profile_data.get("username", email), granted_permissions=profile_data.get("granted_permissions", []))
-            session.add(teamlead_profile)
-        elif role_name == "trader":
-            # Basic trader profile creation, can be expanded
-            trader_profile = Trader(user_id=user.id, **profile_data) # Assumes profile_data matches Trader fields
-            session.add(trader_profile)
-        elif role_name == "merchant":
-            # Basic merchant profile creation
-            merchant_profile = Merchant(user_id=user.id, **profile_data)
-            session.add(merchant_profile)
-        
-        session.commit() # Commit after all additions
-        session.refresh(user)
-        logger.info(f"Created user '{email}' with role '{role_name}'")
-        return user
-    except (AuthenticationError, AuthorizationError, DatabaseError):
-        session.rollback()
-        raise
-    except Exception as e:
-        session.rollback()
-        logger.error(f"Error creating user '{email}': {e}", exc_info=True)
-        raise DatabaseError(f"Error creating user '{email}': {e}") from e
+    # Get role or create if it doesn't exist (simple role handling)
+    role = db_session.query(Role).filter(Role.name == role_name).first()
+    if not role:
+        # This part might need more robust role creation/management logic
+        logger.warning(f"Role '{role_name}' not found, creating it.")
+        role = Role(name=role_name, description=f"{role_name.capitalize()} role")
+        db_session.add(role)
+        # Flush to get role.id if needed immediately, but commit will handle it
+        # db_session.flush() # Consider if role.id is needed before user creation
 
-def authenticate_user(session: Session, email: str, password: str) -> User:
-    """Authenticate a user by email and password. Returns the User if valid."""
-    user = get_user_by_email(session, email)
-    if not user or not verify_password(password, user.password_hash):
-        logger.warning(f"Authentication failed for email: {email}")
+    hashed_pass = hash_password(password)
+    new_user = User(
+        email=email,
+        hashed_password=hashed_pass,
+        role_id=role.id, # Будет установлено после создания роли, если ее не было
+        is_active=is_active,
+        first_name=first_name,
+        last_name=last_name,
+        middle_name=middle_name,
+        phone_number=phone_number,
+        # permissions=permissions # Permissions are usually tied to roles or profiles
+    )
+    db_session.add(new_user)
+    db_session.flush() # To get new_user.id for profile creation
+
+    # Create profile based on role
+    if profile_data is None:
+        profile_data = {}
+    
+    profile_data['user_id'] = new_user.id # Ensure user_id is in profile_data
+
+    if role_name == "admin":
+        # Admin profile specific fields can be added here from profile_data
+        admin_profile = Admin(**profile_data)
+        db_session.add(admin_profile)
+    elif role_name == "support":
+        support_profile = Support(**profile_data)
+        db_session.add(support_profile)
+    elif role_name == "teamlead":
+        teamlead_profile = TeamLead(**profile_data)
+        db_session.add(teamlead_profile)
+    elif role_name == "trader":
+        trader_profile = Trader(**profile_data) # Add trader specific fields
+        db_session.add(trader_profile)
+    elif role_name == "merchant":
+        merchant_profile = Merchant(**profile_data) # Add merchant specific fields
+        db_session.add(merchant_profile)
+    else:
+        logger.warning(f"No specific profile creation logic for role: {role_name}")
+
+    db_session.commit()
+    db_session.refresh(new_user)
+    # db_session.refresh(role) # If role was newly created and needs to be used with refreshed data
+
+    # Load related profile for the returned user object
+    if role_name == "admin":
+        db_session.refresh(new_user.admin_profile)
+    elif role_name == "support":
+        db_session.refresh(new_user.support_profile)
+    # ... and so on for other roles as needed
+
+    logger.info(f"User {email} (ID: {new_user.id}) created successfully with role {role_name}.")
+    return new_user
+
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
+def authenticate_user(db_session: Session, email: str, password: str) -> Optional[User]:
+    """Authenticates a user by email and password.
+
+    Returns the User object on success, None on failure.
+    Raises AuthenticationError for invalid credentials or inactive user.
+    """
+    user = db_session.query(User).options(joinedload(User.role)).filter(User.email == email).one_or_none()
+
+    if not user:
+        logger.warning(f"Authentication failed: User not found for email {email}.")
         raise AuthenticationError("Invalid email or password.")
+
     if not user.is_active:
-        logger.warning(f"Authentication attempt for inactive user: {email}")
-        raise AuthorizationError("User account is inactive.")
-    logger.info(f"Authenticated user '{email}' successfully.")
+        logger.warning(f"Authentication failed: User {email} is inactive.")
+        raise AuthenticationError("User account is inactive.")
+
+    if not verify_password(password, user.hashed_password):
+        logger.warning(f"Authentication failed: Invalid password for user {email}.")
+        raise AuthenticationError("Invalid email or password.")
+
+    # Load profile relationships based on role name after successful authentication
+    # This ensures that when the user object is returned, its profile attribute is populated.
+    # This is crucial for PermissionService or other services that rely on accessing user.admin_profile, user.support_profile etc.
+    role_name = user.role.name
+    if role_name == 'admin':
+        db_session.query(Admin).filter_by(user_id=user.id).one_or_none() # Loads relation
+    elif role_name == 'support':
+        db_session.query(Support).filter_by(user_id=user.id).one_or_none() # Loads relation
+    elif role_name == 'teamlead':
+        db_session.query(TeamLead).filter_by(user_id=user.id).one_or_none() # Loads relation
+    elif role_name == 'trader':
+        db_session.query(Trader).filter_by(user_id=user.id).one_or_none() # Loads relation
+    elif role_name == 'merchant':
+        db_session.query(Merchant).filter_by(user_id=user.id).one_or_none() # Loads relation
+
+    logger.info(f"User {email} authenticated successfully.")
     return user
 
 def get_administrators_statistics(

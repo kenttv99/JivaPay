@@ -11,10 +11,17 @@ from backend.database.db import BalancePlatform, CryptoCurrency
 # Assuming Pydantic schema for response if needed
 # from backend.schemas_enums.platform import PlatformBalanceItemSchema
 
+from backend.config.logger import get_logger
+from backend.utils.decorators import handle_service_exceptions
+
+logger = get_logger(__name__)
+SERVICE_NAME = "platform_service"
+
 class PlatformService:
     def __init__(self, db_session: Session):
         self.db = db_session
 
+    @handle_service_exceptions(logger, service_name=SERVICE_NAME)
     def get_platform_balances(self) -> List[Dict[str, Union[str, Decimal]]]:
         """
         Aggregates and returns the current platform balances per currency.

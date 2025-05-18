@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from decimal import Decimal
 
 from backend.database.db import OrderHistory
+from backend.config.logger import get_logger
 
 # Attempt imports
 try:
@@ -29,8 +30,12 @@ try:
 except ImportError as e:
     raise ImportError(f"Could not import required modules for GatewayService: {e}")
 
-logger = logging.getLogger(__name__)
+# Добавляем импорт декоратора и определяем SERVICE_NAME
+from backend.utils.decorators import handle_service_exceptions
+logger = get_logger(__name__)
+SERVICE_NAME = "gateway_service"
 
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def _get_merchant_store_by_api_key(api_key: Optional[str], db: Session) -> MerchantStore:
     """Authenticates and retrieves the merchant store based on API key."""
     if not api_key:
@@ -47,6 +52,7 @@ def _get_merchant_store_by_api_key(api_key: Optional[str], db: Session) -> Merch
     logger.debug(f"Authenticated merchant store ID: {store.id} using API key.")
     return store
 
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def handle_init_request(
     api_key: Optional[str],
     request_data: IncomingOrderCreate, # Or specific GatewayInitRequest schema
@@ -133,6 +139,7 @@ def handle_init_request(
             raise
         raise OrderProcessingError(msg) from e
 
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def get_order_status(order_identifier: str, db: Session) -> Any: # Return type depends on desired response schema
     """Retrieves the status details for a given order identifier."""
     logger.debug(f"Getting status for order identifier: {order_identifier}")
@@ -150,6 +157,7 @@ def get_order_status(order_identifier: str, db: Session) -> Any: # Return type d
         pass
     raise OrderProcessingError(f"Order not found: {order_identifier}", status_code=404)
 
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def handle_client_confirmation(
     order_identifier: str, 
     uploaded_url: Optional[str], 
@@ -168,7 +176,7 @@ def handle_client_confirmation(
     updated = order_status_manager.confirm_payment_by_client(
         order_id=oh.id,
         receipt=uploaded_url.encode('utf-8'),
-        filename=uploaded_url.split('/')[-1],
+        filename=uploaded_url.split('/')[-1] if uploaded_url else "receipt.bin",
         db_session=db
     )
     return updated 

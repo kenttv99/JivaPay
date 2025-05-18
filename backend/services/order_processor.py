@@ -8,6 +8,8 @@ import uuid
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
+from backend.config.logger import get_logger
+
 # Attempt to import models, DB utils, other services, and exceptions
 try:
     # !! Models needed: IncomingOrder, OrderHistory, etc. !!
@@ -25,7 +27,7 @@ try:
 except ImportError as e:
     raise ImportError(f"Could not import required modules for OrderProcessor: {e}. Ensure models and other services are available.")
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 def process_incoming_order(incoming_order_id: int):
     """Processes a single incoming order by finding a requisite and creating an OrderHistory record.

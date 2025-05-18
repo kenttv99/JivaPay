@@ -16,10 +16,12 @@ from backend.database.db import (
 )
 from backend.services.permission_service import PermissionService
 from backend.utils.exceptions import AuthorizationError, DatabaseError, NotFoundError
-from backend.utils import query_utils # Added import
+from backend.utils import query_utils
+from backend.config.logger import get_logger
+from backend.utils.query_filters import get_active_requisite_filters
 # from backend.schemas_enums.trader import TraderStatsSchema, TraderFullDetailsSchema # For response formatting
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 def get_traders_statistics(
     session: Session,
@@ -98,12 +100,12 @@ def get_traders_statistics(
         items_query = items_query.join(ReqTrader, Trader.id == ReqTrader.trader_id)\
                                  .join(PaymentMethod, ReqTrader.method_id == PaymentMethod.id)\
                                  .filter(PaymentMethod.id == payment_method_id)\
-                                 .filter(ReqTrader.status == 'approve')
+                                 .filter(*get_active_requisite_filters())
         
         count_query = count_query.join(ReqTrader, Trader.id == ReqTrader.trader_id)\
                                  .join(PaymentMethod, ReqTrader.method_id == PaymentMethod.id)\
                                  .filter(PaymentMethod.id == payment_method_id)\
-                                 .filter(ReqTrader.status == 'approve')
+                                 .filter(*get_active_requisite_filters())
     
     # --- Granular permission filtering for Support ---
     allowed_pm_ids_for_support_view = None
@@ -156,8 +158,8 @@ def get_traders_statistics(
                 items_query = items_query.filter(PaymentMethod.id.in_(allowed_pm_ids_for_support_view))
                 count_query = count_query.filter(PaymentMethod.id.in_(allowed_pm_ids_for_support_view))
                 # Ensure ReqTrader is active for this filter context
-                items_query = items_query.filter(ReqTrader.status == 'approve') 
-                count_query = count_query.filter(ReqTrader.status == 'approve')
+                items_query = items_query.filter(*get_active_requisite_filters())
+                count_query = count_query.filter(*get_active_requisite_filters())
 
     # --- Subqueries for aggregated data (turnover, order_count, requisite_count) ---
     # These will be added as columns to the items_query. They do not affect the count_query.
@@ -188,7 +190,7 @@ def get_traders_statistics(
         requisite_count_subquery = session.query(
             ReqTrader.trader_id,
             func.count(ReqTrader.id).label("total_requisites")
-        ).filter(ReqTrader.status == 'approve').group_by(ReqTrader.trader_id).subquery('req_count_sq')
+        ).filter(*get_active_requisite_filters()).group_by(ReqTrader.trader_id).subquery('req_count_sq')
         items_query = items_query.outerjoin(requisite_count_subquery, Trader.id == requisite_count_subquery.c.trader_id)
         req_count_sq_col = func.coalesce(requisite_count_subquery.c.total_requisites, 0)
         items_query = items_query.add_columns(req_count_sq_col.label("calculated_requisite_count"))

@@ -20,10 +20,13 @@ try:
     # from backend.database.utils import get_db_session 
     from backend.database.utils import get_object_or_none
     from backend.utils.exceptions import NotificationError, ConfigurationError
+    from backend.config.logger import get_logger
+    from backend.utils.decorators import handle_service_exceptions
 except ImportError as e:
      raise ImportError(f"Could not import required modules for CallbackService: {e}")
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+SERVICE_NAME = "callback_service"
 
 # --- Configuration --- #
 CALLBACK_TIMEOUT_SECONDS = 15
@@ -79,6 +82,7 @@ def _prepare_callback_payload(order: Any) -> Dict[str, Any]: # Accept OrderHisto
 
 # @celery_app.task(bind=True, max_retries=CALLBACK_MAX_RETRIES, default_retry_delay=CALLBACK_RETRY_DELAY)
 # def send_merchant_callback_task(self, order_id: int, order_model_name: str):
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 async def send_merchant_callback(
     order: Any, # Pass the loaded OrderHistory or IncomingOrder object
     merchant_store: MerchantStore # Pass the loaded MerchantStore object
@@ -132,28 +136,6 @@ async def send_merchant_callback(
             
             logger.info(f"Callback sent successfully for Order ID {order_id_log}. Merchant server responded with status: {response.status_code}")
             # TODO: Potentially log merchant response body if needed for debugging
-
-    except httpx.TimeoutException as e:
-        logger.error(f"Callback timeout for Order ID {order_id_log} to URL {callback_url}. Error: {e}")
-        # Raise specific exception for retry if using Celery
-        # raise NotificationError("Callback timeout") from e 
-        # If called directly, decide how to handle retry or failure
-        raise NotificationError("Callback timed out") from e # Example direct raise
-        
-    except httpx.RequestError as e:
-        # Includes connection errors, invalid URL, etc.
-        logger.error(f"Callback request error for Order ID {order_id_log} to URL {callback_url}. Error: {e}")
-        # Raise specific exception for retry if using Celery
-        # raise NotificationError(f"Callback request error: {e}") from e
-        raise NotificationError(f"Callback request error: {e}") from e
-        
-    except httpx.HTTPStatusError as e:
-        # Handle 4xx/5xx responses from the merchant server
-        logger.error(f"Callback failed for Order ID {order_id_log}. Merchant URL {callback_url} responded with status {e.response.status_code}. Response: {e.response.text[:500]}")
-        # Treat non-2xx responses as failure, potentially retryable
-        # Raise specific exception for retry if using Celery
-        # raise NotificationError(f"Callback failed with status {e.response.status_code}") from e
-        raise NotificationError(f"Callback failed with status {e.response.status_code}") from e
 
     except Exception as e:
         # Catch any other unexpected errors during callback sending

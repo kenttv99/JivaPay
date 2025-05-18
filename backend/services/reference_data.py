@@ -6,6 +6,8 @@ import json
 from typing import Optional, Any, Dict
 from redis import Redis, RedisError
 from sqlalchemy.orm import Session
+from backend.config.logger import get_logger
+from backend.utils.decorators import handle_service_exceptions
 
 # Attempt to import models, DB utils, and exceptions
 try:
@@ -17,7 +19,8 @@ except ImportError:
     from ..database.utils import get_object_or_none
     from ..utils.exceptions import CacheError, DatabaseError, ConfigurationError
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+SERVICE_NAME = "reference_data_service"
 
 # --- Redis Cache Client Configuration --- #
 REDIS_URL = os.getenv("REDIS_URL")
@@ -107,6 +110,7 @@ def _delete_from_cache(key: str):
 # Note: These functions assume Pydantic schemas or dict representations for return values
 # Adjust based on actual model structure and desired return type (e.g., SQLAlchemy objects)
 
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def get_bank_details(bank_id: int, db: Session) -> Optional[Dict[str, Any]]:
     """Gets bank details, using cache first, then DB."""
     cache_key = f"bank:{bank_id}"
@@ -114,29 +118,21 @@ def get_bank_details(bank_id: int, db: Session) -> Optional[Dict[str, Any]]:
     if cached_details is not None:
         return cached_details
 
-    try:
-        bank = get_object_or_none(db, Bank, id=bank_id)
-        if bank:
-            bank_details = {
-                "id": bank.id,
-                "name": bank.public_name or bank.bank_name,
-                "fiat_currency_id": bank.fiat_id,
-                "currency_code": bank.fiat.currency_code if bank.fiat else None,
-                "access": bank.access,
-            }
-            _set_to_cache(cache_key, bank_details)
-            return bank_details
-        else:
-            # Cache the fact that it wasn't found? Optional.
-            # _set_to_cache(cache_key, None, ttl=60) # Cache non-existence for 1 min
-            return None
-    except DatabaseError as e:
-        logger.error(f"Database error fetching bank details for id {bank_id}: {e}", exc_info=True)
-        raise # Re-raise the DatabaseError
-    except Exception as e:
-        logger.error(f"Unexpected error fetching bank details for id {bank_id}: {e}", exc_info=True)
-        raise DatabaseError(f"Unexpected error fetching bank details: {e}") from e # Wrap in DatabaseError
+    bank = get_object_or_none(db, Bank, id=bank_id)
+    if bank:
+        bank_details = {
+            "id": bank.id,
+            "name": bank.public_name or bank.bank_name,
+            "fiat_currency_id": bank.fiat_id,
+            "currency_code": bank.fiat.currency_code if bank.fiat else None,
+            "access": bank.access,
+        }
+        _set_to_cache(cache_key, bank_details)
+        return bank_details
+    else:
+        return None
 
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def get_payment_method_details(method_id: int, db: Session) -> Optional[Dict[str, Any]]:
     """Gets payment method details, using cache first, then DB."""
     cache_key = f"payment_method:{method_id}"
@@ -144,58 +140,43 @@ def get_payment_method_details(method_id: int, db: Session) -> Optional[Dict[str
     if cached_details is not None:
         return cached_details
 
-    try:
-        method = get_object_or_none(db, PaymentMethod, id=method_id)
-        if method:
-            method_details = {
-                "id": method.id,
-                "method_name": method.method_name,
-                "public_name": method.public_name,
-                "access": method.access,
-            }
-            _set_to_cache(cache_key, method_details)
-            return method_details
-        else:
-            return None
-    except DatabaseError as e:
-        logger.error(f"Database error fetching payment method details for id {method_id}: {e}", exc_info=True)
-        raise
-    except Exception as e:
-        logger.error(f"Unexpected error fetching payment method details for id {method_id}: {e}", exc_info=True)
-        raise DatabaseError(f"Unexpected error fetching payment method details: {e}") from e
+    method = get_object_or_none(db, PaymentMethod, id=method_id)
+    if method:
+        method_details = {
+            "id": method.id,
+            "method_name": method.method_name,
+            "public_name": method.public_name,
+            "access": method.access,
+        }
+        _set_to_cache(cache_key, method_details)
+        return method_details
+    else:
+        return None
 
-
+@handle_service_exceptions(logger, service_name=SERVICE_NAME)
 def get_exchange_rate(crypto_id: int, fiat_id: int, db: Session) -> Optional[Dict[str, Any]]:
     """Gets exchange rate details, using cache first, then DB."""
-    # Assuming a model `ExchangeRate` exists with crypto_currency_id and fiat_currency_id
     cache_key = f"exchange_rate:{crypto_id}:{fiat_id}"
     cached_details = _get_from_cache(cache_key)
     if cached_details is not None:
         return cached_details
 
-    try:
-        rate = get_object_or_none(db, ExchangeRate, crypto_currency_id=crypto_id, fiat_currency_id=fiat_id)
-        if rate:
-            rate_details = {
-                "id": rate.id,
-                "currency": rate.currency,
-                "fiat": rate.fiat,
-                "buy_rate": str(rate.buy_rate),
-                "sell_rate": str(rate.sell_rate),
-                "median_rate": str(rate.median_rate),
-                "source": rate.source,
-                "updated_at": rate.updated_at.isoformat() if rate.updated_at else None,
-            }
-            _set_to_cache(cache_key, rate_details)
-            return rate_details
-        else:
-            logger.warning(f"Exchange rate not found for crypto {crypto_id} and fiat {fiat_id}")
-            return None
-    except DatabaseError as e:
-        logger.error(f"Database error fetching exchange rate for crypto {crypto_id}, fiat {fiat_id}: {e}", exc_info=True)
-        raise
-    except Exception as e:
-        logger.error(f"Unexpected error fetching exchange rate for crypto {crypto_id}, fiat {fiat_id}: {e}", exc_info=True)
-        raise DatabaseError(f"Unexpected error fetching exchange rate: {e}") from e
+    rate = get_object_or_none(db, ExchangeRate, crypto_currency_id=crypto_id, fiat_currency_id=fiat_id)
+    if rate:
+        rate_details = {
+            "id": rate.id,
+            "currency": rate.currency,
+            "fiat": rate.fiat,
+            "buy_rate": str(rate.buy_rate),
+            "sell_rate": str(rate.sell_rate),
+            "median_rate": str(rate.median_rate),
+            "source": rate.source,
+            "updated_at": rate.updated_at.isoformat() if rate.updated_at else None,
+        }
+        _set_to_cache(cache_key, rate_details)
+        return rate_details
+    else:
+        logger.warning(f"Exchange rate not found for crypto {crypto_id} and fiat {fiat_id}")
+        return None
 
 # Add other functions for reference data (e.g., get_currency_details) following the same pattern. 
