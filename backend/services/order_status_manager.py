@@ -11,7 +11,7 @@ from sqlalchemy.orm import joinedload # For eager loading
 
 # Attempt to import models, DB utils, exceptions, and worker tasks
 
-# !! Models needed: OrderHistory, User (or specific actor models), potentially UploadedDocument !!
+    # !! Models needed: OrderHistory, User (or specific actor models), potentially UploadedDocument !!
 from backend.database.db import OrderHistory, UploadedDocument, User, IncomingOrder # Added IncomingOrder
 from backend.database.db_ops import get_entity_by_id_logged_async, create_object_async, update_object_db_async # Async versions
 from backend.exceptions.custom_exceptions import (
@@ -20,14 +20,14 @@ from backend.exceptions.custom_exceptions import (
     DatabaseError,
     OrderProcessingError,
     ObjectNotFoundError # Added
-)
-# !! Need worker task for async balance update !!
+    )
+    # !! Need worker task for async balance update !!
 # from backend.worker.tasks import update_balances_task # Assuming this task exists
-# !! Need S3 client if handling uploads here !!
+    # !! Need S3 client if handling uploads here !!
 from backend.utils.s3_client import upload_fileobj_async # Expecting async version or wrapper
-from backend.config.logger import get_logger
+    from backend.config.logger import get_logger
 # from backend.services.balance_manager import update_balances_for_completed_order # Ensure this is async or called carefully
-from backend.config.settings import settings
+    from backend.config.settings import settings
 # from backend.services.audit_service import log_event # Needs to be async: log_event_async
 from backend.services.audit_service import log_event_async # Expecting async version
 from backend.utils.decorators import handle_service_exceptions
@@ -102,8 +102,8 @@ class OrderStatusManager:
         receipt_content: Optional[bytes] = None, 
         receipt_filename: Optional[str] = None,
         # other_details: Optional[Dict[str, Any]] = None # For future use
-    ) -> OrderHistory:
-        """
+) -> OrderHistory:
+    """
         Confirms an order by a trader. Primarily for PayOuts where trader uploads proof,
         or for PayIns if a specific trader confirmation step is needed after client.
         Updates order status to 'completed' and can trigger balance updates.
@@ -131,7 +131,7 @@ class OrderStatusManager:
 
         receipt_url_db = order_history.trader_receipt_url
         if receipt_content and receipt_filename:
-            bucket = settings.S3_BUCKET_NAME
+    bucket = settings.S3_BUCKET_NAME
             s3_key = f"receipts_trader/order_{order_history.id}/{datetime.datetime.now(datetime.timezone.utc).timestamp()}_{receipt_filename}"
             try:
                 uploaded_url = await upload_fileobj_async(receipt_content, bucket, s3_key)
@@ -234,7 +234,7 @@ class OrderStatusManager:
         actor_id: int,
         actor_role: str, # e.g., "support", "admin", "merchant", "trader"
         reason: str
-    ) -> OrderHistory:
+) -> OrderHistory:
         """Marks an order as disputed, with permission checks."""
         logger.info(f"Actor {actor_id} (role: {actor_role}) attempting to dispute OrderHistory ID: {order_history_id} for reason: {reason}")
         
@@ -288,7 +288,7 @@ class OrderStatusManager:
         actor_role: str,
         resolution_details: str,
         final_status: str # e.g., "completed", "canceled_by_admin"
-    ) -> OrderHistory:
+) -> OrderHistory:
         """Resolves a disputed order, setting a final status."""
         logger.info(f"Actor {actor_id} (role: {actor_role}) attempting to resolve dispute for OrderHistory ID: {order_history_id} with final status: {final_status}")
         

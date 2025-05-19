@@ -4,9 +4,9 @@ API Router for Admin - Platform Statistics
 from typing import List, Dict, Union
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.database.utils import get_db_session
+from backend.database.utils import get_async_db_session
 from backend.services.platform_service import PlatformService
 from backend.security import get_current_active_admin # Specific admin dependency
 from backend.database.db import User # For type hinting current_user
@@ -20,7 +20,7 @@ router = APIRouter(
 
 @router.get("/balance", response_model=PlatformBalanceResponseSchema) # Changed from List[Dict[...]]
 async def get_platform_balance_stats(
-    db: Session = Depends(get_db_session),
+    db: AsyncSession = Depends(get_async_db_session),
     current_admin: User = Depends(get_current_active_admin)
 ):
     """
@@ -37,5 +37,5 @@ async def get_platform_balance_stats(
     #     raise HTTPException(status_code=403, detail="Not enough permissions")
 
     platform_service = PlatformService(db_session=db)
-    balances = platform_service.get_platform_balances()
+    balances = await platform_service.get_platform_balances()
     return balances 

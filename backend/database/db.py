@@ -1,13 +1,14 @@
 from decimal import Decimal
 from sqlalchemy import Column, Integer, String, Text, Boolean, DECIMAL, TIMESTAMP, ForeignKey, Index, JSON
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy.ext.asyncio import AsyncAttrs
+from sqlalchemy.orm import DeclarativeBase, relationship, Mapped, mapped_column
 from sqlalchemy.sql import func
 from datetime import datetime, timezone
 from typing import Optional, List
 from sqlalchemy.ext.hybrid import hybrid_property
 
-Base = declarative_base()
+class Base(AsyncAttrs, DeclarativeBase):
+    pass
 
 def utcnow():
     # Возвращает aware datetime в UTC (с tzinfo=timezone.utc)

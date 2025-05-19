@@ -1,0 +1,45 @@
+:root {
+  /* Colors */
+  --color-primary: #2787F5; /* Пример основного цвета, нужно уточнить по Cryptomus */
+  --color-background: #FFFFFF;
+  --color-surface: #FFFFFF; /* Цвет подложек, как у карточки */
+  --color-text-primary: #000000;
+  --color-text-secondary: #6B7280; /* Серый текст */
+  --color-border: #E5E7EB; /* Цвет границ */
+  --color-success: #10B981;
+  --color-error: #EF4444;
+  --color-white: #FFFFFF;
+  --color-black: #000000;
+  --color-panel-background: #F9FAFB; /* Фон левой панели */
+  --color-button-primary-bg: #000000; /* Черная кнопка как на скриншоте */
+  --color-button-primary-text: #FFFFFF;
+
+  /* Typography */
+  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-size-base: 16px;
+  --font-size-sm: 14px;
+  --font-size-lg: 18px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  /* Borders */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+
+  /* Shadows - пример, можно настроить точнее */
+  --shadow-md: 0px 4px 6px -1px rgba(0, 0, 0, 0.05), 0px 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0px 10px 15px -3px rgba(0, 0, 0, 0.05), 0px 4px 6px -4px rgba(0, 0, 0, 0.05);
+
+  /* Размеры для левой и правой панели */
+  --left-panel-width: 320px; /* Примерная ширина левой панели */
+} 

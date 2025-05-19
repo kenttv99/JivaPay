@@ -16,7 +16,7 @@ from backend.config.logger import get_logger
 from backend.database.db import User, Role, Admin, Support, TeamLead, Trader, Merchant
 from backend.utils.exceptions import AuthenticationError, AuthorizationError, DatabaseError, NotFoundError
 from backend.services.permission_service import PermissionService
-from backend.services.audit_logger import log_event
+from backend.services.audit_service import log_event
 from backend.utils import query_utils
 from backend.utils.decorators import handle_service_exceptions
 

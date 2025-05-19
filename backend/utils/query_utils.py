@@ -3,15 +3,32 @@ Utilities for building and executing SQLAlchemy queries,
 including pagination, sorting, and common filters.
 """
 import logging
-from typing import Optional, List, Dict, Any, Tuple, Type
+from typing import Optional, List, Dict, Any, Tuple, Type, TypeVar, Union
 from sqlalchemy.orm import Session, Query
-from sqlalchemy import func, desc, asc, Column
+from sqlalchemy import func, desc, asc, Column, select, and_, or_
 from datetime import datetime
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql import Select
+from pydantic import BaseModel, ValidationError
 
 from backend.config.logger import get_logger
-from backend.utils.exceptions import DatabaseError
+from backend.utils.exceptions import DatabaseError, ValidationError as AppValidationError
 
 logger = get_logger(__name__)
+
+T = TypeVar('T')
+
+def validate_pagination_params(page: int, page_size: int) -> None:
+    """Validate pagination parameters."""
+    if page < 1:
+        raise AppValidationError("Page number must be greater than 0")
+    if page_size < 1 or page_size > 100:
+        raise AppValidationError("Page size must be between 1 and 100")
+
+def validate_sort_params(sort_by: Optional[str], sort_order: Optional[str]) -> None:
+    """Validate sorting parameters."""
+    if sort_order and sort_order.lower() not in ['asc', 'desc']:
+        raise AppValidationError("Sort order must be either 'asc' or 'desc'")
 
 def apply_pagination(query: Query, page: int, per_page: int) -> Query:
     """Applies pagination to a SQLAlchemy query."""
@@ -118,6 +135,44 @@ def get_paginated_results_and_count(
         raise DatabaseError("Failed to retrieve paginated items.") from e
         
     return results, total_count
+
+async def get_paginated_results(
+    session: AsyncSession,
+    query: Select,
+    page: int = 1,
+    page_size: int = 20,
+    sort_by: Optional[str] = None,
+    sort_order: Optional[str] = None,
+    model_class: Optional[Type[T]] = None
+) -> Dict[str, Any]:
+    """
+    Get paginated results with validation.
+    
+    Args:
+        session: AsyncSession instance
+        query: Base query to paginate
+        page: Page number (1-based)
+        page_size: Number of items per page
+        sort_by: Column to sort by
+        sort_order: Sort order ('asc' or 'desc')
+        model_class: Optional model class for result conversion
+    
+    Returns:
+        Dict containing paginated results and metadata
+    """
+    try:
+        validate_pagination_params(page, page_size)
+        if sort_by:
+            validate_sort_params(sort_by, sort_order)
+            
+        # ... existing code ...
+        
+    except ValidationError as e:
+        logger.error(f"Validation error in get_paginated_results: {str(e)}")
+        raise AppValidationError(str(e))
+    except Exception as e:
+        logger.error(f"Error in get_paginated_results: {str(e)}")
+        raise
 
 # Example (Illustrative - not for direct execution here)
 if __name__ == '__main__':

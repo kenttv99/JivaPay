@@ -1,116 +1,96 @@
 """Database utility functions for session management, transactions, and basic CRUD operations."""
 
 import logging
-from contextlib import contextmanager
-from typing import Generator, TypeVar, Type, Optional, Dict, Any
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator, TypeVar, Type, Optional, Dict, Any
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError, NoResultFound
+from sqlalchemy.future import select
 
-from backend.database.engine import SessionLocal
-from backend.database.db import Base  # Base declared in db.py
-
+from backend.database.engine import AsyncSessionLocal
+from backend.database.db import Base
 from backend.utils.exceptions import DatabaseError, JivaPayException
+from backend.logger import get_logger
 
-logger = logging.getLogger(__name__) # Use standard logging
+logger = get_logger(__name__)
 
-ModelType = TypeVar("ModelType", bound=Base)  # type: ignore # Generic type for SQLAlchemy models
+ModelType = TypeVar("ModelType", bound=Base)
 
-# FastAPI dependency that yields a DB session and гарантирует закрытие
-def get_db_session() -> Generator[Session, None, None]:
+async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     """Provides a transactional scope around a series of operations.
 
     Yields:
-        A SQLAlchemy Session object.
+        An AsyncSession object.
     Ensures:
         The session is closed after use.
     """
-    db = SessionLocal()
+    db = AsyncSessionLocal()
     logger.debug(f"DB Session {id(db)} opened.")
     try:
         yield db
     finally:
         logger.debug(f"DB Session {id(db)} closed.")
-        db.close()
+        await db.close()
 
-# Context-manager variant for direct 'with' usage without breaking generator-based dependency
-@contextmanager
-def get_db_session_cm() -> Generator[Session, None, None]:
+@asynccontextmanager
+async def get_db_session_cm() -> AsyncGenerator[AsyncSession, None]:
     """Provides a transactional scope around operations via contextmanager."""
-    db = SessionLocal()
+    db = AsyncSessionLocal()
     logger.debug(f"DB Session {id(db)} opened (cm).")
     try:
         yield db
     finally:
         logger.debug(f"DB Session {id(db)} closed (cm).")
-        db.close()
+        await db.close()
 
-@contextmanager
-def atomic_transaction(db_session: Session) -> Generator[None, None, None]:
+@asynccontextmanager
+async def atomic_transaction(db_session: AsyncSession) -> AsyncGenerator[None, None]:
     """Provides a context manager for atomic database transactions.
 
     Commits the transaction if the block executes successfully, otherwise rolls back.
 
     Args:
-        db_session: The SQLAlchemy Session object to use for the transaction.
+        db_session: The AsyncSession object to use for the transaction.
 
     Raises:
         DatabaseError: If any SQLAlchemyError occurs during commit or rollback.
     """
     if not db_session.is_active:
-        # If the session provided is already closed or inactive, raise an error
-        # or handle appropriately, e.g., start a new one if that makes sense.
-        # Here, we'll raise an error.
         logger.error(f"Attempted atomic transaction on inactive session {id(db_session)}")
         raise DatabaseError("Cannot start atomic transaction on an inactive session.")
 
     logger.debug(f"Starting atomic transaction on session {id(db_session)}.")
     try:
-        # Using nested transactions if the database/driver supports SAVEPOINTs
-        # If not, begin() might raise an error if a transaction is already active.
-        # Standard behavior is often to treat nested begins as essentially NOPs
-        # until the outermost transaction commits/rolls back.
-        with db_session.begin_nested():
+        async with db_session.begin_nested():
             yield
-        # Outer commit (or commit of the nested block if supported)
-        # This commit might happen automatically if using db_session.begin() instead of begin_nested()
-        # However, explicitly yielding within begin_nested ensures the block completes before commit.
-        # If no exception occurred, the outer transaction managed by get_db_session
-        # or another layer will handle the final commit.
-        # Let's make it explicit for clarity within this context
-        db_session.commit()
+        await db_session.commit()
         logger.debug(f"Atomic transaction on session {id(db_session)} committed successfully.")
     except SQLAlchemyError as e:
         logger.error(f"Atomic transaction on session {id(db_session)} failed. Rolling back. Error: {e}", exc_info=True)
         try:
-            db_session.rollback()
+            await db_session.rollback()
         except SQLAlchemyError as rb_exc:
             logger.critical(f"CRITICAL: Failed to rollback transaction on session {id(db_session)} after error! Error: {rb_exc}", exc_info=True)
-            # Raising a critical DatabaseError here
             raise DatabaseError(f"Transaction failed AND rollback failed: {e}; Rollback error: {rb_exc}") from rb_exc
-        # Re-raise the original error wrapped in DatabaseError after successful rollback
         raise DatabaseError(f"Transaction failed and rolled back: {e}") from e
     except Exception as e:
-        # Catch non-SQLAlchemy errors too, ensuring rollback
         logger.error(f"Non-SQLAlchemy error occurred during atomic transaction on session {id(db_session)}. Rolling back. Error: {e}", exc_info=True)
         try:
-            db_session.rollback()
+            await db_session.rollback()
         except SQLAlchemyError as rb_exc:
-             logger.critical(f"CRITICAL: Failed to rollback transaction on session {id(db_session)} after non-SQLAlchemy error! Error: {rb_exc}", exc_info=True)
-             raise DatabaseError(f"Non-SQLAlchemy error occurred AND rollback failed: {e}; Rollback error: {rb_exc}") from rb_exc
-        # Re-raise the original error (or wrap if it's not a JivaPayException)
+            logger.critical(f"CRITICAL: Failed to rollback transaction on session {id(db_session)} after non-SQLAlchemy error! Error: {rb_exc}", exc_info=True)
+            raise DatabaseError(f"Non-SQLAlchemy error occurred AND rollback failed: {e}; Rollback error: {rb_exc}") from rb_exc
         if isinstance(e, JivaPayException):
             raise
         else:
             raise DatabaseError(f"Non-SQLAlchemy error occurred in transaction: {e}") from e
 
-# --- Basic CRUD Functions --- #
-
-def create_object(db: Session, model: Type[ModelType], data: Dict[str, Any]) -> ModelType:
+async def create_object(db: AsyncSession, model: Type[ModelType], data: Dict[str, Any]) -> ModelType:
     """Creates and saves a new object in the database.
 
     Args:
-        db: The SQLAlchemy session.
+        db: The AsyncSession.
         model: The SQLAlchemy model class.
         data: A dictionary containing the object's data.
 
@@ -123,9 +103,9 @@ def create_object(db: Session, model: Type[ModelType], data: Dict[str, Any]) -> 
     try:
         obj = model(**data)
         db.add(obj)
-        db.flush() # Flush to catch potential errors like IntegrityError early
-        db.refresh(obj) # Refresh to get DB-generated values like IDs
-        logger.info(f"Created {model.__name__} object with PK: {getattr(obj, 'id', 'N/A')}") # Assumes 'id' pk
+        await db.flush()
+        await db.refresh(obj)
+        logger.info(f"Created {model.__name__} object with PK: {getattr(obj, 'id', 'N/A')}")
         return obj
     except IntegrityError as e:
         logger.warning(f"Failed to create {model.__name__}: Integrity constraint violated. Data: {data}. Error: {e}")
@@ -134,11 +114,11 @@ def create_object(db: Session, model: Type[ModelType], data: Dict[str, Any]) -> 
         logger.error(f"Failed to create {model.__name__}. Data: {data}. Error: {e}", exc_info=True)
         raise DatabaseError(f"Database error while creating {model.__name__}: {e}") from e
 
-def get_object_or_none(db: Session, model: Type[ModelType], **kwargs) -> Optional[ModelType]:
+async def get_object_or_none(db: AsyncSession, model: Type[ModelType], **kwargs) -> Optional[ModelType]:
     """Retrieves an object by its attributes or returns None if not found.
 
     Args:
-        db: The SQLAlchemy session.
+        db: The AsyncSession.
         model: The SQLAlchemy model class.
         **kwargs: Attributes to filter by (e.g., id=1, email='a@b.com').
 
@@ -149,26 +129,26 @@ def get_object_or_none(db: Session, model: Type[ModelType], **kwargs) -> Optiona
         DatabaseError: If a SQLAlchemyError occurs (excluding NoResultFound).
     """
     try:
-        # Basic filtering, assumes exact matches
-        query = db.query(model).filter_by(**kwargs)
-        obj = query.one_or_none()
+        stmt = select(model).filter_by(**kwargs)
+        result = await db.execute(stmt)
+        obj = result.scalars().first()
         if obj:
             logger.debug(f"Retrieved {model.__name__} object with filter: {kwargs}")
         else:
             logger.debug(f"{model.__name__} object not found with filter: {kwargs}")
         return obj
-    except NoResultFound: # Should not happen with one_or_none, but belt and suspenders
+    except NoResultFound:
         logger.debug(f"{model.__name__} object not found with filter: {kwargs}")
         return None
     except SQLAlchemyError as e:
         logger.error(f"Error retrieving {model.__name__} with filter {kwargs}: {e}", exc_info=True)
         raise DatabaseError(f"Database error while retrieving {model.__name__}: {e}") from e
 
-def update_object_db(db: Session, obj: ModelType, data: Dict[str, Any]) -> ModelType:
+async def update_object_db(db: AsyncSession, obj: ModelType, data: Dict[str, Any]) -> ModelType:
     """Updates an existing database object with new data.
 
     Args:
-        db: The SQLAlchemy session.
+        db: The AsyncSession.
         obj: The SQLAlchemy object instance to update.
         data: A dictionary containing the new data.
 
@@ -179,7 +159,7 @@ def update_object_db(db: Session, obj: ModelType, data: Dict[str, Any]) -> Model
         DatabaseError: If an IntegrityError or other SQLAlchemyError occurs.
     """
     try:
-        pk_name = obj.__mapper__.primary_key[0].name # Get primary key column name
+        pk_name = obj.__mapper__.primary_key[0].name
         pk_value = getattr(obj, pk_name, 'N/A')
         logger.debug(f"Attempting to update {obj.__class__.__name__} with PK {pk_value}. Data: {data}")
 
@@ -189,9 +169,9 @@ def update_object_db(db: Session, obj: ModelType, data: Dict[str, Any]) -> Model
             else:
                 logger.warning(f"Attribute '{key}' not found on {obj.__class__.__name__} during update. Skipping.")
 
-        db.add(obj) # Add the modified object back to the session (important if it was detached)
-        db.flush()  # Flush to catch potential errors
-        db.refresh(obj) # Refresh to get any DB-level changes
+        db.add(obj)
+        await db.flush()
+        await db.refresh(obj)
         logger.info(f"Updated {obj.__class__.__name__} object with PK: {pk_value}")
         return obj
     except IntegrityError as e:

@@ -1,17 +1,18 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from typing import Optional, Type, TypeVar
+from typing import Optional, Type, TypeVar, Any, Dict, Union
 import logging
 from cachetools import TTLCache, cached
 from backend.database.db import ConfigurationSetting
-
-# For async caching, assuming asyncache is available or a similar pattern is used.
-# If not, a simple dict-based async cache could be implemented or caching omitted for async version initially.
+from functools import lru_cache
+import os
+import json
 from asyncache import cached as async_cached
 from cachetools import TTLCache as AsyncTTLCache
+from backend.logger import get_logger
 
-logger = logging.getLogger(__name__) # Use standard logging
+logger = get_logger(__name__) # Use standard logging
 
 T = TypeVar('T')
 
@@ -128,4 +129,58 @@ async def get_typed_config_value_async(key: str, db: AsyncSession, expected_type
 
 # Example Usage (within a context that has a db session):
 # max_retries = get_typed_config_value("MAX_ORDER_RETRIES", db_session, int, default=5)
-# use_feature_x = get_typed_config_value("USE_FEATURE_X", db_session, bool, default=False) 
+# use_feature_x = get_typed_config_value("USE_FEATURE_X", db_session, bool, default=False)
+
+"""
+Configuration Loader Module
+
+This module provides functionality for loading and caching configuration settings.
+It supports both synchronous and asynchronous operations with built-in caching.
+
+Caching Behavior:
+---------------
+1. Synchronous Functions:
+   - Uses LRU cache with TTL (Time To Live)
+   - Cache size: 100 items
+   - Default TTL: 300 seconds (5 minutes)
+   - Cache is shared across all instances
+
+2. Asynchronous Functions:
+   - Uses asyncache with TTL
+   - Cache size: 100 items
+   - Default TTL: 300 seconds (5 minutes)
+   - Cache is shared across all instances
+
+Usage Examples:
+-------------
+1. Synchronous:
+   ```python
+   from backend.utils.config_loader import get_config_value
+   
+   # Get config with default value
+   value = get_config_value("key", default="default_value")
+   
+   # Get config with type conversion
+   value = get_config_value("key", default=0, value_type=int)
+   ```
+
+2. Asynchronous:
+   ```python
+   from backend.utils.config_loader import get_config_value_async
+   
+   # Get config asynchronously
+   value = await get_config_value_async("key", default="default_value")
+   
+   # Get config with type conversion
+   value = await get_config_value_async("key", default=0, value_type=int)
+   ```
+
+Cache Invalidation:
+-----------------
+The cache is automatically invalidated when:
+1. TTL expires (default: 5 minutes)
+2. Cache size limit is reached (LRU eviction)
+3. System restart
+
+Note: For immediate cache invalidation, use the clear_cache() function.
+""" 

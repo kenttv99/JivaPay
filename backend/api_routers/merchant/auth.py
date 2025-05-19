@@ -1,13 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from sqlalchemy import select
 from pydantic import BaseModel
 from datetime import timedelta
 
 from backend.database.db import User
 from backend.config.crypto import verify_password
 from backend.config.logger import get_logger
-from backend.database.utils import get_db_session
+from backend.database.utils import get_async_db_session
 from backend.security import create_access_token
 from backend.config.settings import settings
 
@@ -21,16 +23,18 @@ class Token(BaseModel):
 
 
 @router.post("/auth/token", response_model=Token)
-def login_for_access_token(
+async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db_session)
+    db: AsyncSession = Depends(get_async_db_session)
 ):
-    user: User | None = (
-        db.query(User)
+    query = (
+        select(User)
         .options(selectinload(User.merchant_profile))
         .filter(User.email == form_data.username)
-        .first()
     )
+    result = await db.execute(query)
+    user = result.scalars().first()
+
     if not user or not user.merchant_profile or not verify_password(form_data.password, user.password_hash):
         logger.warning(f"Failed merchant login attempt: {form_data.username}")
         raise HTTPException(
