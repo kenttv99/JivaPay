@@ -19,9 +19,7 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "@jivapay/ui-kit": ["../packages/ui-kit/src"],
-      "@jivapay/ui-kit/*": ["../packages/ui-kit/src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
