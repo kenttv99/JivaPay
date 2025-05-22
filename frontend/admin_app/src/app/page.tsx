@@ -1,42 +1,28 @@
 'use client';
 
-import MainLayout from '@/layouts/MainLayout';
-import Link from 'next/link';
+import Link from 'next/link';import MainLayout from '@/layouts/MainLayout';import { RecentOrders } from '../components/Dashboard/RecentOrders';
 
 export default function Dashboard() {
   return (
     <MainLayout>
-      <div className="max-w-full">
-        <div className="flex justify-between items-center mb-6">
+      <div className="space-y-6">
+        {/* Заголовок страницы */}
+        <div>
           <h1 className="text-3xl font-bold">Панель управления</h1>
-          
-          <div className="flex gap-4">
-            <select className="p-2 border border-[var(--jiva-border)] rounded-md text-sm">
-              <option>Сегодня</option>
-              <option>Вчера</option>
-              <option selected>Неделя</option>
-              <option>Месяц</option>
-              <option>Квартал</option>
-              <option>Год</option>
-            </select>
-            
-            <button className="px-4 py-2 bg-[var(--jiva-primary)] text-white rounded-md hover:bg-[var(--jiva-primary-dark)] transition-colors text-sm">
-              Экспорт отчёта
-            </button>
-          </div>
+          <p className="text-[var(--jiva-text-secondary)] mt-1">Добро пожаловать в административную панель JivaPay</p>
         </div>
         
-        {/* Сводка по ключевым показателям */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        {/* Основные метрики */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="bg-[var(--jiva-background-paper)] rounded-lg p-6 shadow-sm">
             <div className="flex justify-between">
               <div>
-                <p className="text-[var(--jiva-text-secondary)] text-sm mb-1">Новые пользователи</p>
-                <p className="text-3xl font-bold">57</p>
+                <p className="text-[var(--jiva-text-secondary)] text-sm mb-1">Активные пользователи</p>
+                <p className="text-3xl font-bold">2,847</p>
               </div>
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                 </svg>
               </div>
             </div>
@@ -203,6 +189,99 @@ export default function Dashboard() {
           </div>
         </div>
         
+        {/* Дополнительные карточки статистики */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-[var(--jiva-background-paper)] rounded-lg p-5 shadow-sm">
+            <div className="mb-3">
+              <h3 className="text-lg font-medium">Ордеры в обработке</h3>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="flex-shrink-0 rounded-full bg-[var(--jiva-background)] p-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[var(--jiva-primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-[var(--jiva-primary)]">42</p>
+                  <p className="text-sm text-[var(--jiva-text-secondary)]">18 в процессе оплаты</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-[var(--jiva-background-paper)] rounded-lg p-5 shadow-sm">
+            <div className="mb-3">
+              <h3 className="text-lg font-medium">Реквизиты онлайн</h3>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="flex-shrink-0 rounded-full bg-[var(--jiva-background)] p-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[var(--jiva-primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-[var(--jiva-primary)]">156</p>
+                  <p className="text-sm text-[var(--jiva-text-secondary)]">83% доступность</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-[var(--jiva-background-paper)] rounded-lg p-5 shadow-sm">
+            <div className="mb-3">
+              <h3 className="text-lg font-medium">Конверсия</h3>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="flex-shrink-0 rounded-full bg-[var(--jiva-background)] p-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[var(--jiva-primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-[var(--jiva-primary)]">89%</p>
+                  <p className="text-sm text-[var(--jiva-text-secondary)]">+4.2% за месяц</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-[var(--jiva-background-paper)] rounded-lg p-5 shadow-sm">
+            <div className="mb-3">
+              <h3 className="text-lg font-medium">Среднее время</h3>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="flex-shrink-0 rounded-full bg-[var(--jiva-background)] p-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[var(--jiva-primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-[var(--jiva-primary)]">12m 30s</p>
+                  <p className="text-sm text-[var(--jiva-text-secondary)]">Обработка ордера</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* История ордеров с детализацией */}
+        <div className="bg-[var(--jiva-background-paper)] rounded-lg shadow-sm mb-6">
+          <div className="px-6 py-4 border-b border-[var(--jiva-border)] flex justify-between items-center">
+            <h2 className="text-xl font-bold">История ордеров</h2>
+            <button className="px-4 py-2 bg-[var(--jiva-primary)] text-white rounded-md hover:bg-[var(--jiva-primary-dark)] transition-colors text-sm flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+              <span>Смотреть все</span>
+            </button>
+          </div>
+                              <div className="p-6">            <RecentOrders />          </div>
+        </div>
+
         {/* Последние транзакции и новые пользователи */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-[var(--jiva-background-paper)] rounded-lg overflow-hidden shadow-sm">

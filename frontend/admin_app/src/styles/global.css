@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 /* Базовые глобальные стили для JivaPay Admin */
 
 :root {
@@ -16,9 +18,10 @@
   --jiva-font-family: 'Inter', system-ui, sans-serif;
 }
 
+/* Основные настройки для интеграции с Tailwind CSS */
 body {
   font-family: var(--jiva-font-family);
-  background-color: var(--jiva-background);
+  background: var(--jiva-background);
   color: var(--jiva-text);
   margin: 0;
   padding: 0;

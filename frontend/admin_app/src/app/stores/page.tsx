@@ -1,132 +1,43 @@
 'use client';
 
 import MainLayout from '@/layouts/MainLayout';
+import { StoreManagement } from '@/components/Stores/StoreManagement';
+
+// Симуляция данных магазинов
+const mockStoreStats = {
+  totalStores: 156,
+  activeStores: 142,
+  monthlyVolume: 45820000,
+  averageCommission: 2.8,
+  storesChange: 8.5,
+  activeChange: 5.2,
+  volumeChange: 12.3,
+  commissionChange: -0.2
+};
+
+const mockStores = [
+  { id: 'STR-1001', name: 'TechShop Pro', merchantName: 'ООО "Технологии"', domain: 'techshop.ru', status: 'active' as const, monthlyVolume: 2500000, commission: 2.5, category: 'Электроника', createdDate: '2023-01-15', lastActivity: 'Сегодня, 14:30' },
+  { id: 'STR-1002', name: 'Fashion Store', merchantName: 'ИП Петрова', domain: 'fashion-store.net', status: 'active' as const, monthlyVolume: 1800000, commission: 3.0, category: 'Мода', createdDate: '2023-02-20', lastActivity: 'Сегодня, 12:15' },
+  { id: 'STR-1003', name: 'Book Paradise', merchantName: 'ООО "Знание"', domain: 'books.paradise.com', status: 'active' as const, monthlyVolume: 1200000, commission: 2.8, category: 'Книги', createdDate: '2023-03-10', lastActivity: 'Вчера, 18:45' },
+  { id: 'STR-1004', name: 'Sport World', merchantName: 'ИП Спортов', domain: 'sportworld.shop', status: 'blocked' as const, monthlyVolume: 950000, commission: 3.2, category: 'Спорт', createdDate: '2023-01-05', lastActivity: 'Неделю назад' },
+  { id: 'STR-1005', name: 'Home & Garden', merchantName: 'ООО "Дом"', domain: 'home-garden.store', status: 'active' as const, monthlyVolume: 1500000, commission: 2.7, category: 'Дом и сад', createdDate: '2023-04-01', lastActivity: 'Сегодня, 10:20' },
+  { id: 'STR-1006', name: 'Beauty Shop', merchantName: 'ИП Красотина', domain: 'beauty.shop', status: 'active' as const, monthlyVolume: 800000, commission: 3.5, category: 'Красота', createdDate: '2023-05-15', lastActivity: 'Сегодня, 09:30' },
+  { id: 'STR-1007', name: 'Auto Parts', merchantName: 'ООО "Авто"', domain: 'autoparts.pro', status: 'pending' as const, monthlyVolume: 0, commission: 2.9, category: 'Автозапчасти', createdDate: '2023-06-10', lastActivity: 'Вчера, 16:00' },
+  { id: 'STR-1008', name: 'Kids Store', merchantName: 'ИП Детский', domain: 'kids-store.ru', status: 'active' as const, monthlyVolume: 650000, commission: 3.1, category: 'Детские товары', createdDate: '2023-03-25', lastActivity: 'Сегодня, 13:45' },
+  { id: 'STR-1009', name: 'Electronics Hub', merchantName: 'ООО "Гаджеты"', domain: 'electronics.hub', status: 'active' as const, monthlyVolume: 3200000, commission: 2.3, category: 'Электроника', createdDate: '2022-12-01', lastActivity: 'Сегодня, 15:10' },
+  { id: 'STR-1010', name: 'Food Market', merchantName: 'ИП Вкусный', domain: 'foodmarket.online', status: 'inactive' as const, monthlyVolume: 450000, commission: 4.0, category: 'Продукты', createdDate: '2023-02-14', lastActivity: '3 дня назад' },
+  { id: 'STR-1011', name: 'Music Store', merchantName: 'ООО "Мелодия"', domain: 'music-store.net', status: 'active' as const, monthlyVolume: 380000, commission: 3.3, category: 'Музыка', createdDate: '2023-04-20', lastActivity: 'Вчера, 20:30' },
+  { id: 'STR-1012', name: 'Tool Shop', merchantName: 'ИП Мастер', domain: 'tools.shop', status: 'active' as const, monthlyVolume: 1100000, commission: 2.6, category: 'Инструменты', createdDate: '2023-01-30', lastActivity: 'Сегодня, 11:00' }
+];
 
 export default function StoresPage() {
   return (
     <MainLayout>
-      <div className="max-w-full">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Магазины</h1>
-          
-          <button className="px-4 py-2 bg-[var(--jiva-primary)] text-white rounded-md hover:bg-[var(--jiva-primary-dark)] transition-colors">
-            Добавить магазин
-          </button>
-        </div>
-        
-        {/* Фильтры */}
-        <div className="flex flex-wrap gap-4 mb-6 p-4 bg-[var(--jiva-background-paper)] rounded-lg">
-          <div className="flex-1 min-w-[200px]">
-            <label htmlFor="status" className="block text-sm font-medium text-[var(--jiva-text-secondary)] mb-1">
-              Статус
-            </label>
-            <select 
-              id="status" 
-              className="w-full p-2 border border-[var(--jiva-border)] rounded-md"
-            >
-              <option value="">Все статусы</option>
-              <option value="active">Активен</option>
-              <option value="suspended">Приостановлен</option>
-              <option value="pending">На модерации</option>
-            </select>
-          </div>
-          
-          <div className="flex-1 min-w-[200px]">
-            <label htmlFor="merchant" className="block text-sm font-medium text-[var(--jiva-text-secondary)] mb-1">
-              Мерчант
-            </label>
-            <select 
-              id="merchant" 
-              className="w-full p-2 border border-[var(--jiva-border)] rounded-md"
-            >
-              <option value="">Все мерчанты</option>
-              <option value="1">BETBOOM</option>
-              <option value="2">1XBET</option>
-              <option value="3">BETCITY</option>
-            </select>
-          </div>
-          
-          <div className="flex-1 min-w-[200px]">
-            <label htmlFor="search" className="block text-sm font-medium text-[var(--jiva-text-secondary)] mb-1">
-              Поиск
-            </label>
-            <input 
-              type="text" 
-              id="search" 
-              placeholder="Название или ID" 
-              className="w-full p-2 border border-[var(--jiva-border)] rounded-md"
-            />
-          </div>
-        </div>
-        
-        {/* Список магазинов */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((index) => (
-            <div key={index} className="bg-[var(--jiva-background-paper)] rounded-lg overflow-hidden shadow-sm">
-              <div className="h-40 bg-gradient-to-r from-blue-400 to-indigo-600 flex items-center justify-center">
-                <span className="text-white text-2xl font-bold">Магазин {index}</span>
-              </div>
-              
-              <div className="p-4">
-                <h3 className="text-lg font-semibold mb-2">Магазин {index}</h3>
-                <p className="text-sm text-[var(--jiva-text-secondary)] mb-4">ID: STORE-{1000 + index}</p>
-                
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm font-medium">Мерчант:</span>
-                  <span className="text-sm">{['BETBOOM', '1XBET', 'BETCITY'][index % 3]}</span>
-                </div>
-                
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm font-medium">Баланс:</span>
-                  <span className="text-sm">₽ {(Math.random() * 10000).toFixed(2)}</span>
-                </div>
-                
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm font-medium">Статус:</span>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    index % 3 === 0 
-                      ? 'bg-green-100 text-green-800'
-                      : index % 3 === 1
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-red-100 text-red-800'
-                  }`}>
-                    {index % 3 === 0 ? 'Активен' : index % 3 === 1 ? 'На модерации' : 'Приостановлен'}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center mt-4 pt-3 border-t border-[var(--jiva-border)]">
-                  <button className="text-[var(--jiva-primary)] hover:text-[var(--jiva-primary-dark)]">
-                    Подробнее
-                  </button>
-                  
-                  <button className="text-[var(--jiva-error)] hover:text-[var(--jiva-error-dark)]">
-                    {index % 3 === 0 ? 'Приостановить' : 'Активировать'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        
-        {/* Пагинация */}
-        <div className="mt-6 flex items-center justify-center gap-1">
-          <button className="px-3 py-1 border border-[var(--jiva-border)] rounded-md disabled:opacity-50">
-            Назад
-          </button>
-          <button className="px-3 py-1 bg-[var(--jiva-primary)] text-white rounded-md">
-            1
-          </button>
-          <button className="px-3 py-1 border border-[var(--jiva-border)] rounded-md">
-            2
-          </button>
-          <button className="px-3 py-1 border border-[var(--jiva-border)] rounded-md">
-            3
-          </button>
-          <button className="px-3 py-1 border border-[var(--jiva-border)] rounded-md">
-            Далее
-          </button>
-        </div>
-      </div>
+      <StoreManagement 
+        stores={mockStores}
+        stats={mockStoreStats}
+        loading={false}
+      />
     </MainLayout>
   );
 }

@@ -1,6 +1,5 @@
-import '../styles/global.css';
+import '../styles/global.css'; // Основные стили с Tailwind CSS
 import '../styles/theme.css';
-import './globals.css'; // подключаем globals.css для Tailwind CSS
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 
