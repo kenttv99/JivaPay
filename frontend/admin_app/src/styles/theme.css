@@ -1,12 +1,68 @@
+/* Тема для JivaPay Admin App */
+
 :root {
-  --color-bg: #18181b;
-  --color-surface: #23232b;
-  --color-primary: #fff;
-  --color-secondary: #a1a1aa;
-  --color-accent: #7c3aed;
-  --color-border: #2a2a35;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --shadow-md: 0 4px 24px rgba(0,0,0,0.08);
-  --font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  /* Основная цветовая палитра администраторского интерфейса */
+  --jiva-primary: #3b82f6; /* Основной цвет - синий */
+  --jiva-primary-dark: #2563eb;
+  --jiva-primary-light: #93c5fd;
+  
+  --jiva-secondary: #4f46e5; /* Второстепенный - индиго */
+  --jiva-secondary-dark: #4338ca;
+  --jiva-secondary-light: #a5b4fc;
+  
+  --jiva-background: #f9fafb;
+  --jiva-background-paper: #ffffff;
+  --jiva-background-sidebar: #1e293b;
+  --jiva-background-header: #ffffff;
+
+  /* Текст */
+  --jiva-text: #111827;
+  --jiva-text-secondary: #4b5563;
+  --jiva-text-disabled: #9ca3af;
+  --jiva-text-inverse: #ffffff;
+  
+  /* Границы и разделители */
+  --jiva-border: #e5e7eb;
+  --jiva-border-light: #f3f4f6;
+  
+  /* Статусы */
+  --jiva-success: #10b981;
+  --jiva-warning: #f59e0b;
+  --jiva-error: #ef4444;
+  --jiva-info: #3b82f6;
+  
+  /* Тени */
+  --jiva-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --jiva-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --jiva-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --jiva-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  
+  /* Скругления */
+  --jiva-radius-sm: 0.125rem;
+  --jiva-radius: 0.25rem;
+  --jiva-radius-md: 0.375rem;
+  --jiva-radius-lg: 0.5rem;
+  --jiva-radius-xl: 0.75rem;
+  --jiva-radius-full: 9999px;
+  
+  /* Переходы и анимации */
+  --jiva-transition-duration: 150ms;
+  --jiva-transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Типографика */
+  --jiva-font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --jiva-font-size-xs: 0.75rem;
+  --jiva-font-size-sm: 0.875rem;
+  --jiva-font-size: 1rem;
+  --jiva-font-size-lg: 1.125rem;
+  --jiva-font-size-xl: 1.25rem;
+  --jiva-font-size-2xl: 1.5rem;
+  --jiva-font-size-3xl: 1.875rem;
+  --jiva-font-size-4xl: 2.25rem;
+  
+  --jiva-font-weight-light: 300;
+  --jiva-font-weight-normal: 400;
+  --jiva-font-weight-medium: 500;
+  --jiva-font-weight-semibold: 600;
+  --jiva-font-weight-bold: 700;
 } 

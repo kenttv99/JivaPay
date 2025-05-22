@@ -1,15 +1,31 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-@import './theme.css';
+/* Базовые глобальные стили для JivaPay Admin */
 
-html, body {
-  background: var(--color-bg);
-  color: var(--color-primary);
-  font-family: var(--font-family);
+:root {
+  /* Основная цветовая палитра приложения - будет переопределена в theme.css */
+  --jiva-primary: #4a6cf7;
+  --jiva-secondary: #6577e8;
+  --jiva-background: #f9fafb;
+  --jiva-text: #111827;
+  --jiva-text-secondary: #6b7280;
+  --jiva-border: #e5e7eb;
+  --jiva-error: #ef4444;
+  --jiva-success: #10b981;
+  --jiva-warning: #f59e0b;
+
+  /* Типографика */
+  --jiva-font-family: 'Inter', system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--jiva-font-family);
+  background-color: var(--jiva-background);
+  color: var(--jiva-text);
   margin: 0;
   padding: 0;
-  min-height: 100vh;
-  box-sizing: border-box;
+  line-height: 1.5;
 }
-*, *::before, *::after {
-  box-sizing: inherit;
+
+/* Сброс стилей по умолчанию */
+* {
+  box-sizing: border-box;
 } 
