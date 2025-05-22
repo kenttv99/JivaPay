@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "workspaces": [
+    "ui-kit",
+    "admin_app",
+    "merchant_app",
+    "trader_app",
+    "support_app",
+    "teamlead_app"
+  ]
+} 

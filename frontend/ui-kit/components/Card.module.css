@@ -1,0 +1,20 @@
+.card {
+  border-radius: var(--radius-lg, 16px);
+  box-shadow: var(--shadow-md, 0 4px 24px rgba(0,0,0,0.08));
+  background: var(--color-surface, #fff);
+  color: var(--color-bg, #18181b);
+  padding: 2rem;
+  transition: box-shadow 0.2s, background 0.2s;
+}
+.default {
+  background: var(--color-surface, #fff);
+}
+.glass {
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.dark {
+  background: var(--color-bg, #18181b);
+  color: var(--color-primary, #fff);
+} 
