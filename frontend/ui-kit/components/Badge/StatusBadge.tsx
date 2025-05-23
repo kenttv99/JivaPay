@@ -10,16 +10,16 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, children }) =>
     switch (status) {
       case 'active':
       case 'success':
-        return 'bg-green-100 text-green-800';
+        return 'bg-[var(--color-success-light)] text-[var(--color-success-text)]';
       case 'inactive':
       case 'blocked':
       case 'failed':
-        return 'bg-red-100 text-red-800';
+        return 'bg-[var(--color-error-light)] text-[var(--color-error-text)]';
       case 'pending':
       case 'processing':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-[var(--color-warning-light)] text-[var(--color-warning-text)]';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-[var(--color-neutral-light)] text-[var(--color-neutral-text)]';
     }
   };
 

@@ -23,7 +23,7 @@ export const TabGroup: React.FC<TabGroupProps> = ({
   return (
     <div className={className}>
       {/* Tab Navigation */}
-      <div className="border-b border-[var(--jiva-border)] mb-6">
+      <div className="border-b border-[var(--color-border)] mb-6">
         <div className="flex space-x-8">
           {tabs.map((tab) => (
             <button
@@ -31,16 +31,16 @@ export const TabGroup: React.FC<TabGroupProps> = ({
               onClick={() => setActiveTab(tab.key)}
               className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === tab.key
-                  ? 'border-[var(--jiva-primary)] text-[var(--jiva-primary)]'
-                  : 'border-transparent text-[var(--jiva-text-secondary)] hover:text-[var(--jiva-text-primary)] hover:border-gray-300'
+                  ? 'border-[var(--color-accent)] text-[var(--color-accent)]'
+                  : 'border-transparent text-[var(--color-secondary)] hover:text-[var(--color-primary)] hover:border-[var(--color-neutral)]'
               }`}
             >
               {tab.label}
               {tab.count !== undefined && (
                 <span className={`ml-2 py-0.5 px-2 rounded-full text-xs ${
                   activeTab === tab.key
-                    ? 'bg-[var(--jiva-primary)] text-white'
-                    : 'bg-[var(--jiva-background)] text-[var(--jiva-text-secondary)]'
+                    ? 'bg-[var(--color-accent)] text-white'
+                    : 'bg-[var(--color-bg)] text-[var(--color-secondary)]'
                 }`}>
                   {tab.count}
                 </span>

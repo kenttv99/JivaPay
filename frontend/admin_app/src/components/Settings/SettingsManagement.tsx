@@ -1,6 +1,5 @@
 import React from 'react';
-import { TabGroup } from '../ui/TabGroup';
-import { StatusBadge } from '../ui/StatusBadge';
+import { TabGroup, StatusBadge } from '@jivapay/ui-kit';
 
 interface SystemSettings {
   maintenance: boolean;

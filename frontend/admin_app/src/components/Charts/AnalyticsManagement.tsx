@@ -1,6 +1,5 @@
 import React from 'react';
-import { DataTable } from '../ui/DataTable';
-import { StatsCard } from '../widgets/StatsCard';
+import { DataTable, StatsCard } from '@jivapay/ui-kit';
 
 interface AnalyticsData {
   date: string;

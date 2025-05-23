@@ -3,22 +3,30 @@
 /* Базовые глобальные стили для JivaPay Admin */
 
 :root {
-  /* Основная цветовая палитра приложения - будет переопределена в theme.css */
-  --jiva-primary: #4a6cf7;
-  --jiva-secondary: #6577e8;
+  /* Основная цветовая палитра для admin_app */
+  --jiva-primary: #3b82f6;
+  --jiva-primary-dark: #2563eb;
+  --jiva-primary-light: #93c5fd;
+  
   --jiva-background: #f9fafb;
-  --jiva-text: #111827;
-  --jiva-text-secondary: #6b7280;
+  --jiva-background-paper: #ffffff;
+  
+  --jiva-text: #1f2937;
+  --jiva-text-secondary: #4b5563;
+  --jiva-text-disabled: #9ca3af;
+  
   --jiva-border: #e5e7eb;
-  --jiva-error: #ef4444;
+  --jiva-border-light: #f3f4f6;
+  
   --jiva-success: #10b981;
   --jiva-warning: #f59e0b;
-
-  /* Типографика */
-  --jiva-font-family: 'Inter', system-ui, sans-serif;
+  --jiva-error: #ef4444;
+  --jiva-info: #3b82f6;
+  
+  --jiva-font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* Основные настройки для интеграции с Tailwind CSS */
+/* Основные настройки */
 body {
   font-family: var(--jiva-font-family);
   background: var(--jiva-background);
@@ -31,4 +39,25 @@ body {
 /* Сброс стилей по умолчанию */
 * {
   box-sizing: border-box;
+}
+
+/* Стили для status badges из ui-kit */
+.status-badge {
+  @apply px-2.5 py-0.5 rounded-full text-xs font-semibold;
+}
+
+.status-success {
+  @apply bg-green-100 text-green-700;
+}
+
+.status-error {
+  @apply bg-red-100 text-red-700;
+}
+
+.status-warning {
+  @apply bg-yellow-100 text-yellow-700;
+}
+
+.status-info {
+  @apply bg-blue-100 text-blue-700;
 } 

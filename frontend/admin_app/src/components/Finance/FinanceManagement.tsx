@@ -1,7 +1,5 @@
 import React from 'react';
-import { DataTable } from '../ui/DataTable';
-import { StatusBadge } from '../ui/StatusBadge';
-import { StatsCard } from '../widgets/StatsCard';
+import { DataTable, StatusBadge, StatsCard } from '@jivapay/ui-kit';
 
 interface Transaction {
   id: string;

@@ -20,8 +20,8 @@ export default function Dashboard() {
                 <p className="text-[var(--jiva-text-secondary)] text-sm mb-1">Активные пользователи</p>
                 <p className="text-3xl font-bold">2,847</p>
               </div>
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-10 h-10 icon-bg-info rounded-lg flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                 </svg>
               </div>
@@ -41,8 +41,8 @@ export default function Dashboard() {
                 <p className="text-[var(--jiva-text-secondary)] text-sm mb-1">Новые магазины</p>
                 <p className="text-3xl font-bold">28</p>
               </div>
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-10 h-10 icon-bg-success rounded-lg flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
               </div>
@@ -62,8 +62,8 @@ export default function Dashboard() {
                 <p className="text-[var(--jiva-text-secondary)] text-sm mb-1">Объем транзакций</p>
                 <p className="text-3xl font-bold">₽ 4.2M</p>
               </div>
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-10 h-10 bg-[var(--color-accent)] bg-opacity-20 text-[var(--color-accent)] rounded-lg flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
@@ -83,8 +83,8 @@ export default function Dashboard() {
                 <p className="text-[var(--jiva-text-secondary)] text-sm mb-1">Доход с комиссий</p>
                 <p className="text-3xl font-bold">₽ 127K</p>
               </div>
-              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-10 h-10 icon-bg-warning rounded-lg flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 8h6m-5 0a3 3 0 110 6H9l3 3m-3-6h6m6 1a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
@@ -134,7 +134,7 @@ export default function Dashboard() {
                   <span className="text-sm text-[var(--jiva-text-secondary)]">82%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '82%' }}></div>
+                  <div className="progress-bar-success h-2 rounded-full" style={{ width: '82%' }}></div>
                 </div>
               </div>
               
@@ -144,7 +144,7 @@ export default function Dashboard() {
                   <span className="text-sm text-[var(--jiva-text-secondary)]">12%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: '12%' }}></div>
+                  <div className="progress-bar-info h-2 rounded-full" style={{ width: '12%' }}></div>
                 </div>
               </div>
               
@@ -154,7 +154,7 @@ export default function Dashboard() {
                   <span className="text-sm text-[var(--jiva-text-secondary)]">6%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-red-500 h-2 rounded-full" style={{ width: '6%' }}></div>
+                  <div className="progress-bar-error h-2 rounded-full" style={{ width: '6%' }}></div>
                 </div>
               </div>
             </div>
@@ -309,12 +309,12 @@ export default function Dashboard() {
                       <td className="px-6 py-4">Магазин {index}</td>
                       <td className="px-6 py-4 font-medium">₽ {(1000 * index + 500).toFixed(2)}</td>
                       <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
+                        <span className={`status-badge ${
                           index % 3 === 0 
-                            ? 'bg-green-100 text-green-800'
+                            ? 'status-success'
                             : index % 3 === 1
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
+                              ? 'status-warning'
+                              : 'status-error'
                         }`}>
                           {index % 3 === 0 ? 'Успешно' : index % 3 === 1 ? 'В процессе' : 'Ошибка'}
                         </span>

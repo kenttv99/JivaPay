@@ -23,31 +23,31 @@ export const DataTable = <T extends Record<string, any>>({
 }: DataTableProps<T>) => {
   if (loading) {
     return (
-      <div className="bg-[var(--jiva-background-paper)] rounded-lg p-8 text-center">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--jiva-primary)]"></div>
-        <p className="mt-2 text-[var(--jiva-text-secondary)]">Загрузка...</p>
+      <div className="bg-[var(--color-surface)] rounded-lg p-8 text-center">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-accent)]"></div>
+        <p className="mt-2 text-[var(--color-secondary)]">Загрузка...</p>
       </div>
     );
   }
 
   if (!data || data.length === 0) {
     return (
-      <div className="bg-[var(--jiva-background-paper)] rounded-lg p-8 text-center">
-        <p className="text-[var(--jiva-text-secondary)]">{emptyText}</p>
+      <div className="bg-[var(--color-surface)] rounded-lg p-8 text-center">
+        <p className="text-[var(--color-secondary)]">{emptyText}</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-[var(--jiva-background-paper)] rounded-lg overflow-hidden shadow-sm">
+    <div className="bg-[var(--color-surface)] rounded-lg overflow-hidden shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>
-            <tr className="bg-[var(--jiva-background)] border-b border-[var(--jiva-border)]">
+            <tr className="bg-[var(--color-bg)] border-b border-[var(--color-border)]">
               {columns.map((column) => (
                 <th
                   key={column.key}
-                  className={`px-4 py-3 text-sm font-medium text-[var(--jiva-text-secondary)] ${
+                  className={`px-4 py-3 text-sm font-medium text-[var(--color-secondary)] ${
                     column.align === 'center' ? 'text-center' : 
                     column.align === 'right' ? 'text-right' : 'text-left'
                   }`}
@@ -61,12 +61,12 @@ export const DataTable = <T extends Record<string, any>>({
             {data.map((row, index) => (
               <tr
                 key={index}
-                className="border-b border-[var(--jiva-border)] hover:bg-[var(--jiva-background)] transition-colors"
+                className="border-b border-[var(--color-border)] hover:bg-[var(--color-bg)] transition-colors"
               >
                 {columns.map((column) => (
                   <td
                     key={column.key}
-                    className={`px-4 py-3 text-sm ${
+                    className={`px-4 py-3 text-sm text-[var(--color-primary)] ${
                       column.align === 'center' ? 'text-center' : 
                       column.align === 'right' ? 'text-right' : 'text-left'
                     }`}

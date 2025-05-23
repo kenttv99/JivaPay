@@ -5,8 +5,93 @@
   --color-secondary: #a1a1aa;
   --color-accent: #7c3aed;
   --color-border: #2a2a35;
+  
+  /* Status colors */
+  --color-success: #10b981;
+  --color-success-light: #ecfdf5;
+  --color-success-text: #065f46;
+  
+  --color-error: #ef4444;
+  --color-error-light: #fef2f2;
+  --color-error-text: #991b1b;
+  
+  --color-warning: #f59e0b;
+  --color-warning-light: #fffbeb;
+  --color-warning-text: #92400e;
+  
+  --color-info: #3b82f6;
+  --color-info-light: #eff6ff;
+  --color-info-text: #1e40af;
+  
+  --color-neutral: #6b7280;
+  --color-neutral-light: #f9fafb;
+  --color-neutral-text: #374151;
+  
   --radius-md: 12px;
   --radius-lg: 16px;
   --shadow-md: 0 4px 24px rgba(0,0,0,0.08);
   --font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+
+/* Utility classes for status badges */
+.status-badge {
+  @apply px-2 py-1 rounded-full text-xs font-medium;
+}
+
+.status-success {
+  background-color: var(--color-success-light);
+  color: var(--color-success-text);
+}
+
+.status-error {
+  background-color: var(--color-error-light);
+  color: var(--color-error-text);
+}
+
+.status-warning {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning-text);
+}
+
+.status-info {
+  background-color: var(--color-info-light);
+  color: var(--color-info-text);
+}
+
+/* Icon background utilities */
+.icon-bg-success {
+  background-color: var(--color-success-light);
+  color: var(--color-success-text);
+}
+
+.icon-bg-error {
+  background-color: var(--color-error-light);
+  color: var(--color-error-text);
+}
+
+.icon-bg-warning {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning-text);
+}
+
+.icon-bg-info {
+  background-color: var(--color-info-light);
+  color: var(--color-info-text);
+}
+
+/* Progress bar utilities */
+.progress-bar-success {
+  background-color: var(--color-success);
+}
+
+.progress-bar-error {
+  background-color: var(--color-error);
+}
+
+.progress-bar-warning {
+  background-color: var(--color-warning);
+}
+
+.progress-bar-info {
+  background-color: var(--color-info);
 } 

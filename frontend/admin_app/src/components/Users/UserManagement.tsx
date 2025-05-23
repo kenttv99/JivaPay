@@ -1,7 +1,5 @@
 import React from 'react';
-import { DataTable } from '../ui/DataTable';
-import { StatusBadge } from '../ui/StatusBadge';
-import { TabGroup } from '../ui/TabGroup';
+import { DataTable, StatusBadge, TabGroup } from '@jivapay/ui-kit';
 
 interface User {
   id: string;
@@ -96,7 +94,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ users, loading }
         render: (value: boolean, row: User) => (
           <div className="space-y-1">
             <div className="flex items-center">
-              <span className={`w-2 h-2 rounded-full mr-2 ${value ? 'bg-green-500' : 'bg-red-500'}`}></span>
+              <span className={`w-2 h-2 rounded-full mr-2 ${value ? 'bg-[var(--color-success)]' : 'bg-[var(--color-error)]'}`}></span>
               <span className="text-xs">{value ? 'Включен' : 'Отключен'}</span>
             </div>
             {row.teamlead && (

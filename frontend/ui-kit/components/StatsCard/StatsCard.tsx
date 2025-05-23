@@ -22,42 +22,42 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   const getTrendColor = (trend: string) => {
     switch (trend) {
       case 'up':
-        return 'text-[var(--jiva-success)]';
+        return 'text-[var(--color-success)]';
       case 'down':
-        return 'text-[var(--jiva-error)]';
+        return 'text-[var(--color-error)]';
       default:
-        return 'text-[var(--jiva-text-secondary)]';
+        return 'text-[var(--color-secondary)]';
     }
   };
 
   const getIconBackground = (trend: string) => {
     switch (trend) {
       case 'up':
-        return 'bg-green-100';
+        return 'bg-[var(--color-success-light)]';
       case 'down':
-        return 'bg-red-100';
+        return 'bg-[var(--color-error-light)]';
       default:
-        return 'bg-blue-100';
+        return 'bg-[var(--color-info-light)]';
     }
   };
 
   const getIconColor = (trend: string) => {
     switch (trend) {
       case 'up':
-        return 'text-green-600';
+        return 'text-[var(--color-success-text)]';
       case 'down':
-        return 'text-red-600';
+        return 'text-[var(--color-error-text)]';
       default:
-        return 'text-blue-600';
+        return 'text-[var(--color-info-text)]';
     }
   };
 
   return (
-    <div className={`bg-[var(--jiva-background-paper)] rounded-lg p-6 shadow-sm ${className}`}>
+    <div className={`bg-[var(--color-surface)] rounded-lg p-6 shadow-sm ${className}`}>
       <div className="flex justify-between items-start">
         <div className="flex-1">
-          <p className="text-[var(--jiva-text-secondary)] text-sm mb-2">{title}</p>
-          <p className="text-3xl font-bold text-[var(--jiva-text-primary)] mb-2">{value}</p>
+          <p className="text-[var(--color-secondary)] text-sm mb-2">{title}</p>
+          <p className="text-3xl font-bold text-[var(--color-primary)] mb-2">{value}</p>
           
           {(change || subtitle) && (
             <div className="flex items-center gap-2 text-sm">
@@ -67,7 +67,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
                 </span>
               )}
               {subtitle && (
-                <span className="text-[var(--jiva-text-secondary)]">
+                <span className="text-[var(--color-secondary)]">
                   {subtitle}
                 </span>
               )}

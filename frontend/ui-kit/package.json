@@ -4,8 +4,7 @@
   "main": "index.ts",
   "types": "index.ts",
   "dependencies": {
-    "react": "^18.0.0",
-    "classnames": "^2.3.2"
+    "react": "^18.0.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0"
