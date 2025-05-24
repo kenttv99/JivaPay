@@ -10,8 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@jivapay/ui-kit": "workspace:*",
-    "@jivapay/permissions": "workspace:*",
+    "@jivapay/ui-kit": "*",
+    "@jivapay/permissions": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "next": "^15.1.3"

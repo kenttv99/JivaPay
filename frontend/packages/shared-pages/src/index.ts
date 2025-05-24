@@ -6,7 +6,6 @@ export { FinancePage } from './pages/FinancePage';
 export { AnalyticsPage } from './pages/AnalyticsPage';
 export { RequisitesPage } from './pages/RequisitesPage';
 export { StoresPage } from './pages/StoresPage';
-export { SettingsPage } from './pages/SettingsPage';
 
 // Компоненты
 export { MetricsGrid } from './components/MetricsGrid';
