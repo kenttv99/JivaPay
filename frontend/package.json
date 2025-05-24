@@ -2,6 +2,8 @@
   "private": true,
   "workspaces": [
     "ui-kit",
+    "packages/permissions",
+    "packages/shared-pages",
     "admin_app",
     "merchant_app",
     "trader_app",

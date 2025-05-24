@@ -9,7 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@jivapay/ui-kit": "workspace:*",
+    "@jivapay/ui-kit": "*",
+    "@jivapay/permissions": "*",
+    "@jivapay/shared-pages": "*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "next": "15.3.1"

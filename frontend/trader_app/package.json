@@ -9,7 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@jivapay/ui-kit": "workspace:*",
+    "@jivapay/ui-kit": "*",
+    "@jivapay/permissions": "*",
     "classnames": "^2.3.2",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",

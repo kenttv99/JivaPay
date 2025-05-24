@@ -90,7 +90,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.73 21a2 2 0 01-3.46 0" />
               </svg>
               {notificationCount > 0 && (
-                <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-blue-600" />
+                <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--color-info)' }} />
               )}
             </button>
           )}
@@ -98,7 +98,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Профиль */}
           {userProfile && (
             <button className="rounded-full p-1 hover:bg-gray-100 transition-colors">
-              <div className="h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium">
+              <div className="h-8 w-8 rounded-full text-white flex items-center justify-center text-sm font-medium" style={{ backgroundColor: 'var(--color-info)' }}>
                 {userProfile.avatar ? (
                   <img src={userProfile.avatar} alt={userProfile.name} className="w-full h-full rounded-full object-cover" />
                 ) : (

@@ -31,13 +31,13 @@ const OrderStatusBadge = ({ status }: { status: OrderStatus }) => {
       case 'pending':
         return { text: 'Ожидание', className: 'status-warning' };
       case 'canceled':
-        return { text: 'Отменён', className: 'bg-gray-100 text-gray-700' };
+        return { text: 'Отменён', className: 'status-neutral' };
       case 'disputed':
         return { text: 'Спор', className: 'status-warning' };
       case 'failed':
         return { text: 'Ошибка', className: 'status-error' };
       default:
-        return { text: status, className: 'bg-gray-100 text-gray-700' };
+        return { text: status, className: 'status-neutral' };
     }
   };
 
@@ -56,9 +56,9 @@ const OrderTypeBadge = ({ type }: { type: OrderType }) => {
       case 'payin':
         return { text: 'Ввод', className: 'status-success' };
       case 'payout':
-        return { text: 'Вывод', className: 'bg-blue-100 text-blue-700' };
+        return { text: 'Вывод', className: 'status-info' };
       default:
-        return { text: type, className: 'bg-gray-100 text-gray-700' };
+        return { text: type, className: 'status-neutral' };
     }
   };
 

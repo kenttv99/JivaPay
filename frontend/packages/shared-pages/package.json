@@ -1,0 +1,28 @@
+{
+  "name": "@jivapay/shared-pages",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Общие страницы для административных приложений JivaPay",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@jivapay/ui-kit": "workspace:*",
+    "@jivapay/permissions": "workspace:*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "next": "^15.1.3"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.17",
+    "@types/react-dom": "^18.3.5",
+    "typescript": "^5.7.2"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+} 

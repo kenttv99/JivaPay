@@ -58,6 +58,11 @@
   color: var(--color-info-text);
 }
 
+.status-neutral {
+  background-color: var(--color-neutral-light);
+  color: var(--color-neutral-text);
+}
+
 /* Icon background utilities */
 .icon-bg-success {
   background-color: var(--color-success-light);

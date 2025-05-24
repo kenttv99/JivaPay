@@ -1,0 +1,1 @@
+export { StoresPage } from './StoresPage'; 
