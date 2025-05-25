@@ -1,0 +1,131 @@
+{
+  "name": "JivaPay Color Palette",
+  "version": "1.0.0",
+  "description": "Официальная цветовая палитра проекта JivaPay",
+  "lastUpdated": "2024-12-20",
+  "colors": {
+    "base": {
+      "description": "Базовые цвета для фона и основы интерфейса",
+      "shadyLady": {
+        "name": "Shady Lady",
+        "hex": "#ACA9AC",
+        "rgb": "rgb(172, 169, 172)",
+        "rgbValues": [172, 169, 172],
+        "usage": "Светлый фоновый цвет, основа интерфейса",
+        "bias": "98%"
+      },
+      "ghost": {
+        "name": "Ghost",
+        "hex": "#C6CED8",
+        "rgb": "rgb(198, 206, 216)",
+        "rgbValues": [198, 206, 216],
+        "usage": "Дополнительный светлый цвет для вторичных фонов",
+        "bias": "100%"
+      }
+    },
+    "dark": {
+      "description": "Темные цвета для элементов интерфейса и текста",
+      "richBlack": {
+        "name": "Rich Black",
+        "hex": "#232525",
+        "rgb": "rgb(35, 37, 37)",
+        "rgbValues": [35, 37, 37],
+        "usage": "Основной темный цвет для текста и элементов",
+        "bias": "98%"
+      }
+    },
+    "accent": {
+      "description": "Акцентные цвета для выделения и брендинга",
+      "toryBlue": {
+        "name": "Tory Blue",
+        "hex": "#0E44B7",
+        "rgb": "rgb(14, 68, 178)",
+        "rgbValues": [14, 68, 178],
+        "usage": [
+          "Выборочные элементы интерфейса",
+          "Часть логотипа JivaPay",
+          "Кнопки и активные состояния",
+          "Ссылки и интерактивные элементы"
+        ],
+        "bias": "100%"
+      }
+    },
+    "semantic": {
+      "description": "Семантические цвета для статусов и уведомлений",
+      "success": {
+        "name": "Success Green",
+        "hex": "#10B981",
+        "rgb": "rgb(16, 185, 129)",
+        "rgbValues": [16, 185, 129],
+        "usage": "Успешные операции, положительные состояния"
+      },
+      "error": {
+        "name": "Error Red",
+        "hex": "#EF4444",
+        "rgb": "rgb(239, 68, 68)",
+        "rgbValues": [239, 68, 68],
+        "usage": "Ошибки, предупреждения, отрицательные состояния"
+      },
+      "warning": {
+        "name": "Warning Yellow",
+        "hex": "#F59E0B",
+        "rgb": "rgb(245, 158, 11)",
+        "rgbValues": [245, 158, 11],
+        "usage": "Предупреждения, ожидающие действия"
+      }
+    }
+  },
+  "usageGuidelines": {
+    "lightColors": {
+      "colors": ["shadyLady", "ghost"],
+      "purpose": "Фоновая база интерфейса"
+    },
+    "darkColors": {
+      "colors": ["richBlack"],
+      "purpose": "Элементы интерфейса, текст, компоненты"
+    },
+    "accentColors": {
+      "colors": ["toryBlue"],
+      "purpose": "Выборочные элементы, логотип, акценты"
+    },
+    "semanticColors": {
+      "colors": ["success", "error", "warning"],
+      "purpose": "Статусы операций и уведомления"
+    }
+  },
+  "tailwindIntegration": {
+    "description": "Интеграция с Tailwind CSS конфигурацией",
+    "configPath": "frontend/tailwind.config.base.ts",
+    "customColors": {
+      "shady-lady": "#ACA9AC",
+      "ghost": "#C6CED8",
+      "rich-black": "#232525",
+      "tory-blue": "#0E44B7"
+    },
+    "cssVariables": {
+      "--color-success": "#10B981",
+      "--color-error": "#EF4444",
+      "--color-warning": "#F59E0B",
+      "--color-primary": "var(--color-primary)",
+      "--color-secondary": "var(--color-secondary)",
+      "--color-bg": "var(--color-bg)"
+    }
+  },
+  "accessibility": {
+    "contrastRatios": {
+      "richBlackOnShadyLady": "High contrast for text readability",
+      "toryBlueOnWhite": "WCAG AA compliant",
+      "semanticColors": "Designed for accessibility standards"
+    },
+    "colorBlindness": {
+      "note": "Palette tested for common color vision deficiencies",
+      "alternatives": "Semantic colors include sufficient contrast differences"
+    }
+  },
+  "brandingNotes": {
+    "primaryBrand": "toryBlue",
+    "logoColors": ["toryBlue", "richBlack"],
+    "backgroundHierarchy": ["ghost", "shadyLady"],
+    "textHierarchy": ["richBlack"]
+  }
+} 

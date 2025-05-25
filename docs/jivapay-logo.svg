@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1660" height="594" viewBox="0 0 1660 594" fill="none">
+  <!-- Иконка слева -->
+  <defs>
+    <linearGradient id="iconGradient" x1="0" y1="0" x2="300" y2="300" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#BABBBC"/>
+      <stop offset="1" stop-color="#717170"/>
+    </linearGradient>
+  </defs>
+  <rect x="40" y="40" width="300" height="300" rx="80" fill="url(#iconGradient)"/>
+  <circle cx="190" cy="190" r="130" fill="#fff"/>
+  <text x="190" y="255" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="200" font-weight="bold" fill="#B0B0AF">J</text>
+  <!-- Текст справа -->
+  <text x="380" y="270" font-family="Arial, Helvetica, sans-serif" font-size="200" font-weight="normal" letter-spacing="2">
+    <tspan fill="#FCFCFD" opacity="0.13">Jiva</tspan><tspan fill="#4D72FD">pay</tspan>
+  </text>
+</svg>
