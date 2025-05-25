@@ -60,7 +60,7 @@ export const FinanceManagement: React.FC<FinanceManagementProps> = ({
       key: 'date',
       title: 'Дата и время',
       render: (value: string) => (
-        <span className="text-xs text-[var(--jiva-text-secondary)]">{value}</span>
+        <span className="text-xs text-secondary">{value}</span>
       )
     },
     {
@@ -83,14 +83,14 @@ export const FinanceManagement: React.FC<FinanceManagementProps> = ({
       title: 'Комиссия',
       align: 'right' as const,
       render: (value: number) => (
-        <span className="text-[var(--jiva-text-secondary)]">{formatCurrency(value)}</span>
+        <span className="text-secondary">{formatCurrency(value)}</span>
       )
     },
     {
       key: 'method',
       title: 'Способ оплаты',
       render: (value: string) => (
-        <span className="text-xs bg-[var(--jiva-background)] px-2 py-1 rounded">
+        <span className="text-xs bg-background px-2 py-1 rounded">
           {value}
         </span>
       )
@@ -120,11 +120,11 @@ export const FinanceManagement: React.FC<FinanceManagementProps> = ({
       align: 'right' as const,
       render: () => (
         <div className="flex gap-2 justify-end">
-          <button className="text-[var(--jiva-primary)] hover:text-[var(--jiva-primary-dark)] text-xs">
-            Подробнее
+          <button className="text-accent hover:opacity-90 text-xs">
+            Просмотр
           </button>
-          <button className="text-[var(--jiva-text-secondary)] hover:text-[var(--jiva-text-primary)] text-xs">
-            Экспорт
+          <button className="text-secondary hover:text-primary text-xs">
+            Изменить
           </button>
         </div>
       )
@@ -135,12 +135,12 @@ export const FinanceManagement: React.FC<FinanceManagementProps> = ({
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Финансы</h1>
-        <p className="text-[var(--jiva-text-secondary)] mt-1">
-          Финансовая отчетность и транзакции
+        <p className="text-secondary mt-1">
+          Управление транзакциями и балансами
         </p>
       </div>
 
-      {/* Статистические карточки */}
+      {/* Основные метрики */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           title="Общий баланс"
@@ -195,80 +195,73 @@ export const FinanceManagement: React.FC<FinanceManagementProps> = ({
         />
       </div>
 
-      {/* График транзакций */}
-      <div className="bg-[var(--jiva-background-paper)] rounded-lg p-6 shadow-sm">
+      {/* Графики и аналитика */}
+      <div className="bg-surface rounded-lg p-6 shadow-sm">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Динамика транзакций</h2>
-          <div className="flex bg-[var(--jiva-background)] rounded-lg overflow-hidden">
-            <button className="px-3 py-1 text-sm bg-[var(--jiva-primary)] text-white">
-              День
+          <h3 className="text-lg font-semibold">Динамика доходов</h3>
+          <div className="flex bg-background rounded-lg overflow-hidden">
+            <button className="px-3 py-1 text-sm bg-accent text-white">
+              Доходы
             </button>
-            <button className="px-3 py-1 text-sm hover:bg-[var(--jiva-background-paper)]">
-              Неделя
+            <button className="px-3 py-1 text-sm hover:bg-surface">
+              Расходы
             </button>
-            <button className="px-3 py-1 text-sm hover:bg-[var(--jiva-background-paper)]">
-              Месяц
+            <button className="px-3 py-1 text-sm hover:bg-surface">
+              Прибыль
             </button>
           </div>
         </div>
-        <div className="h-80 w-full bg-gray-100 rounded flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-[var(--jiva-text-secondary)]">
-              График финансовых показателей будет здесь
-            </p>
-            <p className="text-xs text-[var(--jiva-text-secondary)] mt-1">
-              Подключение к ChartJS или другой библиотеке графиков
-            </p>
-          </div>
+        
+        <div style={{ width: '100%', height: 300 }}>
+          <p className="text-secondary">
+            График финансовой динамики будет здесь
+          </p>
+          <p className="text-xs text-secondary mt-1">
+            Показывает изменения доходов/расходов по времени
+          </p>
         </div>
       </div>
 
-      {/* Фильтры и поиск */}
-      <div className="bg-[var(--jiva-background-paper)] rounded-lg p-4 shadow-sm">
-        <div className="flex flex-wrap gap-4">
-          <div className="flex-1 min-w-[200px]">
-            <label className="block text-sm font-medium text-[var(--jiva-text-secondary)] mb-1">
+      {/* Настройки и фильтры */}
+      <div className="bg-surface rounded-lg p-4 shadow-sm">
+        <h3 className="text-lg font-semibold mb-4">Фильтры и настройки</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-secondary mb-1">
               Период
             </label>
-            <select className="w-full p-2 border border-[var(--jiva-border)] rounded-md text-sm">
-              <option value="today">Сегодня</option>
-              <option value="yesterday">Вчера</option>
-              <option value="week">Неделя</option>
-              <option value="month">Месяц</option>
-              <option value="custom">Выбрать период</option>
+            <select className="w-full p-2 border border-border rounded-md text-sm">
+              <option>Сегодня</option>
+              <option>Неделя</option>
+              <option>Месяц</option>
+              <option>Год</option>
             </select>
           </div>
-          
-          <div className="flex-1 min-w-[200px]">
-            <label className="block text-sm font-medium text-[var(--jiva-text-secondary)] mb-1">
-              Статус
+          <div>
+            <label className="block text-sm font-medium text-secondary mb-1">
+              Тип операций
             </label>
-            <select className="w-full p-2 border border-[var(--jiva-border)] rounded-md text-sm">
-              <option value="">Все статусы</option>
-              <option value="success">Успешно</option>
-              <option value="processing">В процессе</option>
-              <option value="failed">Ошибка</option>
-              <option value="refund">Возврат</option>
+            <select className="w-full p-2 border border-border rounded-md text-sm">
+              <option>Все</option>
+              <option>Доходы</option>
+              <option>Расходы</option>
+              <option>Переводы</option>
             </select>
           </div>
-          
-          <div className="flex-1 min-w-[200px]">
-            <label className="block text-sm font-medium text-[var(--jiva-text-secondary)] mb-1">
-              Поиск
+          <div>
+            <label className="block text-sm font-medium text-secondary mb-1">
+              Валюта
             </label>
             <input
               type="text"
-              placeholder="ID транзакции или магазин"
-              className="w-full p-2 border border-[var(--jiva-border)] rounded-md text-sm"
+              placeholder="RUB, USD, EUR..."
+              className="w-full p-2 border border-border rounded-md text-sm"
             />
           </div>
-          
-          <div className="flex items-end">
-            <button className="px-4 py-2 bg-[var(--jiva-primary)] text-white rounded-md hover:bg-[var(--jiva-primary-dark)] transition-colors text-sm">
-              Экспорт
-            </button>
-          </div>
         </div>
+        <button className="px-4 py-2 bg-accent text-white rounded-md hover:opacity-90 transition-colors text-sm">
+          Применить фильтры
+        </button>
       </div>
 
       {/* Таблица транзакций */}

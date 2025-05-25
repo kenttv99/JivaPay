@@ -72,8 +72,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     return (
       <div className="p-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-[var(--jiva-text)]">Доступ запрещен</h1>
-          <p className="text-[var(--jiva-text-secondary)] mt-2">У вас нет прав для просмотра этой страницы</p>
+          <h1 className="text-2xl font-bold text-primary">Доступ запрещен</h1>
+          <p className="text-secondary mt-2">У вас нет прав для просмотра этой страницы</p>
         </div>
       </div>
     );
@@ -185,15 +185,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     <div className="space-y-6">
       {/* Заголовок страницы */}
       <div>
-        <h1 className="text-3xl font-bold text-[var(--jiva-text)]">
-          {role === 'admin' ? 'Панель управления' : 
-           role === 'teamlead' ? 'Панель тимлида' : 
-           'Панель поддержки'}
+        <h1 className="text-3xl font-bold text-primary">
+          Панель управления JivaPay
         </h1>
-        <p className="text-[var(--jiva-text-secondary)] mt-1">
-          {role === 'admin' ? 'Добро пожаловать в административную панель JivaPay' :
+        <p className="text-secondary mt-1">
+          {role === 'admin' ? 'Полный контроль над платформой' :
            role === 'teamlead' ? 'Управление командой трейдеров' :
-           'Поддержка пользователей и решение вопросов'}
+           role === 'support' ? 'Поддержка пользователей' :
+           'Управление магазинами'}
         </p>
       </div>
 
@@ -205,13 +204,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       />
 
       {/* Недавние ордера */}
-      <div className="bg-[var(--jiva-background-paper)] rounded-lg p-6 shadow-sm">
+      <div className="bg-surface rounded-lg p-6 shadow-sm">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-[var(--jiva-text)]">
-            {role === 'support' ? 'Назначенные ордера' : 'Недавние ордера'}
+          <h2 className="text-xl font-bold text-primary">
+            Статистика ордеров
           </h2>
           {dashboardConfig.config.enableExport && (
-            <button className="text-sm text-[var(--jiva-primary)] hover:underline">
+            <button className="bg-accent text-white px-4 py-2 rounded-lg hover:opacity-90">
               Экспорт данных
             </button>
           )}
@@ -221,88 +220,82 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           orders={recentOrders}
           showColumns={getOrdersTableConfig()}
           isLoading={isLoading}
-          className="border-t border-[var(--jiva-border-light)]"
+          className="border-t border-border"
         />
         
         {recentOrders.length > 0 && (
           <div className="mt-4 text-center">
-            <a href="/orders" className="text-sm text-[var(--jiva-primary)] hover:underline">
-              Показать все ордера →
+            <a href="/orders" className="text-sm text-accent hover:underline">
+              Посмотреть все ордера →
             </a>
           </div>
         )}
       </div>
 
-      {/* Дополнительная информация для админов */}
-      {role === 'admin' && dashboardConfig.config.showAdvancedMetrics && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-[var(--jiva-background-paper)] rounded-lg p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-[var(--jiva-text)] mb-4">Статистика платежей</h3>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium">Успешные</span>
-                  <span className="text-sm text-[var(--jiva-text-secondary)]">82%</span>
-                </div>
-                <div className="w-full bg-[var(--jiva-border-light)] rounded-full h-2">
-                  <div 
-                    className="bg-[var(--jiva-success)] h-2 rounded-full" 
-                    style={{ width: '82%' }}
-                  ></div>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium">В процессе</span>
-                  <span className="text-sm text-[var(--jiva-text-secondary)]">12%</span>
-                </div>
-                <div className="w-full bg-[var(--jiva-border-light)] rounded-full h-2">
-                  <div 
-                    className="bg-[var(--jiva-info)] h-2 rounded-full" 
-                    style={{ width: '12%' }}
-                  ></div>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium">Неудачные</span>
-                  <span className="text-sm text-[var(--jiva-text-secondary)]">6%</span>
-                </div>
-                <div className="w-full bg-[var(--jiva-border-light)] rounded-full h-2">
-                  <div 
-                    className="bg-[var(--jiva-error)] h-2 rounded-full" 
-                    style={{ width: '6%' }}
-                  ></div>
-                </div>
-              </div>
-            </div>
+      {/* Аналитика платежей */}
+      <div className="bg-surface rounded-lg p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-primary mb-4">Статистика платежей</h3>
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <span className="text-primary">Успешные платежи</span>
+            <span className="text-sm text-secondary">82%</span>
+          </div>
+          <div className="w-full bg-border rounded-full h-2">
+            <div 
+              className="bg-success h-2 rounded-full"
+              style={{ width: '82%' }}
+            ></div>
           </div>
           
-          <div className="bg-[var(--jiva-background-paper)] rounded-lg p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-[var(--jiva-text)] mb-4">Распределение по методам</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm">Банковские карты</span>
-                <span className="text-sm font-medium">65%</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Электронные кошельки</span>
-                <span className="text-sm font-medium">24%</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Криптовалюты</span>
-                <span className="text-sm font-medium">8%</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Другие</span>
-                <span className="text-sm font-medium">3%</span>
-              </div>
-            </div>
+          <div className="flex justify-between items-center">
+            <span className="text-primary">В обработке</span>
+            <span className="text-sm text-secondary">12%</span>
+          </div>
+          <div className="w-full bg-border rounded-full h-2">
+            <div 
+              className="bg-info h-2 rounded-full"
+              style={{ width: '12%' }}
+            ></div>
+          </div>
+          
+          <div className="flex justify-between items-center">
+            <span className="text-primary">Неудачные</span>
+            <span className="text-sm text-secondary">6%</span>
+          </div>
+          <div className="w-full bg-border rounded-full h-2">
+            <div 
+              className="bg-error h-2 rounded-full"
+              style={{ width: '6%' }}
+            ></div>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Методы платежей */}
+      <div className="bg-surface rounded-lg p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-primary mb-4">Распределение по методам</h3>
+        <div className="space-y-3">
+          {[
+            { name: 'Банковские карты', percentage: 65 },
+            { name: 'Электронные кошельки', percentage: 24 },
+            { name: 'Криптовалюты', percentage: 8 },
+            { name: 'Другие', percentage: 3 }
+          ].map((method, index) => (
+            <div key={index} className="flex justify-between items-center">
+              <span className="text-primary">{method.name}</span>
+              <div className="flex items-center gap-2">
+                <div className="w-20 h-2 bg-border rounded-full">
+                  <div 
+                    className="h-2 bg-accent rounded-full"
+                    style={{ width: `${method.percentage}%` }}
+                  ></div>
+                </div>
+                <span className="text-sm text-secondary w-10">{method.percentage}%</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }; 

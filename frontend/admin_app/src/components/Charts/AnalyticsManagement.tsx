@@ -83,7 +83,7 @@ export const AnalyticsManagement: React.FC<AnalyticsManagementProps> = ({
       title: 'Комиссия',
       align: 'right' as const,
       render: (value: number) => (
-        <span className="text-[var(--jiva-text-secondary)]">{formatCurrency(value)}</span>
+        <span className="text-secondary">{formatCurrency(value)}</span>
       )
     },
     {
@@ -91,7 +91,7 @@ export const AnalyticsManagement: React.FC<AnalyticsManagementProps> = ({
       title: 'Конверсия',
       align: 'right' as const,
       render: (value: number) => (
-        <span className="text-[var(--jiva-success)]">{value}%</span>
+        <span className="text-success">{value}%</span>
       )
     }
   ];
@@ -100,19 +100,19 @@ export const AnalyticsManagement: React.FC<AnalyticsManagementProps> = ({
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Аналитика</h1>
-        <p className="text-[var(--jiva-text-secondary)] mt-1">
+        <p className="text-secondary mt-1">
           Статистика и аналитика продаж
         </p>
       </div>
 
       {/* Фильтры */}
-      <div className="bg-[var(--jiva-background-paper)] rounded-lg p-4 shadow-sm">
+      <div className="bg-surface rounded-lg p-4 shadow-sm">
         <div className="flex flex-wrap gap-4">
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-sm font-medium text-[var(--jiva-text-secondary)] mb-1">
+            <label className="block text-sm font-medium text-secondary mb-1">
               Период
             </label>
-            <select className="w-full p-2 border border-[var(--jiva-border)] rounded-md text-sm">
+            <select className="w-full p-2 border border-border rounded-md text-sm">
               <option value="week">Неделя</option>
               <option value="month" defaultChecked>Месяц</option>
               <option value="quarter">Квартал</option>
@@ -122,10 +122,10 @@ export const AnalyticsManagement: React.FC<AnalyticsManagementProps> = ({
           </div>
           
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-sm font-medium text-[var(--jiva-text-secondary)] mb-1">
+            <label className="block text-sm font-medium text-secondary mb-1">
               Мерчант
             </label>
-            <select className="w-full p-2 border border-[var(--jiva-border)] rounded-md text-sm">
+            <select className="w-full p-2 border border-border rounded-md text-sm">
               <option value="">Все мерчанты</option>
               <option value="1">ООО &quot;Первый&quot;</option>
               <option value="2">ИП Петров</option>
@@ -134,10 +134,10 @@ export const AnalyticsManagement: React.FC<AnalyticsManagementProps> = ({
           </div>
           
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-sm font-medium text-[var(--jiva-text-secondary)] mb-1">
+            <label className="block text-sm font-medium text-secondary mb-1">
               Метрики
             </label>
-            <select className="w-full p-2 border border-[var(--jiva-border)] rounded-md text-sm">
+            <select className="w-full p-2 border border-border rounded-md text-sm">
               <option value="transactions">Транзакции</option>
               <option value="volume" defaultChecked>Объем продаж</option>
               <option value="commission">Комиссии</option>
@@ -145,7 +145,7 @@ export const AnalyticsManagement: React.FC<AnalyticsManagementProps> = ({
           </div>
           
           <div className="flex items-end">
-            <button className="px-4 py-2 bg-[var(--jiva-primary)] text-white rounded-md hover:bg-[var(--jiva-primary-dark)] transition-colors text-sm">
+            <button className="px-4 py-2 bg-accent text-white rounded-md hover:opacity-90 transition-colors text-sm">
               Применить
             </button>
           </div>
@@ -153,24 +153,24 @@ export const AnalyticsManagement: React.FC<AnalyticsManagementProps> = ({
       </div>
 
       {/* Основной график */}
-      <div className="bg-[var(--jiva-background-paper)] rounded-lg p-6 shadow-sm">
+      <div className="bg-surface rounded-lg p-6 shadow-sm">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">Объем продаж по дням</h2>
-          <div className="flex bg-[var(--jiva-background)] rounded-lg overflow-hidden">
-            <button className="px-3 py-1 text-sm bg-[var(--jiva-primary)] text-white">
+          <div className="flex bg-background rounded-lg overflow-hidden">
+            <button className="px-3 py-1 text-sm bg-accent text-white">
               График
             </button>
-            <button className="px-3 py-1 text-sm hover:bg-[var(--jiva-background-paper)]">
+            <button className="px-3 py-1 text-sm hover:bg-surface">
               Таблица
             </button>
           </div>
         </div>
         <div className="h-96 w-full bg-gray-100 rounded flex items-center justify-center">
           <div className="text-center">
-            <p className="text-[var(--jiva-text-secondary)]">
+            <p className="text-secondary">
               Основной график аналитики будет здесь
             </p>
-            <p className="text-xs text-[var(--jiva-text-secondary)] mt-1">
+            <p className="text-xs text-secondary mt-1">
               Интеграция с Chart.js или D3.js
             </p>
           </div>
@@ -234,11 +234,11 @@ export const AnalyticsManagement: React.FC<AnalyticsManagementProps> = ({
 
       {/* Дополнительные графики */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-[var(--jiva-background-paper)] rounded-lg p-6 shadow-sm">
+        <div className="bg-surface rounded-lg p-6 shadow-sm">
           <h2 className="text-xl font-bold mb-4">Распределение по способам оплаты</h2>
           <div className="h-80 w-full bg-gray-100 rounded flex items-center justify-center">
             <div className="text-center">
-              <p className="text-[var(--jiva-text-secondary)]">
+              <p className="text-secondary">
                 Круговая диаграмма методов оплаты
               </p>
               <div className="mt-4 space-y-2 text-sm">
@@ -263,11 +263,11 @@ export const AnalyticsManagement: React.FC<AnalyticsManagementProps> = ({
           </div>
         </div>
         
-        <div className="bg-[var(--jiva-background-paper)] rounded-lg p-6 shadow-sm">
+        <div className="bg-surface rounded-lg p-6 shadow-sm">
           <h2 className="text-xl font-bold mb-4">Топ-5 мерчантов</h2>
           <div className="h-80 w-full bg-gray-100 rounded flex items-center justify-center">
             <div className="text-center">
-              <p className="text-[var(--jiva-text-secondary)]">
+              <p className="text-secondary">
                 Горизонтальная гистограмма топ мерчантов
               </p>
               <div className="mt-4 space-y-3 text-sm w-full max-w-sm">
@@ -275,9 +275,9 @@ export const AnalyticsManagement: React.FC<AnalyticsManagementProps> = ({
                   <div key={store} className="flex justify-between items-center">
                     <span>{store}</span>
                     <div className="flex items-center gap-2">
-                      <div className="w-16 h-2 bg-[var(--jiva-background)] rounded overflow-hidden">
+                      <div className="w-16 h-2 bg-background rounded overflow-hidden">
                         <div 
-                          className="h-full bg-[var(--jiva-primary)]" 
+                          className="h-full bg-accent" 
                           style={{ width: `${100 - index * 15}%` }}
                         ></div>
                       </div>
@@ -292,10 +292,10 @@ export const AnalyticsManagement: React.FC<AnalyticsManagementProps> = ({
       </div>
 
       {/* Детальная таблица */}
-      <div className="bg-[var(--jiva-background-paper)] rounded-lg shadow-sm">
-        <div className="flex justify-between items-center p-6 border-b border-[var(--jiva-border)]">
+      <div className="bg-surface rounded-lg shadow-sm">
+        <div className="flex justify-between items-center p-6 border-b border-border">
           <h2 className="text-xl font-bold">Детальная статистика</h2>
-          <button className="px-4 py-2 bg-[var(--jiva-primary)] text-white rounded-md hover:bg-[var(--jiva-primary-dark)] transition-colors text-sm">
+          <button className="px-4 py-2 bg-accent text-white rounded-md hover:opacity-90 transition-colors text-sm">
             Экспорт в CSV
           </button>
         </div>

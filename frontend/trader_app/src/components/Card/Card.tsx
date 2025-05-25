@@ -1,6 +1,4 @@
 import React from 'react';
-import classNames from 'classnames';
-import styles from './Card.module.css';
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'glass' | 'dark';
@@ -8,11 +6,24 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export const Card: React.FC<CardProps> = ({
   children,
-  className,
+  className = '',
   variant = 'default',
   ...props
-}) => (
-  <div className={classNames(styles.card, styles[variant], className)} {...props}>
-    {children}
-  </div>
-); 
+}) => {
+  const baseClasses = 'rounded-lg shadow-md p-8 transition-all duration-200';
+  
+  const variants = {
+    default: 'bg-surface text-primary',
+    glass: 'bg-white/15 backdrop-blur-sm border border-white/20 text-primary',
+    dark: 'bg-background text-primary'
+  };
+
+  return (
+    <div 
+      className={`${baseClasses} ${variants[variant]} ${className}`} 
+      {...props}
+    >
+      {children}
+    </div>
+  );
+}; 

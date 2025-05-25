@@ -1,39 +1,34 @@
 'use client';
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-
 export default function NotFound() {
-  const router = useRouter();
-  
   return (
-    <div className="min-h-screen bg-[var(--jiva-background)] flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       <div className="text-center">
-        <h1 className="text-9xl font-bold text-[var(--jiva-primary)]">404</h1>
-        <h2 className="text-3xl font-bold mb-6 text-[var(--jiva-text)]">Страница не найдена</h2>
-        <p className="text-[var(--jiva-text-secondary)] mb-8">
-          Запрашиваемая страница не существует или была перемещена
+        <h1 className="text-9xl font-bold text-primary">404</h1>
+        <h2 className="text-3xl font-bold mb-6 text-primary">Страница не найдена</h2>
+        <p className="text-secondary mb-8">
+          К сожалению, запрошенная страница не существует или была перемещена.
         </p>
         
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
-            onClick={() => router.back()}
-            className="px-6 py-2 border border-[var(--jiva-border)] rounded-md text-[var(--jiva-text)] hover:bg-[var(--jiva-background-paper)] transition-colors"
+            onClick={() => window.history.back()}
+            className="px-6 py-2 border border-border rounded-md text-primary hover:bg-surface transition-colors"
           >
-            Вернуться назад
+            Назад
           </button>
           
-          <Link
-            href="/"
-            className="px-6 py-2 bg-[var(--jiva-primary)] text-white rounded-md hover:bg-[var(--jiva-primary-dark)] transition-colors"
+          <a
+            href="/admin"
+            className="px-6 py-2 bg-accent text-white rounded-md hover:opacity-90 transition-colors"
           >
             На главную
-          </Link>
+          </a>
         </div>
-      </div>
-      
-      <div className="mt-16 text-[var(--jiva-text-secondary)] text-sm">
-        <p>Если вы считаете, что это ошибка, пожалуйста, свяжитесь с поддержкой</p>
+        
+        <div className="mt-16 text-secondary text-sm">
+          Если проблема повторяется, обратитесь к администратору
+        </div>
       </div>
     </div>
   );

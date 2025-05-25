@@ -27,8 +27,8 @@ export const UsersPage: React.FC<UsersPageProps> = ({
     return (
       <div className="p-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-[var(--jiva-text)]">Доступ запрещен</h1>
-          <p className="text-[var(--jiva-text-secondary)] mt-2">У вас нет прав для просмотра пользователей</p>
+          <h1 className="text-2xl font-bold text-primary">Доступ запрещен</h1>
+          <p className="text-secondary mt-2">У вас нет прав для просмотра пользователей</p>
         </div>
       </div>
     );
@@ -96,20 +96,20 @@ export const UsersPage: React.FC<UsersPageProps> = ({
   // Вкладки в зависимости от роли
   const getTabs = () => {
     const baseTabs = [
-      { id: 'all', label: `Все (${stats.total})`, content: null }
+      { key: 'all', label: `Все (${stats.total})`, content: <div></div> }
     ];
 
     if (usersConfig.config.showAllRoles) {
       baseTabs.push(
-        { id: 'active', label: `Активные (${stats.active})`, content: null },
-        { id: 'blocked', label: `Заблокированные (${stats.blocked})`, content: null },
-        { id: 'admins', label: `Админы (${stats.admins})`, content: null },
-        { id: 'business', label: `Бизнес (${stats.business})`, content: null }
+        { key: 'active', label: `Активные (${stats.active})`, content: <div></div> },
+        { key: 'blocked', label: `Заблокированные (${stats.blocked})`, content: <div></div> },
+        { key: 'admins', label: `Админы (${stats.admins})`, content: <div></div> },
+        { key: 'business', label: `Бизнес (${stats.business})`, content: <div></div> }
       );
     } else {
       // Ограниченный набор вкладок для teamlead/support
       baseTabs.push(
-        { id: 'active', label: `Активные (${stats.active})`, content: null }
+        { key: 'active', label: `Активные (${stats.active})`, content: <div></div> }
       );
     }
 
@@ -121,12 +121,12 @@ export const UsersPage: React.FC<UsersPageProps> = ({
     return {
       view: true, // Все могут просматривать
       edit: usersConfig.config.enableRoleManagement && (
-        usersConfig.permissions.editAny || usersConfig.permissions.editTeam
+        ('editAny' in usersConfig.permissions) || ('editTeam' in usersConfig.permissions)
       ),
-      delete: usersConfig.config.enableRoleManagement && 
+      delete: usersConfig.config.enableRoleManagement &&
         'deleteAny' in usersConfig.permissions,
       block: usersConfig.config.enableRoleManagement && (
-        usersConfig.permissions.editAny || usersConfig.permissions.editTeam
+        ('editAny' in usersConfig.permissions) || ('editTeam' in usersConfig.permissions)
       ),
       changeRole: usersConfig.config.enablePermissionManagement
     };
@@ -147,10 +147,10 @@ export const UsersPage: React.FC<UsersPageProps> = ({
       {/* Заголовок страницы */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-[var(--jiva-text)]">
+          <h1 className="text-3xl font-bold text-primary">
             Управление пользователями
           </h1>
-          <p className="text-[var(--jiva-text-secondary)] mt-1">
+          <p className="text-secondary mt-1">
             {role === 'admin' ? 'Управление всеми пользователями системы' :
              role === 'teamlead' ? 'Управление трейдерами команды' :
              'Поддержка назначенных пользователей'}
@@ -158,7 +158,7 @@ export const UsersPage: React.FC<UsersPageProps> = ({
         </div>
 
         {usersConfig.config.enableRoleManagement && (
-          <button className="bg-[var(--jiva-primary)] text-white px-4 py-2 rounded-lg hover:opacity-90">
+          <button className="bg-accent text-white px-4 py-2 rounded-lg hover:opacity-90">
             Создать пользователя
           </button>
         )}
@@ -166,34 +166,33 @@ export const UsersPage: React.FC<UsersPageProps> = ({
 
       {/* Статистика */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-[var(--jiva-background-paper)] p-4 rounded-lg">
-          <div className="text-2xl font-bold text-[var(--jiva-text)]">{stats.total}</div>
-          <div className="text-sm text-[var(--jiva-text-secondary)]">Всего пользователей</div>
+        <div className="bg-surface p-4 rounded-lg">
+          <div className="text-2xl font-bold text-primary">{stats.total}</div>
+          <div className="text-sm text-secondary">Всего пользователей</div>
         </div>
-        <div className="bg-[var(--jiva-background-paper)] p-4 rounded-lg">
-          <div className="text-2xl font-bold text-[var(--jiva-success)]">{stats.active}</div>
-          <div className="text-sm text-[var(--jiva-text-secondary)]">Активных</div>
+        <div className="bg-surface p-4 rounded-lg">
+          <div className="text-2xl font-bold text-success">{stats.active}</div>
+          <div className="text-sm text-secondary">Активных</div>
         </div>
         {usersConfig.config.showAllRoles && (
           <>
-            <div className="bg-[var(--jiva-background-paper)] p-4 rounded-lg">
-              <div className="text-2xl font-bold text-[var(--jiva-error)]">{stats.blocked}</div>
-              <div className="text-sm text-[var(--jiva-text-secondary)]">Заблокированных</div>
+            <div className="bg-surface p-4 rounded-lg">
+              <div className="text-2xl font-bold text-error">{stats.blocked}</div>
+              <div className="text-sm text-secondary">Заблокированных</div>
             </div>
-            <div className="bg-[var(--jiva-background-paper)] p-4 rounded-lg">
-              <div className="text-2xl font-bold text-[var(--jiva-info)]">{stats.business}</div>
-              <div className="text-sm text-[var(--jiva-text-secondary)]">Бизнес пользователей</div>
+            <div className="bg-surface p-4 rounded-lg">
+              <div className="text-2xl font-bold text-info">{stats.business}</div>
+              <div className="text-sm text-secondary">Бизнес пользователей</div>
             </div>
           </>
         )}
       </div>
 
       {/* Фильтры/Вкладки */}
-      <div className="bg-[var(--jiva-background-paper)] rounded-lg p-6">
+      <div className="bg-surface rounded-lg p-6">
         <TabGroup
           tabs={getTabs()}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
+          defaultTab={activeTab}
         />
 
         {/* Таблица пользователей */}
@@ -209,9 +208,9 @@ export const UsersPage: React.FC<UsersPageProps> = ({
 
         {filteredUsers.length === 0 && !isLoading && (
           <div className="text-center py-8">
-            <div className="text-[var(--jiva-text-secondary)]">
+            <div className="text-secondary">
               {activeTab === 'all' ? 'Пользователи не найдены' : 
-               `Нет пользователей в категории "${getTabs().find(t => t.id === activeTab)?.label}"`}
+               `Нет пользователей в категории "${getTabs().find(t => t.key === activeTab)?.label}"`}
             </div>
           </div>
         )}
@@ -219,14 +218,14 @@ export const UsersPage: React.FC<UsersPageProps> = ({
 
       {/* Дополнительная информация для админов */}
       {role === 'admin' && usersConfig.config.enablePermissionManagement && (
-        <div className="bg-[var(--jiva-background-paper)] rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-[var(--jiva-text)] mb-4">
+        <div className="bg-surface rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-primary mb-4">
             Системная информация
           </h3>
           <div className="grid grid-cols-3 gap-6 text-sm">
             <div>
-              <div className="font-medium text-[var(--jiva-text)]">Роли системы:</div>
-              <div className="text-[var(--jiva-text-secondary)] mt-1">
+              <div className="font-medium text-primary">Роли системы:</div>
+              <div className="text-secondary mt-1">
                 <div>• Администратор (полный доступ)</div>
                 <div>• Тимлид (управление командой)</div>
                 <div>• Поддержка (помощь пользователям)</div>
@@ -235,8 +234,8 @@ export const UsersPage: React.FC<UsersPageProps> = ({
               </div>
             </div>
             <div>
-              <div className="font-medium text-[var(--jiva-text)]">Статусы:</div>
-              <div className="text-[var(--jiva-text-secondary)] mt-1">
+              <div className="font-medium text-primary">Статусы:</div>
+              <div className="text-secondary mt-1">
                 <div>• Активен - полный доступ</div>
                 <div>• Неактивен - временно отключен</div>
                 <div>• Заблокирован - доступ запрещен</div>
@@ -244,8 +243,8 @@ export const UsersPage: React.FC<UsersPageProps> = ({
               </div>
             </div>
             <div>
-              <div className="font-medium text-[var(--jiva-text)]">Действия:</div>
-              <div className="text-[var(--jiva-text-secondary)] mt-1">
+              <div className="font-medium text-primary">Действия:</div>
+              <div className="text-secondary mt-1">
                 <div>• Просмотр - детали пользователя</div>
                 <div>• Изменить - редактирование данных</div>
                 <div>• Заблокировать - временная блокировка</div>

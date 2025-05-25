@@ -1,7 +1,7 @@
-import '../styles/global.css'; // Основные стили с Tailwind CSS
-import '../styles/theme.css';
+import './globals.css'; // Основные стили с Tailwind CSS
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import PermissionProviderWrapper from '@/components/providers/PermissionProviderWrapper';
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'] });
 
@@ -17,8 +17,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body className={`${inter.className} bg-background text-[var(--jiva-text)]`}>
-        {children}
+      <body className={`${inter.className} bg-background text-primary`}>
+        <PermissionProviderWrapper>
+          {children}
+        </PermissionProviderWrapper>
       </body>
     </html>
   );

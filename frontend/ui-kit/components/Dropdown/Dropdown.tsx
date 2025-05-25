@@ -76,8 +76,9 @@ export const Dropdown: React.FC<DropdownProps> = ({
       {isOpen && (
         <div
           className={`
-            absolute z-50 min-w-[160px] bg-[var(--color-surface)] border border-[var(--color-border)] 
-            rounded-md shadow-lg py-1 ${getPlacementClasses(placement)}
+            absolute z-50 min-w-[160px] bg-surface border border-border
+            rounded-md shadow-lg mt-1 py-1 
+            ${placement === 'bottom-start' ? 'left-0' : placement === 'bottom-end' ? 'right-0' : placement === 'top-start' ? 'bottom-full left-0 mb-1' : 'bottom-full right-0 mb-1'}
           `}
         >
           {items.map((item) => (
@@ -87,15 +88,12 @@ export const Dropdown: React.FC<DropdownProps> = ({
               onClick={() => handleItemClick(item)}
               disabled={item.disabled}
               className={`
-                w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2
+                w-full text-left px-3 py-2 text-sm transition-colors
                 ${item.disabled 
                   ? 'opacity-50 cursor-not-allowed' 
-                  : 'hover:bg-[var(--color-bg)] focus:bg-[var(--color-bg)]'
+                  : 'hover:bg-background focus:bg-background'
                 }
-                ${item.danger 
-                  ? 'text-[var(--color-error)] hover:bg-[var(--color-error-light)]' 
-                  : 'text-[var(--color-primary)]'
-                }
+                ${item.danger ? 'text-error' : 'text-primary'}
               `}
             >
               {item.icon && (

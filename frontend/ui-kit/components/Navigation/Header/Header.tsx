@@ -47,12 +47,20 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className={`sticky top-0 z-10 flex h-14 items-center border-b border-gray-200 bg-white px-4 md:px-6 ${className}`}>
+    <header 
+      className={`sticky top-0 z-10 flex h-14 items-center px-4 md:px-6 bg-surface border-b border-border shadow-sm ${className}`}
+    >
       <div className="flex flex-1 items-center gap-4 md:gap-6">
         {/* Поиск */}
         {showSearch && (
           <div className="relative w-full max-w-sm lg:max-w-md">
-            <svg className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg 
+              className="absolute left-2.5 top-2.5 h-4 w-4 text-secondary"
+              xmlns="http://www.w3.org/2000/svg" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
@@ -60,7 +68,7 @@ export const Header: React.FC<HeaderProps> = ({
               placeholder={searchPlaceholder}
               value={searchQuery}
               onChange={handleSearch}
-              className="w-full bg-gray-50 border border-gray-200 rounded-md pl-8 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full rounded-md pl-8 pr-4 py-2 text-sm bg-neutral-light border border-border text-primary placeholder-secondary transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
         )}
@@ -68,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="ml-auto flex items-center gap-2">
           {/* Переключатель темы */}
           <button
-            className="rounded-full p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+            className="rounded-full p-2 text-secondary hover:text-primary hover:bg-neutral-light transition-colors"
             onClick={toggleTheme}
           >
             {theme === "dark" ? (
@@ -84,23 +92,37 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Уведомления */}
           {showNotifications && (
-            <button className="rounded-full p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors relative">
+            <button 
+              className="rounded-full p-2 text-secondary hover:text-primary hover:bg-neutral-light transition-colors relative"
+              onClick={onNotificationClick}
+            >
               <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zm-8-3.5a5.5 5.5 0 1111 0 5.5 5.5 0 01-11 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.73 21a2 2 0 01-3.46 0" />
               </svg>
               {notificationCount > 0 && (
-                <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--color-info)' }} />
+                <span 
+                  className="absolute top-0.5 right-0.5 flex h-2 w-2 rounded-full bg-primary"
+                />
               )}
             </button>
           )}
 
           {/* Профиль */}
           {userProfile && (
-            <button className="rounded-full p-1 hover:bg-gray-100 transition-colors">
-              <div className="h-8 w-8 rounded-full text-white flex items-center justify-center text-sm font-medium" style={{ backgroundColor: 'var(--color-info)' }}>
+            <button 
+              className="rounded-full p-1 hover:bg-neutral-light transition-colors"
+              onClick={onProfileClick}
+            >
+              <div 
+                className="h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium text-white bg-primary"
+              >
                 {userProfile.avatar ? (
-                  <img src={userProfile.avatar} alt={userProfile.name} className="w-full h-full rounded-full object-cover" />
+                  <img 
+                    src={userProfile.avatar} 
+                    alt={userProfile.name} 
+                    className="w-full h-full rounded-full object-cover" 
+                  />
                 ) : (
                   userProfile.initials || userProfile.name.charAt(0).toUpperCase()
                 )}

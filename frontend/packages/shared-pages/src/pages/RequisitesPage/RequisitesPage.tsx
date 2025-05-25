@@ -25,8 +25,8 @@ export const RequisitesPage: React.FC<RequisitesPageProps> = ({
     return (
       <div className="p-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-[var(--jiva-text)]">Доступ запрещен</h1>
-          <p className="text-[var(--jiva-text-secondary)] mt-2">У вас нет прав для управления реквизитами</p>
+          <h1 className="text-2xl font-bold text-primary">Доступ запрещен</h1>
+          <p className="text-secondary mt-2">У вас нет прав для управления реквизитами</p>
         </div>
       </div>
     );
@@ -158,7 +158,7 @@ export const RequisitesPage: React.FC<RequisitesPageProps> = ({
     return (
       <div className="space-y-6">
         <div className="text-center py-8">
-          <div className="text-[var(--jiva-text-secondary)]">Загрузка реквизитов...</div>
+          <div className="text-secondary">Загрузка реквизитов...</div>
         </div>
       </div>
     );
@@ -169,10 +169,10 @@ export const RequisitesPage: React.FC<RequisitesPageProps> = ({
       {/* Заголовок страницы */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-[var(--jiva-text)]">
+          <h1 className="text-3xl font-bold text-primary">
             Управление реквизитами
           </h1>
-          <p className="text-[var(--jiva-text-secondary)] mt-1">
+          <p className="text-secondary mt-1">
             {role === 'admin' ? 'Полное управление всеми реквизитами' :
              role === 'teamlead' ? 'Управление реквизитами команды' :
              'Модерация реквизитов'}
@@ -180,7 +180,7 @@ export const RequisitesPage: React.FC<RequisitesPageProps> = ({
         </div>
 
         {dashboardConfig.config.enableExport && (
-          <button className="bg-[var(--jiva-primary)] text-white px-4 py-2 rounded-lg hover:opacity-90">
+          <button className="bg-accent text-white px-4 py-2 rounded-lg hover:opacity-90">
             Экспорт списка
           </button>
         )}
@@ -188,47 +188,47 @@ export const RequisitesPage: React.FC<RequisitesPageProps> = ({
 
       {/* Статистика реквизитов */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <div className="bg-[var(--jiva-background-paper)] rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-[var(--jiva-primary)]">
+        <div className="bg-surface rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-accent">
             {stats.totalCount}
           </div>
-          <div className="text-sm text-[var(--jiva-text-secondary)]">
+          <div className="text-sm text-secondary">
             Всего реквизитов
           </div>
         </div>
 
-        <div className="bg-[var(--jiva-background-paper)] rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-[var(--jiva-success)]">
+        <div className="bg-surface rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-success">
             {stats.activeCount}
           </div>
-          <div className="text-sm text-[var(--jiva-text-secondary)]">
+          <div className="text-sm text-secondary">
             Активных
           </div>
         </div>
 
-        <div className="bg-[var(--jiva-background-paper)] rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-[var(--jiva-warning)]">
+        <div className="bg-surface rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-warning">
             {stats.moderationCount}
           </div>
-          <div className="text-sm text-[var(--jiva-text-secondary)]">
+          <div className="text-sm text-secondary">
             На модерации
           </div>
         </div>
 
-        <div className="bg-[var(--jiva-background-paper)] rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-[var(--jiva-error)]">
+        <div className="bg-surface rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-error">
             {stats.blockedCount}
           </div>
-          <div className="text-sm text-[var(--jiva-text-secondary)]">
+          <div className="text-sm text-secondary">
             Заблокированных
           </div>
         </div>
 
-        <div className="bg-[var(--jiva-background-paper)] rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-[var(--jiva-info)]">
+        <div className="bg-surface rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-info">
             {stats.onlineCount}
           </div>
-          <div className="text-sm text-[var(--jiva-text-secondary)]">
+          <div className="text-sm text-secondary">
             Онлайн
           </div>
         </div>
@@ -245,76 +245,72 @@ export const RequisitesPage: React.FC<RequisitesPageProps> = ({
 
       {/* Дополнительная информация для разных ролей */}
       {role === 'admin' && (
-        <div className="bg-[var(--jiva-background-paper)] rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-[var(--jiva-text)] mb-4">
-            Системная информация
+        <div className="bg-surface rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-primary mb-4">
+            Аналитика реквизитов
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--jiva-text-secondary)]">Среднее время модерации:</span>
-                <span className="text-[var(--jiva-text)] font-medium">2.3 часа</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--jiva-text-secondary)]">Процент одобрения:</span>
-                <span className="text-[var(--jiva-success)] font-medium">87.5%</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--jiva-text-secondary)]">Новых реквизитов за день:</span>
-                <span className="text-[var(--jiva-text)] font-medium">12</span>
-              </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
+            <div>
+              <span className="text-secondary">Среднее время модерации:</span>
+              <span className="text-primary font-medium">2.3 часа</span>
             </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--jiva-text-secondary)]">Самый активный банк:</span>
-                <span className="text-[var(--jiva-text)] font-medium">Сбербанк</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--jiva-text-secondary)]">Средняя загрузка:</span>
-                <span className="text-[var(--jiva-text)] font-medium">78%</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--jiva-text-secondary)]">Требуют внимания:</span>
-                <span className="text-[var(--jiva-warning)] font-medium">{stats.moderationCount + stats.blockedCount}</span>
-              </div>
+            <div>
+              <span className="text-secondary">Процент одобрения:</span>
+              <span className="text-success font-medium">87.5%</span>
+            </div>
+            <div>
+              <span className="text-secondary">Новых реквизитов за день:</span>
+              <span className="text-primary font-medium">12</span>
+            </div>
+            <div>
+              <span className="text-secondary">Самый активный банк:</span>
+              <span className="text-primary font-medium">Сбербанк</span>
+            </div>
+            <div>
+              <span className="text-secondary">Средняя загрузка:</span>
+              <span className="text-primary font-medium">78%</span>
+            </div>
+            <div>
+              <span className="text-secondary">Требуют внимания:</span>
+              <span className="text-warning font-medium">{stats.moderationCount + stats.blockedCount}</span>
             </div>
           </div>
         </div>
       )}
 
       {role === 'teamlead' && (
-        <div className="bg-[var(--jiva-background-paper)] rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-[var(--jiva-text)] mb-4">
-            Статистика команды
+        <div className="bg-surface rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-primary mb-4">
+            Управление командой
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-[var(--jiva-background)] rounded-lg">
-              <div className="text-2xl font-bold text-[var(--jiva-primary)]">
+          <div className="grid grid-cols-3 gap-6">
+            <div className="text-center p-4 bg-background rounded-lg">
+              <div className="text-2xl font-bold text-accent">
                 {Math.floor(stats.activeCount / 3)}
               </div>
-              <div className="text-sm text-[var(--jiva-text-secondary)]">Трейдеров в команде</div>
+              <div className="text-sm text-secondary">Трейдеров в команде</div>
             </div>
-            <div className="text-center p-4 bg-[var(--jiva-background)] rounded-lg">
-              <div className="text-2xl font-bold text-[var(--jiva-success)]">
+            <div className="text-center p-4 bg-background rounded-lg">
+              <div className="text-2xl font-bold text-success">
                 {((stats.activeCount / stats.totalCount) * 100).toFixed(1)}%
               </div>
-              <div className="text-sm text-[var(--jiva-text-secondary)]">Эффективность команды</div>
+              <div className="text-sm text-secondary">Эффективность команды</div>
             </div>
-            <div className="text-center p-4 bg-[var(--jiva-background)] rounded-lg">
-              <div className="text-2xl font-bold text-[var(--jiva-info)]">
+            <div className="text-center p-4 bg-background rounded-lg">
+              <div className="text-2xl font-bold text-info">
                 ₽ 2.3M
               </div>
-              <div className="text-sm text-[var(--jiva-text-secondary)]">Оборот за месяц</div>
+              <div className="text-sm text-secondary">Оборот за месяц</div>
             </div>
           </div>
         </div>
       )}
 
       {role === 'support' && stats.moderationCount > 0 && (
-        <div className="bg-[var(--jiva-warning-light)] border border-[var(--jiva-warning)] rounded-lg p-4">
+        <div className="bg-warning-light border border-warning rounded-lg p-4">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-[var(--jiva-warning)] rounded-full"></div>
-            <span className="font-medium text-[var(--jiva-text)]">
+            <div className="w-2 h-2 bg-warning rounded-full"></div>
+            <span className="font-medium text-primary">
               Внимание: {stats.moderationCount} реквизитов требуют модерации
             </span>
           </div>

@@ -18,13 +18,13 @@ export const Alert: React.FC<AlertProps> = ({
   const getTypeClasses = (type: string) => {
     switch (type) {
       case 'success':
-        return 'bg-[var(--color-success-light)] border-[var(--color-success)] text-[var(--color-success-text)]';
+        return 'bg-success-light border-success text-success-text';
       case 'error':
-        return 'bg-[var(--color-error-light)] border-[var(--color-error)] text-[var(--color-error-text)]';
+        return 'bg-error-light border-error text-error-text';
       case 'warning':
-        return 'bg-[var(--color-warning-light)] border-[var(--color-warning)] text-[var(--color-warning-text)]';
+        return 'bg-warning-light border-warning text-warning-text';
       default:
-        return 'bg-[var(--color-info-light)] border-[var(--color-info)] text-[var(--color-info-text)]';
+        return 'bg-info-light border-info text-info-text';
     }
   };
 

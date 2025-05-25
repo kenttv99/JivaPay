@@ -25,7 +25,13 @@ const TraderDashboardContent = () => {
     { key: 'bank', title: 'Банк' },
     { key: 'number', title: 'Номер карты' },
     { key: 'status', title: 'Статус', render: (value: string) => (
-      <span className={`status-badge ${value === 'active' ? 'status-success' : value === 'processing' ? 'status-warning' : 'status-error'}`}>
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+        value === 'active' 
+          ? 'bg-success/10 text-success' 
+          : value === 'processing' 
+            ? 'bg-warning/10 text-warning' 
+            : 'bg-error/10 text-error'
+      }`}>
         {value === 'active' ? 'Активна' : value === 'processing' ? 'Обработка' : 'Неактивна'}
       </span>
     )},
@@ -34,29 +40,28 @@ const TraderDashboardContent = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-primary)] p-6 flex items-center justify-center">
-        <div className="text-center">
-          <Spinner size="lg" />
-          <p className="mt-4 text-[var(--color-secondary)]">Загрузка прав пользователя...</p>
+      <div className="min-h-screen bg-background text-primary p-6 flex items-center justify-center">
+        <div className="max-w-md mx-auto text-center">
+          <h1 className="text-3xl font-bold mb-4">JivaPay Trader</h1>
+          <p className="mt-4 text-secondary">Загрузка прав пользователя...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-primary)] p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Заголовок */}
-        <div>
-          <h1 className="text-3xl font-bold">Панель трейдера</h1>
-          <p className="text-[var(--color-secondary)] mt-1">Управление реквизитами и ордерами</p>
-          
-          {/* Демонстрация информации о правах */}
-          <div className="mt-4 p-4 bg-[var(--color-surface)] rounded-lg">
-            <h3 className="text-sm font-medium text-[var(--color-primary)] mb-2">Информация о правах:</h3>
-            <p className="text-xs text-[var(--color-secondary)]">Роль: <span className="text-[var(--color-primary)]">{userRole}</span></p>
-            <p className="text-xs text-[var(--color-secondary)]">Прав: <span className="text-[var(--color-primary)]">{grantedPermissions.length}</span></p>
-          </div>
+    <div className="min-h-screen bg-background text-primary p-6">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">JivaPay Trader Dashboard</h1>
+          <p className="text-secondary mt-1">Управление реквизитами и ордерами</p>
+        </div>
+
+        <div className="mt-4 p-4 bg-surface rounded-lg">
+          <h3 className="text-sm font-medium text-primary mb-2">Информация о правах:</h3>
+          <p className="text-xs text-secondary">Роль: <span className="text-primary">{userRole}</span></p>
+          <p className="text-xs text-secondary">Прав: <span className="text-primary">{grantedPermissions.length}</span></p>
         </div>
 
         {/* Уведомления с демонстрацией прав */}
@@ -221,10 +226,10 @@ const TraderDashboardContent = () => {
         {/* Демонстрация отладочной информации */}
         <Card className="p-4">
           <details>
-            <summary className="cursor-pointer text-sm font-medium text-[var(--color-secondary)] hover:text-[var(--color-primary)]">
+            <summary className="cursor-pointer text-sm font-medium text-secondary hover:text-primary">
               🔍 Отладочная информация (разверните)
             </summary>
-            <div className="mt-3 p-3 bg-[var(--color-bg)] rounded text-xs space-y-2">
+            <div className="mt-3 p-3 bg-background rounded text-xs space-y-2">
               <p><strong>Проверка прав:</strong></p>
               <p>• requisites:manage:own: {hasPermission('requisites:manage:own') ? '✅' : '❌'}</p>
               <p>• orders:view:assigned: {hasPermission('orders:view:assigned') ? '✅' : '❌'}</p>
@@ -233,7 +238,7 @@ const TraderDashboardContent = () => {
               <p>• admin:super:power: {hasPermission('admin:super:power') ? '✅' : '❌'}</p>
               
               <p className="mt-3"><strong>Все права пользователя:</strong></p>
-              <p className="text-[var(--color-secondary)]">{grantedPermissions.join(', ')}</p>
+              <p className="text-secondary">{grantedPermissions.join(', ')}</p>
             </div>
           </details>
         </Card>

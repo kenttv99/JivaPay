@@ -54,13 +54,13 @@ export const UserManagement: React.FC<UserManagementProps> = ({ users, loading }
     {
       key: 'email',
       title: 'Email',
-      render: (value: string) => <span className="text-[var(--jiva-text-secondary)]">{value}</span>
+      render: (value: string) => <span className="text-secondary">{value}</span>
     },
     {
       key: 'role',
       title: 'Роль',
       render: (value: string) => (
-        <span className="px-2 py-1 bg-[var(--jiva-background)] text-[var(--jiva-text-primary)] rounded text-xs font-medium">
+        <span className="px-2 py-1 bg-background text-primary rounded text-xs font-medium">
           {ROLE_DISPLAY_NAMES[value as keyof typeof ROLE_DISPLAY_NAMES]}
         </span>
       )
@@ -94,11 +94,11 @@ export const UserManagement: React.FC<UserManagementProps> = ({ users, loading }
         render: (value: boolean, row: User) => (
           <div className="space-y-1">
             <div className="flex items-center">
-              <span className={`w-2 h-2 rounded-full mr-2 ${value ? 'bg-[var(--color-success)]' : 'bg-[var(--color-error)]'}`}></span>
+              <span className={`w-2 h-2 rounded-full mr-2 ${value ? 'bg-success' : 'bg-error'}`}></span>
               <span className="text-xs">{value ? 'Включен' : 'Отключен'}</span>
             </div>
             {row.teamlead && (
-              <div className="text-xs text-[var(--jiva-text-secondary)]">
+              <div className="text-xs text-secondary">
                 Тимлид: {row.teamlead}
               </div>
             )}
@@ -124,7 +124,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ users, loading }
         key: 'roleDescription',
         title: 'Описание',
         render: (value: string) => (
-          <span className="text-xs text-[var(--jiva-text-secondary)]">{value}</span>
+          <span className="text-xs text-secondary">{value}</span>
         )
       });
     }
@@ -143,7 +143,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ users, loading }
         key: 'lastActive',
         title: 'Активность',
         render: (value: string) => (
-          <span className="text-xs text-[var(--jiva-text-secondary)]">{value}</span>
+          <div className="text-xs text-secondary">{value}</div>
         )
       },
       {
@@ -152,10 +152,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({ users, loading }
         align: 'right' as const,
         render: () => (
           <div className="flex gap-2 justify-end">
-            <button className="text-[var(--jiva-primary)] hover:text-[var(--jiva-primary-dark)] text-xs">
+            <button className="text-accent hover:opacity-90 text-xs">
               Редактировать
             </button>
-            <button className="text-[var(--jiva-error)] hover:text-[var(--jiva-error-dark)] text-xs">
+            <button className="text-error hover:opacity-90 text-xs">
               Заблокировать
             </button>
           </div>
@@ -174,17 +174,17 @@ export const UserManagement: React.FC<UserManagementProps> = ({ users, loading }
           <div className="flex gap-4">
             <input
               type="text"
-              placeholder="Поиск пользователей..."
-              className="px-3 py-2 border border-[var(--jiva-border)] rounded-md text-sm"
+              placeholder="Найти пользователя..."
+              className="px-3 py-2 border border-border rounded-md text-sm"
             />
-            <select className="px-3 py-2 border border-[var(--jiva-border)] rounded-md text-sm">
-              <option value="">Все статусы</option>
-              <option value="active">Активные</option>
-              <option value="inactive">Неактивные</option>
-              <option value="blocked">Заблокированные</option>
+            <select className="px-3 py-2 border border-border rounded-md text-sm">
+              <option value="">Все роли</option>
+              <option value="admin">Администратор</option>
+              <option value="merchant">Мерчант</option>
+              <option value="trader">Трейдер</option>
             </select>
           </div>
-          <button className="px-4 py-2 bg-[var(--jiva-primary)] text-white rounded-md hover:bg-[var(--jiva-primary-dark)] transition-colors text-sm">
+          <button className="px-4 py-2 bg-accent text-white rounded-md hover:opacity-90 transition-colors text-sm">
             Добавить пользователя
           </button>
         </div>
@@ -203,7 +203,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ users, loading }
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Пользователи</h1>
-        <p className="text-[var(--jiva-text-secondary)] mt-1">
+        <p className="text-secondary mt-1">
           Управление пользователями системы
         </p>
       </div>

@@ -39,21 +39,21 @@ export const BalanceChart: React.FC<BalanceChartProps> = ({
       case 'balances':
         return {
           lines: [
-            { key: 'platform_balance', name: 'Баланс платформы', color: 'var(--jiva-primary)' },
-            { key: 'merchant_balance', name: 'Баланс мерчантов', color: 'var(--jiva-success)' },
-            { key: 'trader_balance', name: 'Баланс трейдеров', color: 'var(--jiva-info)' }
+            { key: 'platform_balance', name: 'Баланс платформы', color: '#7c3aed' },
+            { key: 'merchant_balance', name: 'Баланс мерчантов', color: '#10b981' },
+            { key: 'trader_balance', name: 'Баланс трейдеров', color: '#3b82f6' }
           ]
         };
       case 'volume':
         return {
           lines: [
-            { key: 'total_volume', name: 'Общий объем', color: 'var(--jiva-primary)' }
+            { key: 'total_volume', name: 'Общий объем', color: '#7c3aed' }
           ]
         };
       case 'commissions':
         return {
           lines: [
-            { key: 'commissions', name: 'Комиссии', color: 'var(--jiva-warning)' }
+            { key: 'commissions', name: 'Комиссии', color: '#f59e0b' }
           ]
         };
       default:
@@ -62,6 +62,8 @@ export const BalanceChart: React.FC<BalanceChartProps> = ({
   };
 
   const chartConfig = getChartData();
+  const stepX = data.length > 1 ? (650 / (data.length - 1)) : 0;
+  const lines = chartConfig.lines;
 
   // Находим максимальные и минимальные значения для масштабирования
   const getAllValues = () => {
@@ -112,166 +114,158 @@ export const BalanceChart: React.FC<BalanceChartProps> = ({
     return value.toString();
   };
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('ru-RU', {
+      style: 'currency',
+      currency: 'RUB',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
+  };
+
   return (
-    <div className={`bg-[var(--jiva-background-paper)] rounded-lg p-6 ${className}`}>
-      {title && (
-        <h3 className="text-lg font-semibold text-[var(--jiva-text)] mb-4">{title}</h3>
-      )}
+    <div className={`bg-surface rounded-lg p-6 ${className}`}>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold text-primary mb-4">{title}</h3>
+        <div className="flex gap-2">
+          {/* Переключатели типов графика */}
+        </div>
+      </div>
       
-      <div className="relative">
-        <svg width={chartWidth} height={height} className="w-full">
+      <div style={{ width: '100%', height: 400 }}>
+        <svg viewBox="0 0 800 400" className="w-full h-full">
           {/* Сетка */}
           <defs>
             <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="var(--jiva-border-light)" strokeWidth="1" opacity="0.3"/>
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e5e7eb" strokeWidth="1" opacity="0.3"/>
             </pattern>
           </defs>
-          <rect width={chartWidth} height={chartHeight} fill="url(#grid)" />
+          <rect width="100%" height="100%" fill="url(#grid)" />
           
-          {/* Y ось */}
-          <line 
-            x1={padding} 
-            y1={padding} 
-            x2={padding} 
-            y2={chartHeight - padding} 
-            stroke="var(--jiva-border-light)" 
-            strokeWidth="2"
-          />
+          {/* Вертикальные линии сетки */}
+          {Array.from({ length: 8 }, (_, i) => (
+            <line 
+              key={`v-line-${i}`}
+              x1={100 + i * 87.5}
+              y1={50}
+              x2={100 + i * 87.5}
+              y2={350}
+              stroke="#e5e7eb"
+              strokeWidth="1"
+              opacity="0.3"
+            />
+          ))}
           
-          {/* X ось */}
-          <line 
-            x1={padding} 
-            y1={chartHeight - padding} 
-            x2={chartWidth - padding} 
-            y2={chartHeight - padding} 
-            stroke="var(--jiva-border-light)" 
-            strokeWidth="2"
-          />
+          {/* Горизонтальные линии сетки */}
+          {Array.from({ length: 6 }, (_, i) => (
+            <line 
+              key={`h-line-${i}`}
+              x1={100}
+              y1={50 + i * 50}
+              x2={750}
+              y2={50 + i * 50}
+              stroke="#e5e7eb"
+              strokeWidth="1"
+              opacity="0.3"
+            />
+          ))}
           
-          {/* Y подписи */}
-          {[0, 0.25, 0.5, 0.75, 1].map(fraction => {
-            const value = minValue + (maxValue - minValue) * fraction;
-            const y = getY(value);
+          {/* Подписи по Y */}
+          {Array.from({ length: 6 }, (_, i) => (
+            <text 
+              key={`y-label-${i}`}
+              x="90"
+              y={55 + i * 50}
+              className="text-xs fill-secondary"
+              textAnchor="end"
+            >
+              {maxValue - (i * maxValue / 5)}
+            </text>
+          ))}
+          
+          {/* Подписи по X */}
+          {data.map((item, index) => (
+            <text 
+              key={`x-label-${index}`}
+              x={100 + index * stepX}
+              y="375"
+              className="text-xs fill-secondary"
+              textAnchor="middle"
+            >
+              {new Date(item.date).toLocaleDateString()}
+            </text>
+          ))}
+          
+          {/* Линии графика */}
+          {lines.map((line, lineIndex) => {
+            const pathData = data.map((item, index) => {
+              const x = 100 + index * stepX;
+              const value = (item as any)[line.key] || 0;
+              const y = 350 - (value / maxValue) * 300;
+              return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
+            }).join(' ');
+            
             return (
-              <g key={fraction}>
-                <line 
-                  x1={padding - 5} 
-                  y1={y} 
-                  x2={padding} 
-                  y2={y} 
-                  stroke="var(--jiva-border-light)" 
-                  strokeWidth="1"
-                />
-                <text 
-                  x={padding - 10} 
-                  y={y + 4} 
-                  textAnchor="end" 
-                  className="text-xs fill-[var(--jiva-text-secondary)]"
-                >
-                  {formatValue(value)}
-                </text>
-              </g>
-            );
-          })}
-          
-          {/* X подписи (даты) */}
-          {data.map((item, index) => {
-            if (index % Math.ceil(data.length / 6) === 0 || index === data.length - 1) {
-              const x = getX(index);
-              return (
-                <g key={index}>
-                  <line 
-                    x1={x} 
-                    y1={chartHeight - padding} 
-                    x2={x} 
-                    y2={chartHeight - padding + 5} 
-                    stroke="var(--jiva-border-light)" 
-                    strokeWidth="1"
-                  />
-                  <text 
-                    x={x} 
-                    y={chartHeight - padding + 20} 
-                    textAnchor="middle" 
-                    className="text-xs fill-[var(--jiva-text-secondary)]"
-                  >
-                    {new Date(item.date).toLocaleDateString('ru-RU', { 
-                      month: 'short', 
-                      day: 'numeric' 
-                    })}
-                  </text>
-                </g>
-              );
-            }
-            return null;
-          })}
-          
-          {/* Линии данных */}
-          {chartConfig.lines.map(line => (
-            <g key={line.key}>
               <path
-                d={createPath(line.key)}
+                key={`line-${lineIndex}`}
+                d={pathData}
                 fill="none"
                 stroke={line.color}
                 strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
               />
+            );
+          })}
+          
+          {/* Точки на линиях */}
+          {lines.map((line, lineIndex) => 
+            data.map((item, index) => {
+              const x = 100 + index * stepX;
+              const value = (item as any)[line.key] || 0;
+              const y = 350 - (value / maxValue) * 300;
               
-              {/* Точки */}
-              {data.map((item, index) => {
-                const value = item[line.key as keyof BalanceChartData] as number;
-                if (typeof value !== 'number') return null;
-                
-                return (
-                  <circle
-                    key={index}
-                    cx={getX(index)}
-                    cy={getY(value)}
-                    r="4"
-                    fill={line.color}
-                    className="hover:r-6 transition-all cursor-pointer"
-                  >
-                    <title>{`${line.name}: ${formatValue(value)} (${item.date})`}</title>
-                  </circle>
-                );
-              })}
-            </g>
-          ))}
+              return (
+                <circle
+                  key={`point-${lineIndex}-${index}`}
+                  cx={x}
+                  cy={y}
+                  r="3"
+                  fill={line.color}
+                />
+              );
+            })
+          )}
         </svg>
       </div>
       
       {/* Легенда */}
-      {showLegend && (
-        <div className="flex flex-wrap gap-4 mt-4">
-          {chartConfig.lines.map(line => (
-            <div key={line.key} className="flex items-center gap-2">
-              <div 
-                className="w-4 h-4 rounded"
-                style={{ backgroundColor: line.color }}
-              />
-              <span className="text-sm text-[var(--jiva-text-secondary)]">
-                {line.name}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="mt-4 flex flex-wrap gap-4">
+        {lines.map((line, index) => (
+          <div key={index} className="flex items-center gap-2">
+            <div 
+              className="w-3 h-3 rounded"
+              style={{ backgroundColor: line.color }}
+            ></div>
+            <span className="text-sm text-secondary">
+              {line.name}
+            </span>
+          </div>
+        ))}
+      </div>
       
       {/* Статистика */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-4 border-t border-[var(--jiva-border-light)]">
-        {chartConfig.lines.map(line => {
-          const values = data.map(item => item[line.key as keyof BalanceChartData] as number || 0);
-          const current = values[values.length - 1] || 0;
-          const previous = values[values.length - 2] || 0;
-          const change = previous !== 0 ? ((current - previous) / previous) * 100 : 0;
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-4 border-t border-border">
+        {lines.map((line, index) => {
+          const currentValue = (data[data.length - 1] as any)?.[line.key] || 0;
+          const previousValue = (data[data.length - 2] as any)?.[line.key] || 0;
+          const change = previousValue !== 0 ? ((currentValue - previousValue) / previousValue) * 100 : 0;
           
           return (
-            <div key={line.key} className="text-center">
-              <div className="text-sm text-[var(--jiva-text-secondary)]">{line.name}</div>
-              <div className="text-lg font-semibold text-[var(--jiva-text)]">
-                {formatValue(current)}
+            <div key={index} className="text-center">
+              <div className="text-sm text-secondary">{line.name}</div>
+              <div className="text-lg font-semibold text-primary">
+                {formatCurrency(currentValue)}
               </div>
-              <div className={`text-sm ${change >= 0 ? 'text-[var(--jiva-success)]' : 'text-[var(--jiva-error)]'}`}>
+              <div className={`text-sm ${change >= 0 ? 'text-success' : 'text-error'}`}>
                 {change >= 0 ? '+' : ''}{change.toFixed(1)}%
               </div>
             </div>

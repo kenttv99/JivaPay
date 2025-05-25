@@ -101,8 +101,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       title: 'Пользователь',
       render: (value: any, user: UserItem) => (
         <div>
-          <div className="font-medium text-[var(--jiva-text)]">{user.username}</div>
-          <div className="text-sm text-[var(--jiva-text-secondary)]">{user.email}</div>
+          <div className="font-medium text-primary">{user.username}</div>
+          <div className="text-sm text-secondary">{user.email}</div>
         </div>
       )
     },
@@ -120,7 +120,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       key: 'created_date',
       title: 'Дата регистрации',
       render: (value: any, user: UserItem) => (
-        <span className="text-sm text-[var(--jiva-text-secondary)]">
+        <span className="text-sm text-secondary">
           {user.created_date}
         </span>
       )
@@ -129,7 +129,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       key: 'last_active',
       title: 'Последняя активность',
       render: (value: any, user: UserItem) => (
-        <span className="text-sm text-[var(--jiva-text-secondary)]">
+        <span className="text-sm text-secondary">
           {user.last_active || 'Неизвестно'}
         </span>
       )
@@ -138,7 +138,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       key: 'team_id',
       title: 'Команда',
       render: (value: any, user: UserItem) => (
-        <span className="text-sm text-[var(--jiva-text-secondary)]">
+        <span className="text-sm text-secondary">
           {user.team_id || '—'}
         </span>
       )
@@ -154,7 +154,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
           {user.role === 'trader' && (
             <div>Реквизитов: {user.trader_requisite_count || 0}</div>
           )}
-          <div className="text-[var(--jiva-text-secondary)]">
+          <div className="text-secondary">
             Ордеров: {user.total_orders || 0}
           </div>
         </div>
@@ -169,7 +169,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
             <div>Фиат: {user.balance_fiat}</div>
           )}
           {user.balance_crypto && (
-            <div className="text-[var(--jiva-text-secondary)]">
+            <div className="text-secondary">
               Крипто: {user.balance_crypto}
             </div>
           )}
@@ -184,7 +184,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
           {allowedActions.view && (
             <button
               onClick={() => handleUserAction('view', user)}
-              className="text-[var(--jiva-primary)] hover:underline text-sm"
+              className="text-primary hover:underline text-sm"
             >
               Просмотр
             </button>
@@ -192,7 +192,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
           {allowedActions.edit && (
             <button
               onClick={() => handleUserAction('edit', user)}
-              className="text-[var(--jiva-info)] hover:underline text-sm"
+              className="text-info hover:underline text-sm"
             >
               Изменить
             </button>
@@ -200,7 +200,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
           {allowedActions.block && user.status === 'active' && (
             <button
               onClick={() => handleUserAction('block', user)}
-              className="text-[var(--jiva-warning)] hover:underline text-sm"
+              className="text-warning hover:underline text-sm"
             >
               Заблокировать
             </button>
@@ -208,7 +208,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
           {allowedActions.delete && (
             <button
               onClick={() => handleUserAction('delete', user)}
-              className="text-[var(--jiva-error)] hover:underline text-sm"
+              className="text-error hover:underline text-sm"
             >
               Удалить
             </button>
@@ -228,14 +228,14 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       
       {/* Детали выбранного пользователя */}
       {selectedUser && (
-        <div className="mt-6 bg-[var(--jiva-background-paper)] border border-[var(--jiva-border-light)] rounded-lg p-6">
+        <div className="mt-6 bg-surface border border-border rounded-lg p-6">
           <div className="flex justify-between items-start mb-4">
-            <h3 className="text-lg font-semibold text-[var(--jiva-text)]">
+            <h3 className="text-lg font-semibold text-primary">
               Детали пользователя {selectedUser.username}
             </h3>
             <button
               onClick={() => setSelectedUser(null)}
-              className="text-[var(--jiva-text-secondary)] hover:text-[var(--jiva-text)]"
+              className="text-secondary hover:text-primary"
             >
               ✕
             </button>
@@ -244,44 +244,44 @@ export const UserManagement: React.FC<UserManagementProps> = ({
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-3">
               <div>
-                <span className="font-medium text-[var(--jiva-text)]">ID:</span>
-                <span className="text-[var(--jiva-text-secondary)] ml-2">{selectedUser.id}</span>
+                <span className="font-medium text-primary">ID:</span>
+                <span className="text-secondary ml-2">{selectedUser.id}</span>
               </div>
               <div>
-                <span className="font-medium text-[var(--jiva-text)]">Email:</span>
-                <span className="text-[var(--jiva-text-secondary)] ml-2">{selectedUser.email}</span>
+                <span className="font-medium text-primary">Email:</span>
+                <span className="text-secondary ml-2">{selectedUser.email}</span>
               </div>
               <div>
-                <span className="font-medium text-[var(--jiva-text)]">Роль:</span>
+                <span className="font-medium text-primary">Роль:</span>
                 <span className="ml-2"><UserRoleBadge role={selectedUser.role} /></span>
               </div>
               <div>
-                <span className="font-medium text-[var(--jiva-text)]">Статус:</span>
+                <span className="font-medium text-primary">Статус:</span>
                 <span className="ml-2"><UserStatusBadge status={selectedUser.status} /></span>
               </div>
             </div>
             
             <div className="space-y-3">
               <div>
-                <span className="font-medium text-[var(--jiva-text)]">Дата регистрации:</span>
-                <span className="text-[var(--jiva-text-secondary)] ml-2">{selectedUser.created_date}</span>
+                <span className="font-medium text-primary">Дата регистрации:</span>
+                <span className="text-secondary ml-2">{selectedUser.created_date}</span>
               </div>
               {selectedUser.last_active && (
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">Последняя активность:</span>
-                  <span className="text-[var(--jiva-text-secondary)] ml-2">{selectedUser.last_active}</span>
+                  <span className="font-medium text-primary">Последняя активность:</span>
+                  <span className="text-secondary ml-2">{selectedUser.last_active}</span>
                 </div>
               )}
               {selectedUser.team_id && (
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">Команда:</span>
-                  <span className="text-[var(--jiva-text-secondary)] ml-2">{selectedUser.team_id}</span>
+                  <span className="font-medium text-primary">Команда:</span>
+                  <span className="text-secondary ml-2">{selectedUser.team_id}</span>
                 </div>
               )}
               {(selectedUser.balance_fiat || selectedUser.balance_crypto) && (
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">Балансы:</span>
-                  <div className="text-[var(--jiva-text-secondary)] ml-2 mt-1">
+                  <span className="font-medium text-primary">Балансы:</span>
+                  <div className="text-secondary ml-2 mt-1">
                     {selectedUser.balance_fiat && <div>Фиат: {selectedUser.balance_fiat}</div>}
                     {selectedUser.balance_crypto && <div>Крипто: {selectedUser.balance_crypto}</div>}
                   </div>

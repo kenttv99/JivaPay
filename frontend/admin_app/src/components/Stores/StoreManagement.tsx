@@ -56,8 +56,8 @@ export const StoreManagement: React.FC<StoreManagementProps> = ({
       title: 'Название магазина',
       render: (value: string, row: Store) => (
         <div>
-          <div className="font-medium">{value}</div>
-          <div className="text-xs text-[var(--jiva-text-secondary)]">{row.domain}</div>
+          <div className="font-medium text-primary">{value}</div>
+          <div className="text-xs text-secondary">{row.domain}</div>
         </div>
       )
     },
@@ -72,7 +72,7 @@ export const StoreManagement: React.FC<StoreManagementProps> = ({
       key: 'category',
       title: 'Категория',
       render: (value: string) => (
-        <span className="px-2 py-1 bg-[var(--jiva-background)] text-[var(--jiva-text-primary)] rounded text-xs">
+        <span className="px-2 py-1 bg-background text-primary rounded text-xs">
           {value}
         </span>
       )
@@ -90,7 +90,7 @@ export const StoreManagement: React.FC<StoreManagementProps> = ({
       title: 'Комиссия',
       align: 'right' as const,
       render: (value: number) => (
-        <span className="text-[var(--jiva-text-secondary)]">{value}%</span>
+        <span className="text-secondary">{value}%</span>
       )
     },
     {
@@ -104,7 +104,7 @@ export const StoreManagement: React.FC<StoreManagementProps> = ({
       key: 'lastActivity',
       title: 'Последняя активность',
       render: (value: string) => (
-        <span className="text-xs text-[var(--jiva-text-secondary)]">{value}</span>
+        <span className="text-xs text-secondary">{value}</span>
       )
     },
     {
@@ -113,10 +113,10 @@ export const StoreManagement: React.FC<StoreManagementProps> = ({
       align: 'right' as const,
       render: () => (
         <div className="flex gap-2 justify-end">
-          <button className="text-[var(--jiva-primary)] hover:text-[var(--jiva-primary-dark)] text-xs">
+          <button className="text-accent hover:opacity-90 text-xs">
             Настройки
           </button>
-          <button className="text-[var(--jiva-text-secondary)] hover:text-[var(--jiva-text-primary)] text-xs">
+          <button className="text-secondary hover:text-primary text-xs">
             Статистика
           </button>
         </div>
@@ -128,8 +128,8 @@ export const StoreManagement: React.FC<StoreManagementProps> = ({
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Магазины</h1>
-        <p className="text-[var(--jiva-text-secondary)] mt-1">
-          Управление магазинами и их настройками
+        <p className="text-secondary mt-1">
+          Управление интернет-магазинами и настройками API
         </p>
       </div>
 
@@ -189,72 +189,65 @@ export const StoreManagement: React.FC<StoreManagementProps> = ({
       </div>
 
       {/* Фильтры и поиск */}
-      <div className="bg-[var(--jiva-background-paper)] rounded-lg p-4 shadow-sm">
-        <div className="flex flex-wrap gap-4">
-          <div className="flex-1 min-w-[200px]">
-            <label className="block text-sm font-medium text-[var(--jiva-text-secondary)] mb-1">
+      <div className="bg-surface rounded-lg p-4 shadow-sm">
+        <h3 className="text-lg font-semibold mb-4">Фильтры и поиск</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-secondary mb-1">
               Статус
             </label>
-            <select className="w-full p-2 border border-[var(--jiva-border)] rounded-md text-sm">
-              <option value="">Все статусы</option>
-              <option value="active">Активные</option>
-              <option value="inactive">Неактивные</option>
-              <option value="blocked">Заблокированные</option>
-              <option value="pending">Ожидают модерации</option>
+            <select className="w-full p-2 border border-border rounded-md text-sm">
+              <option>Все статусы</option>
+              <option>Активные</option>
+              <option>На модерации</option>
+              <option>Заблокированные</option>
             </select>
           </div>
-          
-          <div className="flex-1 min-w-[200px]">
-            <label className="block text-sm font-medium text-[var(--jiva-text-secondary)] mb-1">
-              Категория
+          <div>
+            <label className="block text-sm font-medium text-secondary mb-1">
+              Мерчант
             </label>
-            <select className="w-full p-2 border border-[var(--jiva-border)] rounded-md text-sm">
-              <option value="">Все категории</option>
-              <option value="electronics">Электроника</option>
-              <option value="fashion">Мода</option>
-              <option value="books">Книги</option>
-              <option value="food">Еда</option>
-              <option value="other">Другое</option>
+            <select className="w-full p-2 border border-border rounded-md text-sm">
+              <option>Все мерчанты</option>
+              <option>ООО &quot;Первый&quot;</option>
+              <option>ИП Петров</option>
+              <option>Сидоров А.А.</option>
             </select>
           </div>
-          
-          <div className="flex-1 min-w-[200px]">
-            <label className="block text-sm font-medium text-[var(--jiva-text-secondary)] mb-1">
+          <div>
+            <label className="block text-sm font-medium text-secondary mb-1">
               Поиск
             </label>
             <input
               type="text"
               placeholder="Название магазина или домен"
-              className="w-full p-2 border border-[var(--jiva-border)] rounded-md text-sm"
+              className="w-full p-2 border border-border rounded-md text-sm"
             />
           </div>
-          
-          <div className="flex items-end">
-            <button className="px-4 py-2 bg-[var(--jiva-primary)] text-white rounded-md hover:bg-[var(--jiva-primary-dark)] transition-colors text-sm">
-              Добавить магазин
-            </button>
-          </div>
         </div>
+        <button className="px-4 py-2 bg-accent text-white rounded-md hover:opacity-90 transition-colors text-sm">
+          Применить фильтры
+        </button>
       </div>
 
-      {/* Топ магазины */}
-      <div className="bg-[var(--jiva-background-paper)] rounded-lg p-6 shadow-sm">
-        <h2 className="text-xl font-bold mb-4">Топ-5 магазинов по обороту</h2>
+      {/* Топ магазинов */}
+      <div className="bg-surface rounded-lg p-6 shadow-sm">
+        <h3 className="text-lg font-semibold mb-4">Топ магазинов по обороту</h3>
         <div className="space-y-3">
           {stores.slice(0, 5).map((store, index) => (
-            <div key={store.id} className="flex items-center justify-between p-3 bg-[var(--jiva-background)] rounded">
+            <div key={store.id} className="flex items-center justify-between p-3 bg-background rounded">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-[var(--jiva-primary)] text-white rounded-full flex items-center justify-center text-sm font-bold">
+                <div className="w-8 h-8 bg-accent text-white rounded-full flex items-center justify-center text-sm font-bold">
                   {index + 1}
                 </div>
                 <div>
-                  <div className="font-medium">{store.name}</div>
-                  <div className="text-xs text-[var(--jiva-text-secondary)]">{store.merchantName}</div>
+                  <div className="font-medium text-primary">{store.name}</div>
+                  <div className="text-xs text-secondary">{store.merchantName}</div>
                 </div>
               </div>
               <div className="text-right">
-                <div className="font-bold">{formatCurrency(store.monthlyVolume)}</div>
-                <div className="text-xs text-[var(--jiva-text-secondary)]">{store.commission}% комиссия</div>
+                <div className="font-bold text-accent">{formatCurrency(store.monthlyVolume)}</div>
+                <div className="text-xs text-secondary">{store.commission}% комиссия</div>
               </div>
             </div>
           ))}

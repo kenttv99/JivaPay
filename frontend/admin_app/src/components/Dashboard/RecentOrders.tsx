@@ -22,51 +22,64 @@ interface Order {
 }
 
 const OrderStatusBadge = ({ status }: { status: OrderStatus }) => {
-  const getStatusConfig = (status: OrderStatus) => {
+  const getStatusClass = (status: OrderStatus) => {
     switch (status) {
       case 'completed':
-        return { text: 'Выполнен', className: 'status-success' };
+        return 'px-2 py-1 rounded-full text-xs font-medium bg-success/10 text-success';
       case 'processing':
-        return { text: 'В обработке', className: 'status-info' };
+        return 'px-2 py-1 rounded-full text-xs font-medium bg-info/10 text-info';
       case 'pending':
-        return { text: 'Ожидание', className: 'status-warning' };
+        return 'px-2 py-1 rounded-full text-xs font-medium bg-warning/10 text-warning';
       case 'canceled':
-        return { text: 'Отменён', className: 'status-neutral' };
+        return 'px-2 py-1 rounded-full text-xs font-medium bg-neutral/10 text-neutral';
       case 'disputed':
-        return { text: 'Спор', className: 'status-warning' };
+        return 'px-2 py-1 rounded-full text-xs font-medium bg-warning/10 text-warning';
       case 'failed':
-        return { text: 'Ошибка', className: 'status-error' };
+        return 'px-2 py-1 rounded-full text-xs font-medium bg-error/10 text-error';
       default:
-        return { text: status, className: 'status-neutral' };
+        return 'px-2 py-1 rounded-full text-xs font-medium bg-neutral/10 text-neutral';
     }
   };
 
-  const config = getStatusConfig(status);
+  const getStatusText = (status: OrderStatus) => {
+    switch (status) {
+      case 'completed': return 'Выполнен';
+      case 'processing': return 'В обработке';
+      case 'pending': return 'Ожидание';
+      case 'canceled': return 'Отменён';
+      case 'disputed': return 'Спор';
+      case 'failed': return 'Ошибка';
+      default: return status;
+    }
+  };
   
   return (
-    <span className={`status-badge ${config.className}`}>
-      {config.text}
+    <span className={getStatusClass(status)}>
+      {getStatusText(status)}
     </span>
   );
 };
 
 const OrderTypeBadge = ({ type }: { type: OrderType }) => {
-  const getTypeConfig = (type: OrderType) => {
+  const getTypeClass = (type: OrderType) => {
     switch (type) {
-      case 'payin':
-        return { text: 'Ввод', className: 'status-success' };
-      case 'payout':
-        return { text: 'Вывод', className: 'status-info' };
-      default:
-        return { text: type, className: 'status-neutral' };
+      case 'payin': return 'px-2 py-1 rounded-full text-xs font-medium bg-success/10 text-success';
+      case 'payout': return 'px-2 py-1 rounded-full text-xs font-medium bg-info/10 text-info';
+      default: return 'px-2 py-1 rounded-full text-xs font-medium bg-neutral/10 text-neutral';
     }
   };
 
-  const config = getTypeConfig(type);
+  const getTypeText = (type: OrderType) => {
+    switch (type) {
+      case 'payin': return 'Ввод';
+      case 'payout': return 'Вывод';
+      default: return type;
+    }
+  };
   
   return (
-    <span className={`status-badge ${config.className}`}>
-      {config.text}
+    <span className={getTypeClass(type)}>
+      {getTypeText(type)}
     </span>
   );
 };
@@ -152,82 +165,78 @@ export const RecentOrders = () => {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-[var(--jiva-border)] overflow-hidden shadow-sm">
+    <div className="bg-surface rounded-lg border border-border overflow-hidden shadow-sm">
       <table className="w-full">
         <thead>
-          <tr className="border-b border-[var(--jiva-border)] bg-[var(--jiva-background)]">
-            <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--jiva-text)]">ID</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--jiva-text)]">Дата</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--jiva-text)]">Пользователь</th>
-            <th className="px-6 py-4 text-right text-sm font-semibold text-[var(--jiva-text)]">Сумма Фиат</th>
-            <th className="px-6 py-4 text-right text-sm font-semibold text-[var(--jiva-text)]">Сумма Крипто</th>
-            <th className="px-6 py-4 text-center text-sm font-semibold text-[var(--jiva-text)]">Тип</th>
-            <th className="px-6 py-4 text-center text-sm font-semibold text-[var(--jiva-text)]">Статус</th>
-            <th className="px-6 py-4 text-center text-sm font-semibold text-[var(--jiva-text)]">Трейдер</th>
+          <tr className="bg-neutral-light">
+            <th className="px-6 py-4 text-left text-sm font-semibold text-secondary">ID</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold text-secondary">Дата</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold text-secondary">Пользователь</th>
+            <th className="px-6 py-4 text-right text-sm font-semibold text-secondary">Сумма Фиат</th>
+            <th className="px-6 py-4 text-right text-sm font-semibold text-secondary">Сумма Крипто</th>
+            <th className="px-6 py-4 text-center text-sm font-semibold text-secondary">Тип</th>
+            <th className="px-6 py-4 text-center text-sm font-semibold text-secondary">Статус</th>
+            <th className="px-6 py-4 text-center text-sm font-semibold text-secondary">Трейдер</th>
           </tr>
         </thead>
-        <tbody className="bg-white">
+        <tbody className="bg-surface">
           {recentOrders.map((order) => (
             <React.Fragment key={order.id}>
               <tr 
-                className="border-b border-[var(--jiva-border-light)] hover:bg-[var(--jiva-background)] cursor-pointer transition-colors"
+                className="border-b border-border hover:bg-neutral-light/50 transition-colors cursor-pointer"
                 onClick={() => toggleOrderDetails(order.id)}
               >
-                <td className="px-6 py-4 text-[var(--jiva-primary)] font-medium text-sm">{order.id}</td>
-                <td className="px-6 py-4 text-[var(--jiva-text-secondary)] text-sm">{order.date}</td>
-                <td className="px-6 py-4 text-[var(--jiva-text)] font-medium">{order.user}</td>
-                <td className="px-6 py-4 text-right font-semibold text-[var(--jiva-text)]">{order.amount}</td>
-                <td className="px-6 py-4 text-right text-[var(--jiva-text-secondary)]">{order.amount_crypto} {order.currency_crypto}</td>
+                <td className="px-6 py-4 font-medium text-sm text-primary">{order.id}</td>
+                <td className="px-6 py-4 text-secondary text-sm">{order.date}</td>
+                <td className="px-6 py-4 text-primary font-medium">{order.user}</td>
+                <td className="px-6 py-4 text-right font-semibold text-primary">{order.amount}</td>
+                <td className="px-6 py-4 text-right text-secondary">{order.amount_crypto} {order.currency_crypto}</td>
                 <td className="px-6 py-4 text-center">
                   <OrderTypeBadge type={order.type} />
                 </td>
                 <td className="px-6 py-4 text-center">
                   <OrderStatusBadge status={order.status} />
                 </td>
-                <td className="px-6 py-4 text-center text-sm text-[var(--jiva-text-secondary)]">
+                <td className="px-6 py-4 text-center text-sm text-secondary">
                   {order.trader || "Не назначен"}
                 </td>
               </tr>
               {expandedOrder === order.id && (
                 <tr>
-                  <td colSpan={8} className="px-6 py-6 bg-[var(--jiva-background)] border-t border-[var(--jiva-border-light)]">
+                  <td colSpan={8} className="px-6 py-6 bg-neutral-light border-t border-border">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <h4 className="font-semibold text-[var(--jiva-text)] mb-4">Детали ордера</h4>
+                        <h4 className="font-semibold text-primary mb-4">Детали ордера</h4>
                         <div className="grid grid-cols-2 gap-6">
                           <div className="space-y-2">
                             <p className="text-sm">
-                              <span className="font-medium text-[var(--jiva-text)]">Трейдер:</span> 
-                              <span className="text-[var(--jiva-text-secondary)] ml-2">{order.trader || "Не назначен"}</span>
+                              <span className="font-medium text-primary">Трейдер:</span>
+                              <span className="ml-2 text-secondary">{order.trader || "Не назначен"}</span>
                             </p>
                             <p className="text-sm">
-                              <span className="font-medium text-[var(--jiva-text)]">Реквизит:</span> 
-                              <span className="text-[var(--jiva-text-secondary)] ml-2">{order.requisite || "Не назначен"}</span>
+                              <span className="font-medium text-primary">Реквизит:</span>
+                              <span className="ml-2 text-secondary">{order.requisite || "Не указан"}</span>
                             </p>
                           </div>
                           <div className="space-y-2">
                             <p className="text-sm">
-                              <span className="font-medium text-[var(--jiva-text)]">Комиссия магазина:</span> 
-                              <span className="text-[var(--jiva-text-secondary)] ml-2">{order.store_commission}</span>
+                              <span className="font-medium text-primary">Комиссия магазина:</span>
+                              <span className="ml-2 text-secondary">{order.store_commission}</span>
                             </p>
                             <p className="text-sm">
-                              <span className="font-medium text-[var(--jiva-text)]">Комиссия трейдера:</span> 
-                              <span className="text-[var(--jiva-text-secondary)] ml-2">{order.trader_commission}</span>
+                              <span className="font-medium text-primary">Комиссия трейдера:</span>
+                              <span className="ml-2 text-secondary">{order.trader_commission}</span>
                             </p>
                           </div>
                         </div>
                       </div>
-                      <div className="flex gap-3 ml-6">
-                        <button className="px-4 py-2 bg-white hover:bg-[var(--jiva-background)] text-[var(--jiva-text)] border border-[var(--jiva-border)] rounded-md transition-colors flex items-center gap-2">
-                          <span>👁</span>
-                          <span className="text-sm font-medium">Детали</span>
+                      <div className="flex gap-2 ml-4">
+                        <button className="bg-primary text-white px-3 py-1 rounded-lg hover:bg-primary/90 transition-colors text-xs">
+                          Редактировать
                         </button>
-                        {order.status === "processing" && (
-                          <button className="px-4 py-2 bg-[var(--jiva-primary)] hover:bg-[var(--jiva-primary-dark)] text-white rounded-md transition-colors flex items-center gap-2">
-                            <span>✓</span>
-                            <span className="text-sm font-medium">Принять</span>
-                          </button>
-                        )}
+                        <button className="bg-surface text-primary border border-border px-3 py-1 rounded-lg hover:bg-neutral-light transition-colors text-xs">
+                          Детали
+                        </button>
                       </div>
                     </div>
                   </td>

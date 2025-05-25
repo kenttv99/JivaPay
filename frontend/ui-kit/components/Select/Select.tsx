@@ -68,19 +68,19 @@ export const Select: React.FC<SelectProps> = ({
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={`
-          w-full text-left bg-[var(--color-surface)] border border-[var(--color-border)] rounded-md 
-          focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent 
+          w-full text-left bg-surface border border-border rounded-md 
+          focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent 
           transition-colors ${getSizeClasses(size)}
-          ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-[var(--color-accent)]'}
-          ${error ? 'border-[var(--color-error)]' : ''}
+          ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-accent'}
+          ${error ? 'border-error' : ''}
         `}
       >
-        <span className={`block truncate ${selectedOption ? 'text-[var(--color-primary)]' : 'text-[var(--color-secondary)]'}`}>
+        <span className={`block truncate ${selectedOption ? 'text-primary' : 'text-secondary'}`}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
           <svg
-            className={`w-5 h-5 text-[var(--color-secondary)] transition-transform ${isOpen ? 'rotate-180' : ''}`}
+            className={`w-5 h-5 text-secondary transition-transform ${isOpen ? 'rotate-180' : ''}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -91,7 +91,7 @@ export const Select: React.FC<SelectProps> = ({
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-md shadow-lg max-h-60 overflow-auto">
+        <div className="absolute z-50 w-full mt-1 bg-surface border border-border rounded-md shadow-lg max-h-60 overflow-auto">
           {options.map((option) => (
             <button
               key={option.value}
@@ -102,11 +102,11 @@ export const Select: React.FC<SelectProps> = ({
                 w-full text-left px-3 py-2 text-sm transition-colors
                 ${option.disabled 
                   ? 'opacity-50 cursor-not-allowed' 
-                  : 'hover:bg-[var(--color-bg)] focus:bg-[var(--color-bg)]'
+                  : 'hover:bg-background focus:bg-background'
                 }
                 ${option.value === value 
-                  ? 'bg-[var(--color-accent)] bg-opacity-10 text-[var(--color-accent)]' 
-                  : 'text-[var(--color-primary)]'
+                  ? 'bg-accent bg-opacity-10 text-accent' 
+                  : 'text-primary'
                 }
               `}
             >
@@ -117,7 +117,7 @@ export const Select: React.FC<SelectProps> = ({
       )}
 
       {error && (
-        <p className="mt-1 text-sm text-[var(--color-error)]">
+        <p className="mt-1 text-sm text-error">
           {error}
         </p>
       )}

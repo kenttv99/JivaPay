@@ -27,8 +27,8 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
     return (
       <div className="p-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-[var(--jiva-text)]">Доступ запрещен</h1>
-          <p className="text-[var(--jiva-text-secondary)] mt-2">У вас нет прав для просмотра ордеров</p>
+          <h1 className="text-2xl font-bold text-primary">Доступ запрещен</h1>
+          <p className="text-secondary mt-2">У вас нет прав для просмотра ордеров</p>
         </div>
       </div>
     );
@@ -116,18 +116,18 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
       {/* Заголовок страницы */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-[var(--jiva-text)]">
+          <h1 className="text-3xl font-bold text-primary">
             {role === 'support' ? 'Проблемные ордера' : 'Управление ордерами'}
           </h1>
-          <p className="text-[var(--jiva-text-secondary)] mt-1">
+          <p className="text-secondary mt-1">
             {role === 'admin' ? 'Централизованная система управления всеми ордерами' :
              role === 'teamlead' ? 'Ордера команды трейдеров' :
              'Ордера требующие поддержки'}
           </p>
         </div>
 
-        {ordersConfig.permissions.exportData && (
-          <button className="bg-[var(--jiva-primary)] text-white px-4 py-2 rounded-lg hover:opacity-90">
+        {('exportData' in ordersConfig.permissions) && ordersConfig.permissions.exportData && (
+          <button className="bg-accent text-white px-4 py-2 rounded-lg hover:opacity-90">
             Экспорт данных
           </button>
         )}
@@ -135,47 +135,47 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
 
       {/* Статистика */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        <div className="bg-[var(--jiva-background-paper)] p-4 rounded-lg">
-          <div className="text-2xl font-bold text-[var(--jiva-text)]">{stats.total}</div>
-          <div className="text-sm text-[var(--jiva-text-secondary)]">Всего ордеров</div>
+        <div className="bg-surface p-4 rounded-lg">
+          <div className="text-2xl font-bold text-primary">{stats.total}</div>
+          <div className="text-sm text-secondary">Всего ордеров</div>
         </div>
-        <div className="bg-[var(--jiva-background-paper)] p-4 rounded-lg">
-          <div className="text-2xl font-bold text-[var(--jiva-success)]">{stats.completed}</div>
-          <div className="text-sm text-[var(--jiva-text-secondary)]">Выполнено</div>
+        <div className="bg-surface p-4 rounded-lg">
+          <div className="text-2xl font-bold text-success">{stats.completed}</div>
+          <div className="text-sm text-secondary">Выполнено</div>
         </div>
-        <div className="bg-[var(--jiva-background-paper)] p-4 rounded-lg">
-          <div className="text-2xl font-bold text-[var(--jiva-info)]">{stats.processing}</div>
-          <div className="text-sm text-[var(--jiva-text-secondary)]">В процессе</div>
+        <div className="bg-surface p-4 rounded-lg">
+          <div className="text-2xl font-bold text-info">{stats.processing}</div>
+          <div className="text-sm text-secondary">В процессе</div>
         </div>
-        <div className="bg-[var(--jiva-background-paper)] p-4 rounded-lg">
-          <div className="text-2xl font-bold text-[var(--jiva-warning)]">{stats.pending}</div>
-          <div className="text-sm text-[var(--jiva-text-secondary)]">Ожидание</div>
+        <div className="bg-surface p-4 rounded-lg">
+          <div className="text-2xl font-bold text-warning">{stats.pending}</div>
+          <div className="text-sm text-secondary">Ожидание</div>
         </div>
         {ordersConfig.filters.showAllStatuses && (
           <>
-            <div className="bg-[var(--jiva-background-paper)] p-4 rounded-lg">
-              <div className="text-2xl font-bold text-[var(--jiva-error)]">{stats.disputed + stats.failed}</div>
-              <div className="text-sm text-[var(--jiva-text-secondary)]">Проблемные</div>
+            <div className="bg-surface p-4 rounded-lg">
+              <div className="text-2xl font-bold text-error">{stats.disputed + stats.failed}</div>
+              <div className="text-sm text-secondary">Проблемные</div>
             </div>
-            <div className="bg-[var(--jiva-background-paper)] p-4 rounded-lg">
-              <div className="text-2xl font-bold text-[var(--jiva-primary)]">{stats.payin}</div>
-              <div className="text-sm text-[var(--jiva-text-secondary)]">Пополнения</div>
+            <div className="bg-surface p-4 rounded-lg">
+              <div className="text-2xl font-bold text-accent">{stats.payin}</div>
+              <div className="text-sm text-secondary">Пополнения</div>
             </div>
           </>
         )}
       </div>
 
       {/* Фильтры */}
-      <div className="bg-[var(--jiva-background-paper)] rounded-lg p-6">
+      <div className="bg-surface rounded-lg p-6">
         <div className="flex gap-4 mb-6">
           <div>
-            <label className="block text-sm font-medium text-[var(--jiva-text)] mb-2">
+            <label className="block text-sm font-medium text-primary mb-2">
               Статус
             </label>
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="border border-[var(--jiva-border-light)] rounded-lg px-3 py-2 text-[var(--jiva-text)] bg-[var(--jiva-background)]"
+              className="border border-border rounded-lg px-3 py-2 text-primary bg-background"
             >
               {getAvailableStatuses().map(status => (
                 <option key={status.value} value={status.value}>
@@ -187,13 +187,13 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
 
           {ordersConfig.filters.showAllTypes && (
             <div>
-              <label className="block text-sm font-medium text-[var(--jiva-text)] mb-2">
+              <label className="block text-sm font-medium text-primary mb-2">
                 Тип операции
               </label>
               <select
                 value={selectedType}
                 onChange={(e) => setSelectedType(e.target.value)}
-                className="border border-[var(--jiva-border-light)] rounded-lg px-3 py-2 text-[var(--jiva-text)] bg-[var(--jiva-background)]"
+                className="border border-border rounded-lg px-3 py-2 text-primary bg-background"
               >
                 <option value="all">Все</option>
                 <option value="payin">Пополнение</option>
@@ -219,7 +219,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
 
         {filteredOrders.length === 0 && !isLoading && (
           <div className="text-center py-8">
-            <div className="text-[var(--jiva-text-secondary)]">
+            <div className="text-secondary">
               Ордера не найдены для выбранных фильтров
             </div>
           </div>
@@ -227,27 +227,27 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
       </div>
 
       {/* Быстрые действия для админов */}
-      {role === 'admin' && ordersConfig.permissions.editAny && (
-        <div className="bg-[var(--jiva-background-paper)] rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-[var(--jiva-text)] mb-4">
+      {role === 'admin' && ('editAny' in ordersConfig.permissions) && (
+        <div className="bg-surface rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-primary mb-4">
             Быстрые действия
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <button className="p-4 border border-[var(--jiva-border-light)] rounded-lg hover:bg-[var(--jiva-background)] text-left">
-              <div className="font-medium text-[var(--jiva-text)]">Переназначить трейдера</div>
-              <div className="text-sm text-[var(--jiva-text-secondary)]">Массовое переназначение</div>
+            <button className="p-4 border border-border rounded-lg hover:bg-background text-left">
+              <div className="font-medium text-primary">Переназначить трейдера</div>
+              <div className="text-sm text-secondary">Массовое переназначение</div>
             </button>
-            <button className="p-4 border border-[var(--jiva-border-light)] rounded-lg hover:bg-[var(--jiva-background)] text-left">
-              <div className="font-medium text-[var(--jiva-text)]">Отменить ордера</div>
-              <div className="text-sm text-[var(--jiva-text-secondary)]">Массовая отмена</div>
+            <button className="p-4 border border-border rounded-lg hover:bg-background text-left">
+              <div className="font-medium text-primary">Отменить ордера</div>
+              <div className="text-sm text-secondary">Массовая отмена</div>
             </button>
-            <button className="p-4 border border-[var(--jiva-border-light)] rounded-lg hover:bg-[var(--jiva-background)] text-left">
-              <div className="font-medium text-[var(--jiva-text)]">Обновить статусы</div>
-              <div className="text-sm text-[var(--jiva-text-secondary)]">Синхронизация</div>
+            <button className="p-4 border border-border rounded-lg hover:bg-background text-left">
+              <div className="font-medium text-primary">Обновить статусы</div>
+              <div className="text-sm text-secondary">Синхронизация</div>
             </button>
-            <button className="p-4 border border-[var(--jiva-border-light)] rounded-lg hover:bg-[var(--jiva-background)] text-left">
-              <div className="font-medium text-[var(--jiva-text)]">Создать отчет</div>
-              <div className="text-sm text-[var(--jiva-text-secondary)]">Подробная аналитика</div>
+            <button className="p-4 border border-border rounded-lg hover:bg-background text-left">
+              <div className="font-medium text-primary">Создать отчет</div>
+              <div className="text-sm text-secondary">Подробная аналитика</div>
             </button>
           </div>
         </div>

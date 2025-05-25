@@ -1,0 +1,5 @@
+@import '@jivapay/ui-kit/styles/variables.css';
+@import '@jivapay/ui-kit/styles/themes/dark.css';
+@import "tailwindcss";
+
+/* НЕТ кастомных CSS классов - только переменные! */ 

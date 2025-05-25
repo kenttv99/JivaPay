@@ -25,8 +25,8 @@ export const StoresPage: React.FC<StoresPageProps> = ({
     return (
       <div className="p-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-[var(--jiva-text)]">Доступ запрещен</h1>
-          <p className="text-[var(--jiva-text-secondary)] mt-2">У вас нет прав для управления магазинами</p>
+          <h1 className="text-2xl font-bold text-primary">Доступ запрещен</h1>
+          <p className="text-secondary mt-2">У вас нет прав для управления магазинами</p>
         </div>
       </div>
     );
@@ -119,7 +119,7 @@ export const StoresPage: React.FC<StoresPageProps> = ({
     return (
       <div className="space-y-6">
         <div className="text-center py-8">
-          <div className="text-[var(--jiva-text-secondary)]">Загрузка магазинов...</div>
+          <div className="text-secondary">Загрузка магазинов...</div>
         </div>
       </div>
     );
@@ -130,111 +130,99 @@ export const StoresPage: React.FC<StoresPageProps> = ({
       {/* Заголовок страницы */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-[var(--jiva-text)]">
+          <h1 className="text-3xl font-bold text-primary">
             Управление магазинами
           </h1>
-          <p className="text-[var(--jiva-text-secondary)] mt-1">
-            {role === 'admin' ? 'Полное управление всеми магазинами мерчантов' :
-             'Просмотр информации о магазинах'}
+          <p className="text-secondary mt-1">
+            {role === 'admin' ? 'Полное управление всеми магазинами системы' :
+             'Управление собственными магазинами'}
           </p>
         </div>
 
         {dashboardConfig.config.enableExport && (
-          <button className="bg-[var(--jiva-primary)] text-white px-4 py-2 rounded-lg hover:opacity-90">
+          <button className="bg-accent text-white px-4 py-2 rounded-lg hover:opacity-90">
             Экспорт данных
           </button>
         )}
       </div>
 
       {/* Статистика магазинов */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[var(--jiva-background-paper)] rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-2xl font-bold text-[var(--jiva-primary)]">
-                {stats.totalCount}
-              </div>
-              <div className="text-sm text-[var(--jiva-text-secondary)]">
-                Всего магазинов
-              </div>
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-surface rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-2">Всего магазинов</h3>
+          <div className="text-2xl font-bold text-accent">
+            {stats.totalCount}
+          </div>
+          <div className="text-sm text-secondary">
+            Зарегистрировано в системе
           </div>
         </div>
 
-        <div className="bg-[var(--jiva-background-paper)] rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-2xl font-bold text-[var(--jiva-success)]">
-                {stats.activeCount}
-              </div>
-              <div className="text-sm text-[var(--jiva-text-secondary)]">
-                Активных
-              </div>
-            </div>
+        <div className="bg-surface rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-2">Активные</h3>
+          <div className="text-2xl font-bold text-success">
+            {stats.activeCount}
+          </div>
+          <div className="text-sm text-secondary">
+            Принимают платежи
           </div>
         </div>
 
-        <div className="bg-[var(--jiva-background-paper)] rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-2xl font-bold text-[var(--jiva-warning)]">
-                ₽ {(stats.totalRevenue / 1000000).toFixed(1)}M
-              </div>
-              <div className="text-sm text-[var(--jiva-text-secondary)]">
-                Общий оборот
-              </div>
-            </div>
+        <div className="bg-surface rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-2">На модерации</h3>
+          <div className="text-2xl font-bold text-warning">
+            {stats.pendingCount}
+          </div>
+          <div className="text-sm text-secondary">
+            Требуют проверки
           </div>
         </div>
 
-        <div className="bg-[var(--jiva-background-paper)] rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-2xl font-bold text-[var(--jiva-info)]">
-                {stats.totalOrders.toLocaleString()}
-              </div>
-              <div className="text-sm text-[var(--jiva-text-secondary)]">
-                Всего ордеров
-              </div>
-            </div>
+        <div className="bg-surface rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-2">Аналитика</h3>
+          <div className="text-2xl font-bold text-info">
+            {stats.totalOrders.toLocaleString()}
+          </div>
+          <div className="text-sm text-secondary">
+            Всего ордеров
           </div>
         </div>
       </div>
 
       {/* Детальная статистика статусов */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-[var(--jiva-background-paper)] rounded-lg p-4 text-center">
-          <div className="text-xl font-bold text-[var(--jiva-success)]">
+        <div className="bg-surface rounded-lg p-4 text-center">
+          <div className="text-xl font-bold text-success">
             {stats.activeCount}
           </div>
-          <div className="text-sm text-[var(--jiva-text-secondary)]">
+          <div className="text-sm text-secondary">
             Активные
           </div>
         </div>
 
-        <div className="bg-[var(--jiva-background-paper)] rounded-lg p-4 text-center">
-          <div className="text-xl font-bold text-[var(--jiva-warning)]">
+        <div className="bg-surface rounded-lg p-4 text-center">
+          <div className="text-xl font-bold text-warning">
             {stats.pendingCount}
           </div>
-          <div className="text-sm text-[var(--jiva-text-secondary)]">
+          <div className="text-sm text-secondary">
             Ожидают модерации
           </div>
         </div>
 
-        <div className="bg-[var(--jiva-background-paper)] rounded-lg p-4 text-center">
-          <div className="text-xl font-bold text-[var(--jiva-text-secondary)]">
+        <div className="bg-surface rounded-lg p-4 text-center">
+          <div className="text-xl font-bold text-secondary">
             {stats.inactiveCount}
           </div>
-          <div className="text-sm text-[var(--jiva-text-secondary)]">
+          <div className="text-sm text-secondary">
             Неактивные
           </div>
         </div>
 
-        <div className="bg-[var(--jiva-background-paper)] rounded-lg p-4 text-center">
-          <div className="text-xl font-bold text-[var(--jiva-error)]">
+        <div className="bg-surface rounded-lg p-4 text-center">
+          <div className="text-xl font-bold text-error">
             {stats.blockedCount}
           </div>
-          <div className="text-sm text-[var(--jiva-text-secondary)]">
+          <div className="text-sm text-secondary">
             Заблокированные
           </div>
         </div>
@@ -253,10 +241,11 @@ export const StoresPage: React.FC<StoresPageProps> = ({
       {/* Дополнительная аналитика для админов */}
       {role === 'admin' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-[var(--jiva-background-paper)] rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-[var(--jiva-text)] mb-4">
-              Топ магазинов по обороту
+          <div className="bg-surface rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-primary mb-4">
+              Последние магазины
             </h3>
+            
             <div className="space-y-3">
               {storesData
                 .sort((a, b) => {
@@ -266,20 +255,20 @@ export const StoresPage: React.FC<StoresPageProps> = ({
                 })
                 .slice(0, 5)
                 .map((store, index) => (
-                  <div key={store.id} className="flex justify-between items-center p-3 bg-[var(--jiva-background)] rounded-lg">
+                  <div key={store.id} className="flex justify-between items-center p-3 bg-background rounded-lg">
                     <div>
-                      <div className="font-medium text-[var(--jiva-text)]">
+                      <div className="font-medium text-primary">
                         #{index + 1} {store.name}
                       </div>
-                      <div className="text-sm text-[var(--jiva-text-secondary)]">
+                      <div className="text-sm text-secondary">
                         {store.merchant_name}
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-[var(--jiva-primary)]">
+                      <div className="font-bold text-accent">
                         {store.total_revenue}
                       </div>
-                      <div className="text-sm text-[var(--jiva-text-secondary)]">
+                      <div className="text-sm text-secondary">
                         {store.total_orders} ордеров
                       </div>
                     </div>
@@ -288,39 +277,39 @@ export const StoresPage: React.FC<StoresPageProps> = ({
             </div>
           </div>
 
-          <div className="bg-[var(--jiva-background-paper)] rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-[var(--jiva-text)] mb-4">
-              Системная аналитика
+          <div className="bg-surface rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-primary mb-4">
+              Детальная аналитика
             </h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--jiva-text-secondary)]">Средний оборот магазина:</span>
-                <span className="text-[var(--jiva-text)] font-medium">
-                  ₽ {stats.totalCount > 0 ? (stats.totalRevenue / stats.totalCount / 1000).toFixed(0) : 0}K
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-sm">
+              <div>
+                <span className="text-secondary">Средний оборот магазина:</span>
+                <span className="text-primary font-medium">
+                  ₽ {Math.round(stats.activeCount * 150000).toLocaleString()}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--jiva-text-secondary)]">Средняя конверсия:</span>
-                <span className="text-[var(--jiva-success)] font-medium">78.5%</span>
+              <div>
+                <span className="text-secondary">Средняя конверсия:</span>
+                <span className="text-success font-medium">78.5%</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--jiva-text-secondary)]">Новых магазинов за месяц:</span>
-                <span className="text-[var(--jiva-text)] font-medium">{Math.floor(stats.totalCount * 0.15)}</span>
+              <div>
+                <span className="text-secondary">Новых магазинов за месяц:</span>
+                <span className="text-primary font-medium">{Math.floor(stats.totalCount * 0.15)}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--jiva-text-secondary)]">Средняя комиссия:</span>
-                <span className="text-[var(--jiva-warning)] font-medium">2.8%</span>
+              <div>
+                <span className="text-secondary">Средняя комиссия:</span>
+                <span className="text-warning font-medium">2.8%</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--jiva-text-secondary)]">Интеграций с API:</span>
-                <span className="text-[var(--jiva-info)] font-medium">
-                  {Math.floor(stats.activeCount * 0.6)}
+              <div>
+                <span className="text-secondary">Интеграций с API:</span>
+                <span className="text-info font-medium">
+                  {Math.round(stats.activeCount * 0.7)}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--jiva-text-secondary)]">Настроенных webhook:</span>
-                <span className="text-[var(--jiva-info)] font-medium">
-                  {Math.floor(stats.activeCount * 0.8)}
+              <div>
+                <span className="text-secondary">Настроенных webhook:</span>
+                <span className="text-info font-medium">
+                  {Math.round(stats.activeCount * 0.9)}
                 </span>
               </div>
             </div>
@@ -330,10 +319,10 @@ export const StoresPage: React.FC<StoresPageProps> = ({
 
       {/* Уведомления о проблемах */}
       {stats.blockedCount > 0 && (
-        <div className="bg-[var(--jiva-error-light)] border border-[var(--jiva-error)] rounded-lg p-4">
+        <div className="bg-error-light border border-error rounded-lg p-4">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-[var(--jiva-error)] rounded-full"></div>
-            <span className="font-medium text-[var(--jiva-text)]">
+            <div className="w-2 h-2 bg-error rounded-full"></div>
+            <span className="font-medium text-primary">
               Внимание: {stats.blockedCount} магазинов заблокированы
             </span>
           </div>
@@ -341,10 +330,10 @@ export const StoresPage: React.FC<StoresPageProps> = ({
       )}
 
       {stats.pendingCount > 0 && (
-        <div className="bg-[var(--jiva-warning-light)] border border-[var(--jiva-warning)] rounded-lg p-4">
+        <div className="bg-warning-light border border-warning rounded-lg p-4">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-[var(--jiva-warning)] rounded-full"></div>
-            <span className="font-medium text-[var(--jiva-text)]">
+            <div className="w-2 h-2 bg-warning rounded-full"></div>
+            <span className="font-medium text-primary">
               {stats.pendingCount} магазинов ожидают модерации
             </span>
           </div>

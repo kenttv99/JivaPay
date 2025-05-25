@@ -120,11 +120,11 @@ export const RequisiteManagement: React.FC<RequisiteManagementProps> = ({
       title: 'Реквизит',
       render: (value: any, requisite: RequisiteItem) => (
         <div>
-          <div className="font-medium text-[var(--jiva-text)]">{requisite.bank_name}</div>
-          <div className="text-sm text-[var(--jiva-text-secondary)]">
+          <div className="font-medium text-primary">{requisite.bank_name}</div>
+          <div className="text-sm text-secondary">
             {maskCardNumber(requisite.card_number)}
           </div>
-          <div className="text-sm text-[var(--jiva-text-secondary)]">
+          <div className="text-sm text-secondary">
             {requisite.card_holder}
           </div>
         </div>
@@ -135,10 +135,10 @@ export const RequisiteManagement: React.FC<RequisiteManagementProps> = ({
       title: 'Трейдер',
       render: (value: any, requisite: RequisiteItem) => (
         <div>
-          <div className="font-medium text-[var(--jiva-text)]">{requisite.trader_name}</div>
-          <div className="text-sm text-[var(--jiva-text-secondary)]">ID: {requisite.trader_id}</div>
+          <div className="font-medium text-primary">{requisite.trader_name}</div>
+          <div className="text-sm text-secondary">ID: {requisite.trader_id}</div>
           {showColumns.team && requisite.team_id && (
-            <div className="text-sm text-[var(--jiva-text-secondary)]">
+            <div className="text-sm text-secondary">
               Команда: {requisite.team_id}
             </div>
           )}
@@ -162,14 +162,14 @@ export const RequisiteManagement: React.FC<RequisiteManagementProps> = ({
       title: 'Статистика',
       render: (value: any, requisite: RequisiteItem) => (
         <div className="text-sm">
-          <div className="font-medium text-[var(--jiva-text)]">
-            Ордеров: {requisite.total_orders}
+          <div className="font-medium text-primary">
+            ₽ {requisite.total_volume}
           </div>
-          <div className="text-[var(--jiva-text-secondary)]">
-            Объем: {requisite.total_volume}
+          <div className="text-secondary">
+            {requisite.total_orders} ордеров
           </div>
-          <div className="text-[var(--jiva-text-secondary)]">
-            Успешность: {requisite.success_rate}
+          <div className="text-secondary">
+            {requisite.success_rate}% успешность
           </div>
         </div>
       )
@@ -178,7 +178,7 @@ export const RequisiteManagement: React.FC<RequisiteManagementProps> = ({
       key: 'created_date',
       title: 'Дата создания',
       render: (value: any, requisite: RequisiteItem) => (
-        <span className="text-sm text-[var(--jiva-text-secondary)]">
+        <span className="text-sm text-secondary">
           {requisite.created_date}
         </span>
       )
@@ -187,7 +187,7 @@ export const RequisiteManagement: React.FC<RequisiteManagementProps> = ({
       key: 'last_used',
       title: 'Последнее использование',
       render: (value: any, requisite: RequisiteItem) => (
-        <span className="text-sm text-[var(--jiva-text-secondary)]">
+        <span className="text-sm text-secondary">
           {requisite.last_used || 'Не использовался'}
         </span>
       )
@@ -200,7 +200,7 @@ export const RequisiteManagement: React.FC<RequisiteManagementProps> = ({
           {allowedActions.view && (
             <button
               onClick={() => handleRequisiteAction('view', requisite)}
-              className="text-[var(--jiva-primary)] hover:underline text-sm"
+              className="text-accent hover:underline text-sm"
             >
               Просмотр
             </button>
@@ -208,7 +208,7 @@ export const RequisiteManagement: React.FC<RequisiteManagementProps> = ({
           {allowedActions.moderate && requisite.status === 'moderation' && (
             <button
               onClick={() => handleRequisiteAction('view', requisite)}
-              className="text-[var(--jiva-info)] hover:underline text-sm"
+              className="text-info hover:underline text-sm"
             >
               Модерация
             </button>
@@ -216,7 +216,7 @@ export const RequisiteManagement: React.FC<RequisiteManagementProps> = ({
           {allowedActions.block && requisite.status === 'active' && (
             <button
               onClick={() => handleRequisiteAction('block', requisite)}
-              className="text-[var(--jiva-warning)] hover:underline text-sm"
+              className="text-warning hover:underline text-sm"
             >
               Заблокировать
             </button>
@@ -224,7 +224,7 @@ export const RequisiteManagement: React.FC<RequisiteManagementProps> = ({
           {allowedActions.setStatus && requisite.status === 'blocked' && (
             <button
               onClick={() => handleRequisiteAction('unblock', requisite)}
-              className="text-[var(--jiva-success)] hover:underline text-sm"
+              className="text-success hover:underline text-sm"
             >
               Разблокировать
             </button>
@@ -253,24 +253,24 @@ export const RequisiteManagement: React.FC<RequisiteManagementProps> = ({
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-3">
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">ID реквизита:</span>
-                  <span className="text-[var(--jiva-text-secondary)] ml-2">{selectedRequisite.id}</span>
+                  <span className="font-medium text-primary">ID реквизита:</span>
+                  <span className="text-secondary ml-2">{selectedRequisite.id}</span>
                 </div>
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">Банк:</span>
-                  <span className="text-[var(--jiva-text-secondary)] ml-2">{selectedRequisite.bank_name}</span>
+                  <span className="font-medium text-primary">Банк:</span>
+                  <span className="text-secondary ml-2">{selectedRequisite.bank_name}</span>
                 </div>
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">Номер карты:</span>
-                  <span className="text-[var(--jiva-text-secondary)] ml-2">{selectedRequisite.card_number}</span>
+                  <span className="font-medium text-primary">Номер карты:</span>
+                  <span className="text-secondary ml-2">{selectedRequisite.card_number}</span>
                 </div>
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">Держатель карты:</span>
-                  <span className="text-[var(--jiva-text-secondary)] ml-2">{selectedRequisite.card_holder}</span>
+                  <span className="font-medium text-primary">Держатель карты:</span>
+                  <span className="text-secondary ml-2">{selectedRequisite.card_holder}</span>
                 </div>
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">Трейдер:</span>
-                  <span className="text-[var(--jiva-text-secondary)] ml-2">
+                  <span className="font-medium text-primary">Трейдер:</span>
+                  <span className="text-secondary ml-2">
                     {selectedRequisite.trader_name} ({selectedRequisite.trader_id})
                   </span>
                 </div>
@@ -278,90 +278,90 @@ export const RequisiteManagement: React.FC<RequisiteManagementProps> = ({
               
               <div className="space-y-3">
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">Статус:</span>
+                  <span className="font-medium text-primary">Статус:</span>
                   <span className="ml-2"><RequisiteStatusBadge status={selectedRequisite.status} /></span>
                 </div>
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">Онлайн статус:</span>
+                  <span className="font-medium text-primary">Онлайн статус:</span>
                   <span className="ml-2"><OnlineStatusBadge isOnline={selectedRequisite.is_online} /></span>
                 </div>
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">Дата создания:</span>
-                  <span className="text-[var(--jiva-text-secondary)] ml-2">{selectedRequisite.created_date}</span>
+                  <span className="font-medium text-primary">Дата создания:</span>
+                  <span className="text-secondary ml-2">{selectedRequisite.created_date}</span>
                 </div>
                 {selectedRequisite.last_used && (
                   <div>
-                    <span className="font-medium text-[var(--jiva-text)]">Последнее использование:</span>
-                    <span className="text-[var(--jiva-text-secondary)] ml-2">{selectedRequisite.last_used}</span>
+                    <span className="font-medium text-primary">Последнее использование:</span>
+                    <span className="text-secondary ml-2">{selectedRequisite.last_used}</span>
                   </div>
                 )}
                 {selectedRequisite.team_id && (
                   <div>
-                    <span className="font-medium text-[var(--jiva-text)]">Команда:</span>
-                    <span className="text-[var(--jiva-text-secondary)] ml-2">{selectedRequisite.team_id}</span>
+                    <span className="font-medium text-primary">Команда:</span>
+                    <span className="text-secondary ml-2">{selectedRequisite.team_id}</span>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Статистика использования */}
-            <div className="border-t border-[var(--jiva-border-light)] pt-4">
-              <h3 className="text-lg font-semibold text-[var(--jiva-text)] mb-3">
+            <div className="border-t border-border pt-4">
+              <h3 className="text-lg font-semibold text-primary mb-3">
                 Статистика использования
               </h3>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">Всего ордеров:</span>
-                  <div className="text-[var(--jiva-text-secondary)]">{selectedRequisite.total_orders}</div>
+                  <span className="font-medium text-primary">Всего ордеров:</span>
+                  <div className="text-secondary">{selectedRequisite.total_orders}</div>
                 </div>
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">Общий объем:</span>
-                  <div className="text-[var(--jiva-text-secondary)]">{selectedRequisite.total_volume}</div>
+                  <span className="font-medium text-primary">Общий объем:</span>
+                  <div className="text-secondary">{selectedRequisite.total_volume}</div>
                 </div>
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">Успешность:</span>
-                  <div className="text-[var(--jiva-text-secondary)]">{selectedRequisite.success_rate}</div>
+                  <span className="font-medium text-primary">Успешность:</span>
+                  <div className="text-secondary">{selectedRequisite.success_rate}</div>
                 </div>
               </div>
             </div>
 
             {selectedRequisite.moderation_comment && (
-              <div className="border-t border-[var(--jiva-border-light)] pt-4">
-                <span className="font-medium text-[var(--jiva-text)]">Комментарий модерации:</span>
-                <div className="text-[var(--jiva-text-secondary)] mt-1">{selectedRequisite.moderation_comment}</div>
+              <div className="border-t border-border pt-4">
+                <span className="font-medium text-primary">Комментарий модерации:</span>
+                <div className="text-secondary mt-1">{selectedRequisite.moderation_comment}</div>
               </div>
             )}
 
             {/* Модерация (только для реквизитов на модерации) */}
             {canModerate && selectedRequisite.status === 'moderation' && (
-              <div className="border-t border-[var(--jiva-border-light)] pt-4">
-                <h3 className="text-lg font-semibold text-[var(--jiva-text)] mb-3">
+              <div className="border-t border-border pt-4">
+                <h3 className="text-lg font-semibold text-primary mb-3">
                   Модерация реквизита
                 </h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-[var(--jiva-text)] mb-1">
+                    <label className="block text-sm font-medium text-primary mb-1">
                       Комментарий модерации
                     </label>
                     <textarea
                       value={moderationComment}
                       onChange={(e) => setModerationComment(e.target.value)}
-                      className="w-full border border-[var(--jiva-border-light)] rounded-lg px-3 py-2 text-[var(--jiva-text)] bg-[var(--jiva-background)]"
+                      className="w-full border border-border rounded-lg px-3 py-2 text-primary bg-background"
                       rows={3}
                       placeholder="Укажите причину одобрения или отклонения..."
                     />
                   </div>
                   
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     <button
                       onClick={() => handleModeration('approve')}
-                      className="bg-[var(--jiva-success)] text-white px-4 py-2 rounded-lg hover:opacity-90"
+                      className="bg-success text-white px-4 py-2 rounded-lg hover:opacity-90"
                     >
                       Одобрить
                     </button>
                     <button
                       onClick={() => handleModeration('reject')}
-                      className="bg-[var(--jiva-error)] text-white px-4 py-2 rounded-lg hover:opacity-90"
+                      className="bg-error text-white px-4 py-2 rounded-lg hover:opacity-90"
                     >
                       Отклонить
                     </button>
@@ -372,12 +372,12 @@ export const RequisiteManagement: React.FC<RequisiteManagementProps> = ({
 
             {/* Управление статусом */}
             {canEdit && selectedRequisite.status !== 'moderation' && (
-              <div className="border-t border-[var(--jiva-border-light)] pt-4">
-                <div className="flex gap-2">
+              <div className="border-t border-border pt-4">
+                <div className="flex gap-3">
                   {selectedRequisite.status === 'active' && (
                     <button
                       onClick={() => handleRequisiteAction('block', selectedRequisite)}
-                      className="bg-[var(--jiva-warning)] text-white px-4 py-2 rounded-lg hover:opacity-90"
+                      className="bg-warning text-white px-4 py-2 rounded-lg hover:opacity-90"
                     >
                       Заблокировать
                     </button>
@@ -385,7 +385,7 @@ export const RequisiteManagement: React.FC<RequisiteManagementProps> = ({
                   {selectedRequisite.status === 'blocked' && (
                     <button
                       onClick={() => handleRequisiteAction('unblock', selectedRequisite)}
-                      className="bg-[var(--jiva-success)] text-white px-4 py-2 rounded-lg hover:opacity-90"
+                      className="bg-success text-white px-4 py-2 rounded-lg hover:opacity-90"
                     >
                       Разблокировать
                     </button>
@@ -393,7 +393,7 @@ export const RequisiteManagement: React.FC<RequisiteManagementProps> = ({
                   {selectedRequisite.status === 'inactive' && (
                     <button
                       onClick={() => handleRequisiteAction('activate', selectedRequisite)}
-                      className="bg-[var(--jiva-primary)] text-white px-4 py-2 rounded-lg hover:opacity-90"
+                      className="bg-primary text-white px-4 py-2 rounded-lg hover:opacity-90"
                     >
                       Активировать
                     </button>

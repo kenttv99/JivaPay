@@ -18,6 +18,8 @@ export interface StoreItem {
   webhook_url?: string;
   api_key_id?: string;
   description?: string;
+  domain?: string;
+  api_key?: boolean;
 }
 
 interface StoreManagementProps {
@@ -97,11 +99,11 @@ export const StoreManagement: React.FC<StoreManagementProps> = ({
       title: 'Магазин',
       render: (value: any, store: StoreItem) => (
         <div>
-          <div className="font-medium text-[var(--jiva-text)]">{store.name}</div>
-          <div className="text-sm text-[var(--jiva-text-secondary)]">ID: {store.id}</div>
-          {store.description && (
-            <div className="text-sm text-[var(--jiva-text-secondary)] mt-1">
-              {store.description}
+          <div className="font-medium text-primary">{store.name}</div>
+          <div className="text-sm text-secondary">ID: {store.id}</div>
+          {store.domain && (
+            <div className="text-sm text-secondary mt-1">
+              {store.domain}
             </div>
           )}
         </div>
@@ -112,8 +114,8 @@ export const StoreManagement: React.FC<StoreManagementProps> = ({
       title: 'Мерчант',
       render: (value: any, store: StoreItem) => (
         <div>
-          <div className="font-medium text-[var(--jiva-text)]">{store.merchant_name}</div>
-          <div className="text-sm text-[var(--jiva-text-secondary)]">ID: {store.merchant_id}</div>
+          <div className="font-medium text-primary">{store.merchant_name}</div>
+          <div className="text-sm text-secondary">ID: {store.merchant_id}</div>
         </div>
       )
     }] : []),
@@ -127,14 +129,12 @@ export const StoreManagement: React.FC<StoreManagementProps> = ({
       title: 'Статистика',
       render: (value: any, store: StoreItem) => (
         <div className="text-sm">
-          <div className="font-medium text-[var(--jiva-text)]">
-            Ордеров: {store.total_orders}
+          <div className="font-medium text-primary">
+            ₽ {store.total_revenue}
           </div>
-          {showColumns.revenue && (
-            <div className="text-[var(--jiva-text-secondary)]">
-              Оборот: {store.total_revenue}
-            </div>
-          )}
+          <div className="text-secondary">
+            {store.total_orders} ордеров
+          </div>
         </div>
       )
     },
@@ -142,14 +142,14 @@ export const StoreManagement: React.FC<StoreManagementProps> = ({
       key: 'commission_rate',
       title: 'Комиссия',
       render: (value: any, store: StoreItem) => (
-        <span className="text-[var(--jiva-text)]">{store.commission_rate}</span>
+        <span className="text-primary">{store.commission_rate}</span>
       )
     }] : []),
     {
       key: 'created_date',
       title: 'Дата создания',
       render: (value: any, store: StoreItem) => (
-        <span className="text-sm text-[var(--jiva-text-secondary)]">
+        <span className="text-sm text-secondary">
           {store.created_date}
         </span>
       )
@@ -158,9 +158,9 @@ export const StoreManagement: React.FC<StoreManagementProps> = ({
       key: 'last_active',
       title: 'Последняя активность',
       render: (value: any, store: StoreItem) => (
-        <span className="text-sm text-[var(--jiva-text-secondary)]">
-          {store.last_active || 'Неизвестно'}
-        </span>
+        <div className="text-secondary">
+          Последняя активность: {store.last_active}
+        </div>
       )
     }] : []),
     ...(showColumns.webhook ? [{
@@ -169,12 +169,12 @@ export const StoreManagement: React.FC<StoreManagementProps> = ({
       render: (value: any, store: StoreItem) => (
         <div className="text-sm">
           {store.webhook_url ? (
-            <div className="text-[var(--jiva-success)]">Настроен</div>
+            <div className="text-success">Настроен</div>
           ) : (
-            <div className="text-[var(--jiva-text-secondary)]">Не настроен</div>
+            <div className="text-secondary">Не настроен</div>
           )}
           {store.api_key_id && (
-            <div className="text-[var(--jiva-text-secondary)]">
+            <div className="text-secondary">
               API ключ: {store.api_key_id}
             </div>
           )}
@@ -189,7 +189,7 @@ export const StoreManagement: React.FC<StoreManagementProps> = ({
           {allowedActions.view && (
             <button
               onClick={() => handleStoreAction('view', store)}
-              className="text-[var(--jiva-primary)] hover:underline text-sm"
+              className="text-accent hover:underline text-sm"
             >
               Просмотр
             </button>
@@ -197,7 +197,7 @@ export const StoreManagement: React.FC<StoreManagementProps> = ({
           {allowedActions.edit && (
             <button
               onClick={() => handleStoreAction('edit', store)}
-              className="text-[var(--jiva-info)] hover:underline text-sm"
+              className="text-info hover:underline text-sm"
             >
               Изменить
             </button>
@@ -205,7 +205,7 @@ export const StoreManagement: React.FC<StoreManagementProps> = ({
           {allowedActions.block && store.status === 'active' && (
             <button
               onClick={() => handleStoreAction('block', store)}
-              className="text-[var(--jiva-warning)] hover:underline text-sm"
+              className="text-warning hover:underline text-sm"
             >
               Заблокировать
             </button>
@@ -213,7 +213,7 @@ export const StoreManagement: React.FC<StoreManagementProps> = ({
           {allowedActions.delete && (
             <button
               onClick={() => handleStoreAction('delete', store)}
-              className="text-[var(--jiva-error)] hover:underline text-sm"
+              className="text-error hover:underline text-sm"
             >
               Удалить
             </button>
@@ -230,7 +230,7 @@ export const StoreManagement: React.FC<StoreManagementProps> = ({
         <div className="mb-4 flex justify-end">
           <button
             onClick={onCreateStore}
-            className="bg-[var(--jiva-primary)] text-white px-4 py-2 rounded-lg hover:opacity-90"
+            className="bg-accent text-white px-4 py-2 rounded-lg hover:opacity-90"
           >
             Создать магазин
           </button>
@@ -254,92 +254,92 @@ export const StoreManagement: React.FC<StoreManagementProps> = ({
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-3">
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">ID магазина:</span>
-                  <span className="text-[var(--jiva-text-secondary)] ml-2">{selectedStore.id}</span>
+                  <span className="font-medium text-primary">ID магазина:</span>
+                  <span className="text-secondary ml-2">{selectedStore.id}</span>
                 </div>
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">Название:</span>
-                  <span className="text-[var(--jiva-text-secondary)] ml-2">{selectedStore.name}</span>
+                  <span className="font-medium text-primary">Название:</span>
+                  <span className="text-secondary ml-2">{selectedStore.name}</span>
                 </div>
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">Мерчант:</span>
-                  <span className="text-[var(--jiva-text-secondary)] ml-2">
-                    {selectedStore.merchant_name} ({selectedStore.merchant_id})
+                  <span className="font-medium text-primary">Мерчант:</span>
+                  <span className="text-secondary ml-2">
+                    {selectedStore.merchant_name}
                   </span>
                 </div>
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">Статус:</span>
+                  <span className="font-medium text-primary">Статус:</span>
                   <span className="ml-2"><StoreStatusBadge status={selectedStore.status} /></span>
                 </div>
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">Комиссия:</span>
-                  <span className="text-[var(--jiva-text-secondary)] ml-2">{selectedStore.commission_rate}</span>
+                  <span className="font-medium text-primary">Комиссия:</span>
+                  <span className="text-secondary ml-2">{selectedStore.commission_rate}</span>
                 </div>
               </div>
               
               <div className="space-y-3">
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">Дата создания:</span>
-                  <span className="text-[var(--jiva-text-secondary)] ml-2">{selectedStore.created_date}</span>
+                  <span className="font-medium text-primary">Дата создания:</span>
+                  <span className="text-secondary ml-2">{selectedStore.created_date}</span>
                 </div>
                 {selectedStore.last_active && (
                   <div>
-                    <span className="font-medium text-[var(--jiva-text)]">Последняя активность:</span>
-                    <span className="text-[var(--jiva-text-secondary)] ml-2">{selectedStore.last_active}</span>
+                    <span className="font-medium text-primary">Последняя активность:</span>
+                    <span className="text-secondary ml-2">{selectedStore.last_active}</span>
                   </div>
                 )}
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">Всего ордеров:</span>
-                  <span className="text-[var(--jiva-text-secondary)] ml-2">{selectedStore.total_orders}</span>
+                  <span className="font-medium text-primary">Всего ордеров:</span>
+                  <span className="text-secondary ml-2">{selectedStore.total_orders}</span>
                 </div>
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">Общий оборот:</span>
-                  <span className="text-[var(--jiva-text-secondary)] ml-2">{selectedStore.total_revenue}</span>
+                  <span className="font-medium text-primary">Общий оборот:</span>
+                  <span className="text-secondary ml-2">{selectedStore.total_revenue}</span>
                 </div>
               </div>
             </div>
 
             {selectedStore.description && (
               <div>
-                <span className="font-medium text-[var(--jiva-text)]">Описание:</span>
-                <div className="text-[var(--jiva-text-secondary)] mt-1">{selectedStore.description}</div>
+                <span className="font-medium text-primary">Описание:</span>
+                <div className="text-secondary mt-1">{selectedStore.description}</div>
               </div>
             )}
 
             {/* Интеграционная информация */}
-            <div className="border-t border-[var(--jiva-border-light)] pt-4">
-              <h3 className="text-lg font-semibold text-[var(--jiva-text)] mb-3">
-                Интеграция
+            <div className="border-t border-border pt-4">
+              <h3 className="text-lg font-semibold text-primary mb-3">
+                Настройки API
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-2 text-sm">
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">Webhook URL:</span>
-                  <span className="text-[var(--jiva-text-secondary)] ml-2">
+                  <span className="font-medium text-primary">Webhook URL:</span>
+                  <span className="text-secondary ml-2">
                     {selectedStore.webhook_url || 'Не настроен'}
                   </span>
                 </div>
                 <div>
-                  <span className="font-medium text-[var(--jiva-text)]">API ключ:</span>
-                  <span className="text-[var(--jiva-text-secondary)] ml-2">
-                    {selectedStore.api_key_id || 'Не создан'}
+                  <span className="font-medium text-primary">API ключ:</span>
+                  <span className="text-secondary ml-2">
+                    {selectedStore.api_key ? '••••••••••••••••' : 'Не настроен'}
                   </span>
                 </div>
               </div>
             </div>
 
             {canEdit && (
-              <div className="border-t border-[var(--jiva-border-light)] pt-4">
-                <div className="flex gap-2">
+              <div className="border-t border-border pt-4">
+                <div className="flex gap-3">
                   <button
                     onClick={() => handleStoreAction('edit', selectedStore)}
-                    className="bg-[var(--jiva-primary)] text-white px-4 py-2 rounded-lg hover:opacity-90"
+                    className="bg-accent text-white px-4 py-2 rounded-lg hover:opacity-90"
                   >
                     Редактировать
                   </button>
                   {selectedStore.status === 'active' && (
                     <button
                       onClick={() => handleStoreAction('block', selectedStore)}
-                      className="bg-[var(--jiva-warning)] text-white px-4 py-2 rounded-lg hover:opacity-90"
+                      className="bg-warning text-white px-4 py-2 rounded-lg hover:opacity-90"
                     >
                       Заблокировать
                     </button>
@@ -347,7 +347,7 @@ export const StoreManagement: React.FC<StoreManagementProps> = ({
                   {selectedStore.status === 'blocked' && (
                     <button
                       onClick={() => handleStoreAction('unblock', selectedStore)}
-                      className="bg-[var(--jiva-success)] text-white px-4 py-2 rounded-lg hover:opacity-90"
+                      className="bg-success text-white px-4 py-2 rounded-lg hover:opacity-90"
                     >
                       Разблокировать
                     </button>
