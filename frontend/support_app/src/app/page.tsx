@@ -1,103 +1,245 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import React from 'react';
+import { SupportLayout } from '../layouts/SupportLayout';
+import { MetricsGrid, OrdersTable, UserManagement, PlatformMetrics } from '@jivapay/shared-pages';
+
+// Мок данные для демонстрации
+const mockMetrics = [
+  {
+    id: 'total-tickets',
+    title: 'Всего тикетов',
+    value: '1,247',
+    change: '+12%',
+    trend: 'up' as const,
+    subtitle: 'За последний месяц'
+  },
+  {
+    id: 'pending-tickets',
+    title: 'Ожидают ответа',
+    value: '23',
+    change: '+5',
+    trend: 'up' as const,
+    subtitle: 'Требуют внимания'
+  },
+  {
+    id: 'resolved-today',
+    title: 'Решено сегодня',
+    value: '89',
+    change: '+15%',
+    trend: 'up' as const,
+    subtitle: 'Выше среднего'
+  },
+  {
+    id: 'avg-response',
+    title: 'Среднее время ответа',
+    value: '2.4ч',
+    change: '-18%',
+    trend: 'down' as const,
+    subtitle: 'Улучшение'
+  }
+];
+
+const mockOrders = [
+  {
+    id: 'ORD-12345',
+    date: '2024-12-15 14:30',
+    user: 'user123@example.com',
+    amount: '₽ 15,000',
+    amount_crypto: '0.45',
+    currency_crypto: 'BTC',
+    type: 'payin' as const,
+    status: 'disputed' as const,
+    trader: 'trader_001',
+    requisite: 'SBER-4567'
+  },
+  {
+    id: 'ORD-12346',
+    date: '2024-12-15 14:15',
+    user: 'merchant@shop.com',
+    amount: '₽ 8,750',
+    amount_crypto: '0.28',
+    currency_crypto: 'BTC',
+    type: 'payout' as const,
+    status: 'failed' as const,
+    trader: null,
+    requisite: null
+  }
+];
+
+const mockUsers = [
+  {
+    id: 'user_001',
+    username: 'problem_user',
+    email: 'user@example.com',
+    role: 'merchant' as const,
+    status: 'blocked' as const,
+    created_date: '2024-01-15',
+    last_active: '2024-12-14 23:45',
+    total_orders: 156,
+    merchant_store_count: 3
+  }
+];
+
+const mockPlatformData = {
+  total_users: 15643,
+  active_merchants: 892,
+  active_traders: 234,
+  total_orders_today: 1247,
+  total_volume_today: '₽ 12,450,000',
+  platform_revenue: '₽ 245,600',
+  success_rate: 97.8,
+  avg_processing_time: '4.2 мин',
+  platform_balance: '₽ 2,340,000',
+  merchant_balance: '₽ 15,670,000',
+  trader_balance: '₽ 8,920,000'
+};
+
+export default function SupportDashboard() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <SupportLayout>
+      <div className="space-y-8">
+        {/* Page Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-primary">
+              Панель поддержки
+            </h1>
+            <p className="text-secondary mt-1">
+              Управление тикетами, пользователями и проблемными ордерами
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <button className="px-4 py-2 bg-success text-white rounded-lg hover:bg-green-600 transition-colors">
+              Создать тикет
+            </button>
+            <button className="px-4 py-2 bg-warning text-white rounded-lg hover:bg-yellow-600 transition-colors">
+              Экстренный режим
+            </button>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+
+        {/* Support Metrics */}
+        <div>
+          <h2 className="text-xl font-semibold text-primary mb-4">
+            Метрики поддержки
+          </h2>
+          <MetricsGrid 
+            metrics={mockMetrics}
+            columns={4}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
+        </div>
+
+        {/* Platform Overview */}
+        <div>
+          <h2 className="text-xl font-semibold text-primary mb-4">
+            Состояние платформы
+          </h2>
+          <PlatformMetrics 
+            data={mockPlatformData}
+            showFinancials={false}
+            showBalances={false}
           />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
+        </div>
+
+        {/* Problem Orders */}
+        <div>
+          <h2 className="text-xl font-semibold text-primary mb-4">
+            Проблемные ордера
+          </h2>
+          <OrdersTable 
+            orders={mockOrders}
+            showColumns={{
+              trader: true,
+              commissions: false,
+              store: false,
+              crypto: true,
+              actions: true
+            }}
           />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        </div>
+
+        {/* Problem Users */}
+        <div>
+          <h2 className="text-xl font-semibold text-primary mb-4">
+            Пользователи с проблемами
+          </h2>
+          <UserManagement 
+            users={mockUsers}
+            allowedActions={{
+              view: true,
+              edit: true,
+              delete: false,
+              block: true,
+              changeRole: false
+            }}
+            showColumns={{
+              team: false,
+              balances: true,
+              statistics: true,
+              lastActive: true
+            }}
+          />
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="card-base p-6">
+            <h3 className="font-semibold text-primary mb-3">
+              Быстрые действия
+            </h3>
+            <div className="space-y-3">
+              <button className="w-full text-left p-3 bg-surface hover:bg-surface/80 rounded-lg transition-colors">
+                Массовое назначение тикетов
+              </button>
+              <button className="w-full text-left p-3 bg-surface hover:bg-surface/80 rounded-lg transition-colors">
+                Экспорт отчета за день
+              </button>
+              <button className="w-full text-left p-3 bg-surface hover:bg-surface/80 rounded-lg transition-colors">
+                Системное уведомление
+              </button>
+            </div>
+          </div>
+
+          <div className="card-base p-6">
+            <h3 className="font-semibold text-primary mb-3">
+              Статистика команды
+            </h3>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-secondary">Онлайн сейчас:</span>
+                <span className="text-primary font-medium">5 агентов</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-secondary">Средний рейтинг:</span>
+                <span className="text-primary font-medium">4.8/5</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-secondary">Решено сегодня:</span>
+                <span className="text-primary font-medium">89 тикетов</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="card-base p-6">
+            <h3 className="font-semibold text-primary mb-3">
+              Системные уведомления
+            </h3>
+            <div className="space-y-2 text-sm">
+              <div className="p-2 bg-warning/10 text-warning rounded">
+                Превышен лимит ожидания ответа
+              </div>
+              <div className="p-2 bg-success/10 text-success rounded">
+                Все системы работают стабильно
+              </div>
+              <div className="p-2 bg-info/10 text-info rounded">
+                Обновление в 2:00 МСК
+              </div>
+            </div>
+          </div>
+        </div>
     </div>
+    </SupportLayout>
   );
 }

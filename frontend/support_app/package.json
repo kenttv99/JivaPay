@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@jivapay/permissions": "*",
+    "@jivapay/shared-pages": "*",
     "@jivapay/ui-kit": "*",
     "next": "15.3.1",
     "react": "^19.0.0",
@@ -17,13 +18,13 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
+    "autoprefixer": "^10.4.16",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.3.1",
-    "tailwindcss": "^4",
+    "tailwindcss": "^3.4.11",
     "typescript": "^5"
   }
 }

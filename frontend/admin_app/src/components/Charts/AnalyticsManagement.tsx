@@ -165,7 +165,7 @@ export const AnalyticsManagement: React.FC<AnalyticsManagementProps> = ({
             </button>
           </div>
         </div>
-        <div className="h-96 w-full bg-gray-100 rounded flex items-center justify-center">
+        <div className="h-96 w-full bg-surface/50 rounded flex items-center justify-center">
           <div className="text-center">
             <p className="text-secondary">
               Основной график аналитики будет здесь
@@ -236,7 +236,7 @@ export const AnalyticsManagement: React.FC<AnalyticsManagementProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-surface rounded-lg p-6 shadow-sm">
           <h2 className="text-xl font-bold mb-4">Распределение по способам оплаты</h2>
-          <div className="h-80 w-full bg-gray-100 rounded flex items-center justify-center">
+          <div className="h-80 w-full bg-surface/50 rounded flex items-center justify-center">
             <div className="text-center">
               <p className="text-secondary">
                 Круговая диаграмма методов оплаты
@@ -265,7 +265,7 @@ export const AnalyticsManagement: React.FC<AnalyticsManagementProps> = ({
         
         <div className="bg-surface rounded-lg p-6 shadow-sm">
           <h2 className="text-xl font-bold mb-4">Топ-5 мерчантов</h2>
-          <div className="h-80 w-full bg-gray-100 rounded flex items-center justify-center">
+          <div className="h-80 w-full bg-surface/50 rounded flex items-center justify-center">
             <div className="text-center">
               <p className="text-secondary">
                 Горизонтальная гистограмма топ мерчантов

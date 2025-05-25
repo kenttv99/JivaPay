@@ -1,0 +1,79 @@
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes skeletonLoading {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+/* Дополнительные анимации для Charts и других компонентов */
+@keyframes slideUp {
+  from { transform: translateY(100%); height: 0; }
+  to { transform: translateY(0); height: var(--final-height, auto); }
+}
+
+@keyframes dashOffset {
+  from { stroke-dashoffset: 1000; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* Utility классы для анимаций */
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slideInLeft {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.animate-countUp {
+  animation: countUp 0.5s ease-out;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.5s ease-out;
+}
+
+.animate-dashOffset {
+  animation: dashOffset 2s ease-out;
+}
+
+/* Базовые transition-стили для hover/focus */
+.animated-transition {
+  transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* Utility классы для компонентов */
+.dropdown-panel {
+  @apply bg-background border border-border rounded-lg shadow-lg z-50 animate-fadeIn;
+}
+
+.card-base {
+  @apply bg-background border border-border rounded-lg;
+} 

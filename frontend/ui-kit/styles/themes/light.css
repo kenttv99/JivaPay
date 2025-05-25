@@ -1,8 +1,9 @@
 :root {
   --color-bg: #ffffff;
-  --color-surface: #ffffff;
-  --color-primary: #111827;
-  --color-secondary: #6b7280;
-  --color-accent: #7c3aed;
+  --color-surface: var(--color-ghost);
+  --color-primary: var(--color-rich-black);
+  --color-secondary: var(--color-tory-blue);
+  --color-accent: var(--color-tory-blue); /* Используем tory-blue как accent */
+  --color-muted: var(--color-shady-lady);
   --color-border: #e5e7eb;
 } 

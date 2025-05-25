@@ -10,4 +10,6 @@ export * from './Modal';
 export * from './Dropdown';
 export * from './Select';
 export * from './Spinner';
-export * from './Alert'; 
+export * from './Alert';
+export * from './Skeleton';
+export * from './Charts'; 

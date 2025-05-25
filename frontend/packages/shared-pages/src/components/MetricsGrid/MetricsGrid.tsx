@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { StatsCard } from '@jivapay/ui-kit';
+import { StatsCard, Skeleton } from '@jivapay/ui-kit';
 
 export interface MetricItem {
   id: string;
@@ -19,12 +19,16 @@ interface MetricsGridProps {
   metrics: MetricItem[];
   columns?: 2 | 3 | 4;
   className?: string;
+  isLoading?: boolean;
+  skeletonCount?: number;
 }
 
 export const MetricsGrid: React.FC<MetricsGridProps> = ({ 
   metrics, 
   columns = 4, 
-  className = '' 
+  className = '',
+  isLoading = false,
+  skeletonCount = 4
 }) => {
   const gridClass = {
     2: 'grid-cols-1 md:grid-cols-2',
@@ -32,19 +36,44 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({
     4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
   }[columns];
 
-  return (
-    <div className={`grid ${gridClass} gap-6 ${className}`}>
-      {metrics.map((metric) => {
-        const cardContent = (
-          <StatsCard
-            key={metric.id}
-            title={metric.title}
-            value={metric.value}
-            change={metric.change}
-            trend={metric.trend}
-            subtitle={metric.subtitle}
-            icon={metric.icon}
+  // Skeleton состояние при загрузке
+  if (isLoading) {
+    return (
+      <div className={`grid ${gridClass} gap-6 animate-fadeIn ${className}`}>
+        {Array.from({ length: skeletonCount }, (_, index) => (
+          <Skeleton 
+            key={`skeleton-${index}`}
+            variant="card" 
+            className="h-32"
+            animation="pulse"
           />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`grid ${gridClass} gap-6 animate-fadeIn ${className}`}>
+      {metrics.map((metric, index) => {
+        const cardContent = (
+          <div
+            key={metric.id}
+            className="animate-fadeIn"
+            style={{ 
+              animationDelay: `${index * 100}ms`,
+              animationFillMode: 'both'
+            }}
+          >
+            <StatsCard
+              title={metric.title}
+              value={metric.value}
+              change={metric.change}
+              trend={metric.trend}
+              subtitle={metric.subtitle}
+              icon={metric.icon}
+              animateValue={true}
+            />
+          </div>
         );
 
         // Если есть ссылка, оборачиваем в Link или a
@@ -53,7 +82,7 @@ export const MetricsGrid: React.FC<MetricsGridProps> = ({
             <a 
               key={metric.id} 
               href={metric.link} 
-              className="block hover:scale-105 transition-transform"
+              className="block hover:scale-[1.02] transition-all duration-200 animated-transition hover:shadow-lg"
             >
               {cardContent}
             </a>

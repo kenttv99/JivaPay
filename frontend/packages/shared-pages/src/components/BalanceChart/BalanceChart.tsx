@@ -39,21 +39,21 @@ export const BalanceChart: React.FC<BalanceChartProps> = ({
       case 'balances':
         return {
           lines: [
-            { key: 'platform_balance', name: 'Баланс платформы', color: '#7c3aed' },
-            { key: 'merchant_balance', name: 'Баланс мерчантов', color: '#10b981' },
-            { key: 'trader_balance', name: 'Баланс трейдеров', color: '#3b82f6' }
+            { key: 'platform_balance', name: 'Баланс платформы', color: 'rgb(var(--color-secondary))' },
+            { key: 'merchant_balance', name: 'Баланс мерчантов', color: 'rgb(var(--color-success))' },
+            { key: 'trader_balance', name: 'Баланс трейдеров', color: 'rgb(var(--color-info))' }
           ]
         };
       case 'volume':
         return {
           lines: [
-            { key: 'total_volume', name: 'Общий объем', color: '#7c3aed' }
+            { key: 'total_volume', name: 'Общий объем', color: 'rgb(var(--color-secondary))' }
           ]
         };
       case 'commissions':
         return {
           lines: [
-            { key: 'commissions', name: 'Комиссии', color: '#f59e0b' }
+            { key: 'commissions', name: 'Комиссии', color: 'rgb(var(--color-warning))' }
           ]
         };
       default:
@@ -137,7 +137,7 @@ export const BalanceChart: React.FC<BalanceChartProps> = ({
           {/* Сетка */}
           <defs>
             <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e5e7eb" strokeWidth="1" opacity="0.3"/>
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgb(var(--color-border))" strokeWidth="1" opacity="0.3"/>
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#grid)" />
@@ -150,7 +150,7 @@ export const BalanceChart: React.FC<BalanceChartProps> = ({
               y1={50}
               x2={100 + i * 87.5}
               y2={350}
-              stroke="#e5e7eb"
+              stroke="rgb(var(--color-border))"
               strokeWidth="1"
               opacity="0.3"
             />
@@ -164,7 +164,7 @@ export const BalanceChart: React.FC<BalanceChartProps> = ({
               y1={50 + i * 50}
               x2={750}
               y2={50 + i * 50}
-              stroke="#e5e7eb"
+              stroke="rgb(var(--color-border))"
               strokeWidth="1"
               opacity="0.3"
             />

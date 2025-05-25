@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { Skeleton } from '@jivapay/ui-kit';
 
 export interface PlatformMetricsData {
   total_users: number;
@@ -20,6 +21,7 @@ interface PlatformMetricsProps {
   data: PlatformMetricsData;
   showFinancials?: boolean;
   showBalances?: boolean;
+  isLoading?: boolean;
   className?: string;
 }
 
@@ -27,10 +29,29 @@ export const PlatformMetrics: React.FC<PlatformMetricsProps> = ({
   data,
   showFinancials = true,
   showBalances = true,
+  isLoading = false,
   className = ''
 }) => {
+  // Skeleton состояние при загрузке
+  if (isLoading) {
+    return (
+      <div className={`space-y-6 animate-fadeIn ${className}`}>
+        <Skeleton variant="card" className="h-48" />
+        <Skeleton variant="card" className="h-32" />
+        {showFinancials && <Skeleton variant="card" className="h-24" />}
+        {showBalances && <Skeleton variant="card" className="h-32" />}
+        <Skeleton variant="card" className="h-48" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} variant="card" className="h-20" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={`space-y-6 ${className}`}>
+    <div className={`space-y-6 animate-fadeIn ${className}`}>
       {/* Основные метрики пользователей */}
       <div className="bg-surface rounded-lg p-6">
         <h3 className="text-lg font-semibold text-primary mb-4">
